@@ -19,7 +19,7 @@ function HomePage() {
   
   // Get actual workout data
   const allWorkouts = getWorkouts()
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 })
+  const weekStart = startOfWeek(today, { weekStartsOn: 0 }) // Start on Sunday (U.S. calendar)
   const weekEnd = addDays(weekStart, 6)
   
   const thisWeekWorkouts = allWorkouts.filter(w => 

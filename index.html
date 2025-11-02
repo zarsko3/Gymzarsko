@@ -2,13 +2,58 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icon-16x16.png" />
+    
+    <!-- Viewport with safe areas for iOS -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#0284c7" />
-    <meta name="description" content="Track your PPL workouts with Gymzarski - A modern fitness tracking app" />
+    
+    <!-- Theme Colors -->
+    <meta name="theme-color" content="#10B981" />
+    <meta name="msapplication-TileColor" content="#10B981" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- App Description -->
+    <meta name="description" content="Track your Push, Pull, Legs workouts with Gymzarsko - Your modern fitness companion" />
+    <meta name="keywords" content="workout tracker, fitness, ppl, gym, exercise, strength training" />
+    
+    <!-- Apple iOS PWA Support -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <title>Gymzarski - PPL Workout Tracker</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Gymzarsko" />
+    
+    <!-- Apple Touch Icons (iOS Home Screen) -->
+    <link rel="apple-touch-icon" href="/icon-180x180.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/icon-167x167.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icon-180x180.png" />
+    
+    <!-- Apple Splash Screens (Optional - improves iOS experience) -->
+    <link rel="apple-touch-startup-image" href="/splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" />
+    <link rel="apple-touch-startup-image" href="/splash-1668x2388.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" />
+    <link rel="apple-touch-startup-image" href="/splash-1536x2048.png" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)" />
+    <link rel="apple-touch-startup-image" href="/splash-1242x2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" />
+    <link rel="apple-touch-startup-image" href="/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" />
+    <link rel="apple-touch-startup-image" href="/splash-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" />
+    <link rel="apple-touch-startup-image" href="/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" />
+    
+    <!-- Microsoft Tiles (Windows) -->
+    <meta name="msapplication-TileImage" content="/icon-144x144.png" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Gymzarsko - Workout Tracker" />
+    <meta property="og:description" content="Track your Push, Pull, Legs workouts with ease" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:url" content="https://gymzarsko.vercel.app" />
+    
+    <title>Gymzarsko - PPL Workout Tracker</title>
   </head>
   <body>
     <div id="root"></div>

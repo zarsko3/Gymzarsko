@@ -50,10 +50,10 @@ function WorkoutsPage() {
         setLoading(true)
         const allWorkouts = await getWorkouts()
         
-        // Get current week range (Monday to Sunday)
+        // Get current week range (Sunday to Saturday)
         const today = new Date()
-        const weekStart = startOfWeek(today, { weekStartsOn: 1 }) // 1 = Monday
-        const weekEnd = endOfWeek(today, { weekStartsOn: 1 })
+        const weekStart = startOfWeek(today, { weekStartsOn: 0 }) // 0 = Sunday (U.S. calendar)
+        const weekEnd = endOfWeek(today, { weekStartsOn: 0 })
         
         // Filter workouts for this week and count by type
         const thisWeekWorkouts = allWorkouts.filter(workout => {

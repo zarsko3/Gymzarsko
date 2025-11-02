@@ -7,7 +7,7 @@ interface WeeklyCalendarProps {
 }
 
 function WeeklyCalendar({ workoutDays = [], currentDate = new Date(), onTodayClick }: WeeklyCalendarProps) {
-  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }) // Start on Monday
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 }) // Start on Sunday (U.S. calendar)
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
   const isWorkoutDay = (date: Date) => {
