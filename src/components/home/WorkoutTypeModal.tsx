@@ -41,31 +41,33 @@ function WorkoutTypeModal({ isOpen, onClose, onSelectWorkout }: WorkoutTypeModal
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Select Workout Type">
-      <div className="space-y-3">
-        <p className="text-text-secondary text-center mb-4">
+      <div className="space-y-4">
+        <p className="text-text-secondary text-center text-sm mb-2">
           Choose your workout for today
         </p>
-        {workoutTypes.map((workout) => (
-          <Card
-            key={workout.id}
-            onClick={() => handleSelect(workout.id)}
-            className={`${workout.color} border-2 hover:shadow-md transition-all cursor-pointer`}
-          >
-            <div className="flex items-center gap-4 p-3">
-              <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600">
-                <workout.Icon size={24} strokeWidth={2} />
+        <div className="space-y-3">
+          {workoutTypes.map((workout) => (
+            <Card
+              key={workout.id}
+              onClick={() => handleSelect(workout.id)}
+              className={`${workout.color} border-2 hover:shadow-md transition-all cursor-pointer active:scale-[0.98]`}
+            >
+              <div className="flex items-center gap-4 p-4">
+                <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 flex-shrink-0">
+                  <workout.Icon size={24} strokeWidth={2} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-text-primary text-lg">
+                    {workout.name}
+                  </h3>
+                  <p className="text-text-secondary text-sm mt-0.5">
+                    {workout.description}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-text-primary text-lg">
-                  {workout.name}
-                </h3>
-                <p className="text-text-secondary text-sm mt-0.5">
-                  {workout.description}
-                </p>
-              </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          ))}
+        </div>
       </div>
     </Modal>
   )
