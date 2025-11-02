@@ -37,10 +37,19 @@ export interface Workout {
 
 // User Profile
 export interface UserProfile {
-  id: string
-  name: string
-  email?: string
+  id: string // Firebase Auth UID
+  displayName: string
+  email: string
+  photoURL?: string
+  theme: 'light' | 'dark'
+  notifications: {
+    workoutReminders: boolean
+    progressUpdates: boolean
+    emailNotifications: boolean
+  }
+  language: 'en' | 'es' | 'he'
   createdAt: Date
+  updatedAt: Date
 }
 
 // Progress Tracking

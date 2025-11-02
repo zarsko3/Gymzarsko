@@ -6,7 +6,7 @@ const navItems = [
   { to: '/history', icon: Clock, label: 'History' },
   { to: '/workouts', icon: Dumbbell, label: 'Workout' },
   { to: '/progress', icon: Calendar, label: 'Calendar' },
-  { to: '/profile', icon: Settings, label: 'Settings' },
+  { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
 function BottomNav() {

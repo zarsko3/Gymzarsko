@@ -30,9 +30,18 @@ export const mockExercises: Exercise[] = [
 // Mock User Profile
 export const mockUserProfile: UserProfile = {
   id: 'user1',
-  name: 'Guest User',
-  email: undefined,
+  displayName: 'Guest User',
+  email: 'guest@gymzarsko.app',
+  photoURL: undefined,
+  theme: 'light',
+  notifications: {
+    workoutReminders: true,
+    progressUpdates: true,
+    emailNotifications: false,
+  },
+  language: 'en',
   createdAt: new Date(),
+  updatedAt: new Date(),
 }
 
 // Helper to generate mock workouts with correct sets per exercise

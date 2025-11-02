@@ -1,0 +1,160 @@
+========================================
+FIREBASE STORAGE RULES FOR GYMZARSKO
+========================================
+
+IMPORTANT: Apply these rules to Firebase Storage for profile image uploads
+
+========================================
+HOW TO APPLY THESE RULES:
+========================================
+
+1. Go to Firebase Console: https://console.firebase.google.com
+2. Select your project: "gymzarsko"
+3. Click "Storage" in the left sidebar
+4. Click on the "Rules" tab
+5. Replace the existing rules with the rules below
+6. Click "Publish"
+
+========================================
+FIREBASE STORAGE SECURITY RULES:
+========================================
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Profile Images - authenticated users can upload their own images
+    match /profile-images/{userId} {
+      // Allow read access to any authenticated user (for viewing profiles)
+      allow read: if request.auth != null;
+      
+      // Allow write access only to the user's own profile image
+      allow write: if request.auth != null 
+                   && request.auth.uid == userId
+                   && request.resource.size < 5 * 1024 * 1024  // Max 5MB
+                   && request.resource.contentType.matches('image/.*');  // Only images
+    }
+    
+    // Block all other storage access by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+========================================
+WHAT THESE RULES DO:
+========================================
+
+✅ Profile Images Security:
+   - Users can only upload images to their own profile (userId must match auth.uid)
+   - Maximum file size: 5MB
+   - Only image files allowed (jpeg, png, gif, webp, etc.)
+   - All authenticated users can view profile images (for social features)
+
+✅ File Size Limit:
+   - 5MB max per image to prevent storage abuse
+   - Enforced at the Firebase Storage level
+
+✅ File Type Validation:
+   - Only image/* content types allowed
+   - Prevents users from uploading non-image files
+
+✅ Security:
+   - Users cannot overwrite other users' profile images
+   - Unauthenticated users cannot upload files
+   - All other storage paths are blocked by default
+
+========================================
+TESTING THE RULES:
+========================================
+
+After applying the rules:
+
+1. Log in to your app
+2. Go to Settings page (click Settings icon in bottom nav)
+3. Click the camera icon on your profile photo
+4. Select an image (JPG, PNG, or GIF)
+5. Image should upload successfully
+6. Try uploading a file > 5MB (should fail)
+7. Try uploading a non-image file (should fail)
+8. Log out and try accessing the Storage URL directly (should work for images)
+
+========================================
+STORAGE STRUCTURE:
+========================================
+
+Your Firebase Storage will have the following structure:
+
+gymzarsko-storage/
+└── profile-images/
+    ├── {userId-1} (user 1's profile image)
+    ├── {userId-2} (user 2's profile image)
+    └── {userId-3} (user 3's profile image)
+
+Each user can have only ONE profile image (overwrites on re-upload).
+
+========================================
+COST CONSIDERATIONS:
+========================================
+
+Firebase Storage Free Tier:
+- 5GB stored
+- 1GB/day downloaded
+- 20,000 downloads/day
+
+For a typical fitness app:
+- 1000 users x 2MB average per image = 2GB storage
+- Well within free tier limits
+
+If you exceed limits:
+- $0.026 per GB stored per month
+- $0.12 per GB downloaded
+
+========================================
+CLEANUP (Optional):
+========================================
+
+To delete a user's profile image when they delete their account,
+the app automatically calls deleteProfileImage() which removes
+the image from Storage before deleting the user account.
+
+For bulk cleanup, you can use Firebase Console:
+1. Go to Storage > Files
+2. Navigate to profile-images/
+3. Delete orphaned images manually
+
+Or use Firebase Admin SDK for automated cleanup.
+
+========================================
+NEXT STEPS:
+========================================
+
+1. ✅ Apply the Storage rules above in Firebase Console
+2. ✅ Test image upload in your deployed app
+3. ✅ Verify file size and type restrictions work
+4. ✅ Check that images display correctly after upload
+5. ✅ Test image deletion feature
+
+========================================
+TROUBLESHOOTING:
+========================================
+
+Error: "Firebase Storage: User does not have permission to access"
+→ Make sure you've applied the Storage rules above
+→ Ensure user is logged in (authenticated)
+→ Check that userId matches auth.uid
+
+Error: "File size exceeds maximum allowed"
+→ Image must be less than 5MB
+→ Compress image before uploading
+
+Error: "Invalid file type"
+→ Only image files allowed (JPEG, PNG, GIF, WebP)
+→ Check file extension and MIME type
+
+For more help, check Firebase Storage documentation:
+https://firebase.google.com/docs/storage/security
+
+========================================
+

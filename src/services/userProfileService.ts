@@ -1,0 +1,304 @@
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  Timestamp,
+} from 'firebase/firestore'
+import {
+  updateProfile,
+  updatePassword,
+  updateEmail,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  deleteUser,
+} from 'firebase/auth'
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
+import { db, auth, storage } from '../lib/firebase'
+import type { UserProfile } from '../types'
+
+const USERS_COLLECTION = 'users'
+
+/**
+ * Get current user ID
+ */
+function getUserId(): string {
+  const userId = auth.currentUser?.uid
+  if (!userId) {
+    throw new Error('User must be authenticated')
+  }
+  return userId
+}
+
+/**
+ * Get user profile from Firestore
+ */
+export async function getUserProfile(): Promise<UserProfile | null> {
+  try {
+    const userId = getUserId()
+    const userRef = doc(db, USERS_COLLECTION, userId)
+    const userDoc = await getDoc(userRef)
+
+    if (userDoc.exists()) {
+      const data = userDoc.data()
+      return {
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as UserProfile
+    }
+
+    // Create default profile if doesn't exist
+    const defaultProfile: Omit<UserProfile, 'id'> = {
+      displayName: auth.currentUser?.displayName || 'User',
+      email: auth.currentUser?.email || '',
+      photoURL: auth.currentUser?.photoURL || undefined,
+      theme: 'light',
+      notifications: {
+        workoutReminders: true,
+        progressUpdates: true,
+        emailNotifications: false,
+      },
+      language: 'en',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+
+    await createUserProfile(defaultProfile)
+    return { id: userId, ...defaultProfile }
+  } catch (error) {
+    console.error('Error getting user profile:', error)
+    return null
+  }
+}
+
+/**
+ * Create user profile in Firestore
+ */
+export async function createUserProfile(
+  profile: Omit<UserProfile, 'id'>
+): Promise<void> {
+  try {
+    const userId = getUserId()
+    const userRef = doc(db, USERS_COLLECTION, userId)
+
+    await setDoc(userRef, {
+      ...profile,
+      createdAt: Timestamp.fromDate(profile.createdAt),
+      updatedAt: Timestamp.fromDate(new Date()),
+    })
+  } catch (error) {
+    console.error('Error creating user profile:', error)
+    throw error
+  }
+}
+
+/**
+ * Update user profile
+ */
+export async function updateUserProfile(
+  updates: Partial<Omit<UserProfile, 'id' | 'createdAt'>>
+): Promise<void> {
+  try {
+    const userId = getUserId()
+    const userRef = doc(db, USERS_COLLECTION, userId)
+
+    await updateDoc(userRef, {
+      ...updates,
+      updatedAt: Timestamp.fromDate(new Date()),
+    })
+  } catch (error) {
+    console.error('Error updating user profile:', error)
+    throw error
+  }
+}
+
+/**
+ * Update display name in both Auth and Firestore
+ */
+export async function updateDisplayName(displayName: string): Promise<void> {
+  try {
+    if (!auth.currentUser) throw new Error('No user logged in')
+
+    // Update Firebase Auth profile
+    await updateProfile(auth.currentUser, { displayName })
+
+    // Update Firestore profile
+    await updateUserProfile({ displayName })
+  } catch (error) {
+    console.error('Error updating display name:', error)
+    throw error
+  }
+}
+
+/**
+ * Upload profile image to Firebase Storage
+ */
+export async function uploadProfileImage(file: File): Promise<string> {
+  try {
+    const userId = getUserId()
+
+    const storageRef = ref(storage, `profile-images/${userId}`)
+    
+    // Upload file
+    await uploadBytes(storageRef, file)
+    
+    // Get download URL
+    const photoURL = await getDownloadURL(storageRef)
+    
+    // Update Auth profile
+    if (auth.currentUser) {
+      await updateProfile(auth.currentUser, { photoURL })
+    }
+    
+    // Update Firestore profile
+    await updateUserProfile({ photoURL })
+    
+    return photoURL
+  } catch (error) {
+    console.error('Error uploading profile image:', error)
+    throw error
+  }
+}
+
+/**
+ * Delete profile image
+ */
+export async function deleteProfileImage(): Promise<void> {
+  try {
+    const userId = getUserId()
+
+    const storageRef = ref(storage, `profile-images/${userId}`)
+    
+    try {
+      await deleteObject(storageRef)
+    } catch (error: any) {
+      // Ignore if file doesn't exist
+      if (error.code !== 'storage/object-not-found') {
+        throw error
+      }
+    }
+
+    // Update Auth profile
+    if (auth.currentUser) {
+      await updateProfile(auth.currentUser, { photoURL: null })
+    }
+
+    // Update Firestore profile
+    await updateUserProfile({ photoURL: undefined })
+  } catch (error) {
+    console.error('Error deleting profile image:', error)
+    throw error
+  }
+}
+
+/**
+ * Change user password (requires re-authentication)
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<void> {
+  try {
+    if (!auth.currentUser?.email) {
+      throw new Error('No email associated with account')
+    }
+
+    // Re-authenticate user
+    const credential = EmailAuthProvider.credential(
+      auth.currentUser.email,
+      currentPassword
+    )
+    await reauthenticateWithCredential(auth.currentUser, credential)
+
+    // Update password
+    await updatePassword(auth.currentUser, newPassword)
+  } catch (error: any) {
+    console.error('Error changing password:', error)
+    if (error.code === 'auth/wrong-password') {
+      throw new Error('Current password is incorrect')
+    }
+    throw error
+  }
+}
+
+/**
+ * Update email (requires re-authentication)
+ */
+export async function changeEmail(
+  currentPassword: string,
+  newEmail: string
+): Promise<void> {
+  try {
+    if (!auth.currentUser?.email) {
+      throw new Error('No email associated with account')
+    }
+
+    // Re-authenticate user
+    const credential = EmailAuthProvider.credential(
+      auth.currentUser.email,
+      currentPassword
+    )
+    await reauthenticateWithCredential(auth.currentUser, credential)
+
+    // Update email in Auth
+    await updateEmail(auth.currentUser, newEmail)
+
+    // Update email in Firestore
+    await updateUserProfile({ email: newEmail })
+  } catch (error: any) {
+    console.error('Error changing email:', error)
+    if (error.code === 'auth/wrong-password') {
+      throw new Error('Password is incorrect')
+    } else if (error.code === 'auth/email-already-in-use') {
+      throw new Error('Email is already in use')
+    }
+    throw error
+  }
+}
+
+/**
+ * Delete user account (requires re-authentication)
+ */
+export async function deleteUserAccount(password: string): Promise<void> {
+  try {
+    if (!auth.currentUser?.email) {
+      throw new Error('No email associated with account')
+    }
+
+    const userId = getUserId()
+
+    // Re-authenticate user
+    const credential = EmailAuthProvider.credential(
+      auth.currentUser.email,
+      password
+    )
+    await reauthenticateWithCredential(auth.currentUser, credential)
+
+    // Delete profile image if exists
+    try {
+      await deleteProfileImage()
+    } catch (error) {
+      console.warn('Failed to delete profile image:', error)
+    }
+
+    // Delete Firestore profile
+    const userRef = doc(db, USERS_COLLECTION, userId)
+    await deleteDoc(userRef)
+
+    // Delete all user's workouts
+    // Note: In production, you might want to use a Cloud Function for this
+    // to ensure all user data is deleted properly
+
+    // Delete Auth account (must be last)
+    await deleteUser(auth.currentUser)
+  } catch (error: any) {
+    console.error('Error deleting account:', error)
+    if (error.code === 'auth/wrong-password') {
+      throw new Error('Password is incorrect')
+    }
+    throw error
+  }
+}
+

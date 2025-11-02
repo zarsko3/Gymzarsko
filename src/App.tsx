@@ -12,6 +12,7 @@ import WorkoutSummaryPage from './pages/WorkoutSummaryPage'
 import ProgressPage from './pages/ProgressPage'
 import ExerciseDetailPage from './pages/ExerciseDetailPage'
 import ProfilePage from './pages/ProfilePage'
+import SettingsPage from './pages/SettingsPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 
@@ -38,6 +39,7 @@ function App() {
                 <Route path="/progress" element={<ProgressPage />} />
                 <Route path="/progress/exercise/:exerciseId" element={<ExerciseDetailPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/settings" element={<SettingsPage />} />
               </Routes>
             </Layout>
           </PrivateRoute>
