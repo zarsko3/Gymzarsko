@@ -1,0 +1,58 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Workouts collection
+    match /workouts/{workoutId} {
+      // Anyone authenticated can read their own workouts
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Users can create workouts (will add userId automatically)
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      
+      // Users can update their own workouts
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Users can delete their own workouts
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    // User profiles collection
+    match /users/{userId} {
+      // Users can read their own profile
+      allow read: if isAuthenticated() && isOwner(userId);
+      
+      // Users can create/update their own profile
+      allow create, update: if isAuthenticated() && isOwner(userId);
+      
+      // Users cannot delete their profile
+      allow delete: if false;
+    }
+    
+    // Templates collection (shared templates)
+    match /templates/{templateId} {
+      // All authenticated users can read templates
+      allow read: if isAuthenticated();
+      
+      // Only template creator can modify
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Block everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

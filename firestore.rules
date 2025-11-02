@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ⚠️ TEMPORARY RULES FOR TESTING
+    // This allows public read/write access
+    // Replace with Option 2 once you add authentication
+    
+    match /workouts/{workoutId} {
+      // Anyone can read and write workouts
+      allow read, write: if true;
+    }
+    
+    match /templates/{templateId} {
+      // Anyone can read templates
+      allow read: if true;
+      // Only allow writing if you add custom templates later
+      allow write: if true;
+    }
+    
+    // Block everything else by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
