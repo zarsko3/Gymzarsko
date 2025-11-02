@@ -52,7 +52,6 @@ export async function getUserProfile(): Promise<UserProfile | null> {
     const defaultProfile: Omit<UserProfile, 'id'> = {
       displayName: auth.currentUser?.displayName || 'User',
       email: auth.currentUser?.email || '',
-      photoURL: auth.currentUser?.photoURL || undefined,
       theme: 'light',
       notifications: {
         workoutReminders: true,
@@ -62,6 +61,11 @@ export async function getUserProfile(): Promise<UserProfile | null> {
       language: 'en',
       createdAt: new Date(),
       updatedAt: new Date(),
+    }
+    
+    // Only add photoURL if it exists
+    if (auth.currentUser?.photoURL) {
+      (defaultProfile as any).photoURL = auth.currentUser.photoURL
     }
 
     await createUserProfile(defaultProfile)
@@ -82,11 +86,23 @@ export async function createUserProfile(
     const userId = getUserId()
     const userRef = doc(db, USERS_COLLECTION, userId)
 
-    await setDoc(userRef, {
-      ...profile,
+    // Prepare profile data, filtering out undefined values
+    const profileData: Record<string, any> = {
+      displayName: profile.displayName,
+      email: profile.email,
+      theme: profile.theme,
+      notifications: profile.notifications,
+      language: profile.language,
       createdAt: Timestamp.fromDate(profile.createdAt),
       updatedAt: Timestamp.fromDate(new Date()),
-    })
+    }
+
+    // Only add photoURL if it's defined
+    if (profile.photoURL !== undefined) {
+      profileData.photoURL = profile.photoURL
+    }
+
+    await setDoc(userRef, profileData)
   } catch (error) {
     console.error('Error creating user profile:', error)
     throw error
@@ -103,10 +119,20 @@ export async function updateUserProfile(
     const userId = getUserId()
     const userRef = doc(db, USERS_COLLECTION, userId)
 
-    await updateDoc(userRef, {
-      ...updates,
+    // Filter out undefined values and prepare update data
+    const updateData: Record<string, any> = {
       updatedAt: Timestamp.fromDate(new Date()),
+    }
+
+    // Only include defined values
+    Object.keys(updates).forEach((key) => {
+      const value = (updates as any)[key]
+      if (value !== undefined) {
+        updateData[key] = value
+      }
     })
+
+    await updateDoc(userRef, updateData)
   } catch (error) {
     console.error('Error updating user profile:', error)
     throw error
