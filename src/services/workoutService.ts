@@ -43,6 +43,17 @@ export const saveWorkout = (workout: Workout): void => {
   }
 }
 
+// Get single workout by ID
+export const getWorkoutById = (workoutId: string): Workout | null => {
+  try {
+    const workouts = getWorkouts()
+    return workouts.find(w => w.id === workoutId) || null
+  } catch (error) {
+    console.error('Error getting workout by ID:', error)
+    return null
+  }
+}
+
 // Delete workout
 export const deleteWorkout = (workoutId: string): void => {
   try {
@@ -86,11 +97,15 @@ export const updateCurrentWorkout = (workout: Workout): void => {
 }
 
 // Complete and save current workout
-export const completeWorkout = (workout: Workout): void => {
-  workout.completed = true
-  workout.endTime = new Date()
-  saveWorkout(workout)
+export const completeWorkout = (workout: Workout): Workout => {
+  const completedWorkout = {
+    ...workout,
+    completed: true,
+    endTime: new Date(),
+  }
+  saveWorkout(completedWorkout)
   localStorage.removeItem(CURRENT_WORKOUT_KEY)
+  return completedWorkout
 }
 
 // Cancel current workout

@@ -92,6 +92,7 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
     .slice(0, 5)
     .map(exercise => ({
       id: `we-${exercise.id}-${Date.now()}`,
+      exerciseId: exercise.id,
       exercise,
       sets: Array(3).fill(null).map((_, i) => ({
         id: `set-${i}-${Date.now()}`,
@@ -107,6 +108,7 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
     startTime: new Date(),
     duration: 0,
     exercises,
+    completed: false,
   }
 
   try {
@@ -140,10 +142,12 @@ export async function updateWorkout(workout: Workout): Promise<void> {
  * Complete a workout
  */
 export async function completeWorkout(workout: Workout): Promise<Workout> {
+  const startTime = workout.startTime || workout.date
   const completedWorkout = {
     ...workout,
     endTime: new Date(),
-    duration: (new Date().getTime() - workout.startTime.getTime()) / 1000,
+    duration: (new Date().getTime() - startTime.getTime()) / 1000,
+    completed: true,
   }
 
   try {
