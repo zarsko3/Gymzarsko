@@ -1,4 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
+import { AuthProvider } from './contexts/AuthContext'
+import PrivateRoute from './components/auth/PrivateRoute'
 import Layout from './components/layout/Layout'
 import HomePage from './pages/HomePage'
 import HistoryPage from './pages/HistoryPage'
@@ -10,23 +12,38 @@ import WorkoutSummaryPage from './pages/WorkoutSummaryPage'
 import ProgressPage from './pages/ProgressPage'
 import ExerciseDetailPage from './pages/ExerciseDetailPage'
 import ProfilePage from './pages/ProfilePage'
+import LoginPage from './pages/LoginPage'
+import SignupPage from './pages/SignupPage'
 
 function App() {
   return (
-    <Layout>
+    <AuthProvider>
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/history" element={<HistoryPage />} />
-        <Route path="/workout/detail/:workoutId" element={<WorkoutDetailPage />} />
-        <Route path="/workouts" element={<WorkoutsPage />} />
-        <Route path="/workout/start" element={<StartWorkoutPage />} />
-        <Route path="/workout/active" element={<ActiveWorkoutPage />} />
-        <Route path="/workout/summary" element={<WorkoutSummaryPage />} />
-        <Route path="/progress" element={<ProgressPage />} />
-        <Route path="/progress/exercise/:exerciseId" element={<ExerciseDetailPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
+        {/* Public routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        
+        {/* Protected routes */}
+        <Route path="/*" element={
+          <PrivateRoute>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/history" element={<HistoryPage />} />
+                <Route path="/workout/detail/:workoutId" element={<WorkoutDetailPage />} />
+                <Route path="/workouts" element={<WorkoutsPage />} />
+                <Route path="/workout/start" element={<StartWorkoutPage />} />
+                <Route path="/workout/active" element={<ActiveWorkoutPage />} />
+                <Route path="/workout/summary" element={<WorkoutSummaryPage />} />
+                <Route path="/progress" element={<ProgressPage />} />
+                <Route path="/progress/exercise/:exerciseId" element={<ExerciseDetailPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+              </Routes>
+            </Layout>
+          </PrivateRoute>
+        } />
       </Routes>
-    </Layout>
+    </AuthProvider>
   )
 }
 

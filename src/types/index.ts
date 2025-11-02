@@ -25,6 +25,7 @@ export interface WorkoutExercise {
 
 export interface Workout {
   id: string
+  userId?: string // Firebase user ID for security rules
   type: WorkoutType
   date: Date
   startTime?: Date

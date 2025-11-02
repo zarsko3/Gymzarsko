@@ -1,6 +1,10 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, MoreVertical, User, Bell, Database, Info, LogOut, ChevronRight } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 import Card from '../components/ui/Card'
+import Modal from '../components/ui/Modal'
+import Button from '../components/ui/Button'
 
 const settingsItems = [
   { icon: Bell, label: 'Notifications', description: 'Manage alerts' },
@@ -10,6 +14,22 @@ const settingsItems = [
 
 function ProfilePage() {
   const navigate = useNavigate()
+  const { currentUser, logout } = useAuth()
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const handleLogout = async () => {
+    try {
+      setLoading(true)
+      await logout()
+      navigate('/login')
+    } catch (error) {
+      console.error('Failed to log out:', error)
+    } finally {
+      setLoading(false)
+      setShowLogoutModal(false)
+    }
+  }
 
   return (
     <div className="min-h-screen pb-20">
@@ -38,8 +58,12 @@ function ProfilePage() {
               <User size={40} className="text-white" strokeWidth={2} />
             </div>
             <div className="flex-1">
-              <h3 className="text-xl font-bold text-text-primary">Guest User</h3>
-              <p className="text-text-secondary text-sm mt-1">Using local storage</p>
+              <h3 className="text-xl font-bold text-text-primary">
+                {currentUser?.email?.split('@')[0] || 'User'}
+              </h3>
+              <p className="text-text-secondary text-sm mt-1">
+                {currentUser?.email || 'No email'}
+              </p>
               <div className="flex gap-2 mt-2">
                 <span className="text-xs bg-white px-2 py-1 rounded-full text-primary-600 font-medium">
                   Free Plan
@@ -89,13 +113,16 @@ function ProfilePage() {
           </div>
         </div>
 
-        {/* Danger Zone */}
-        <Card className="border-2 border-red-200 bg-red-50 cursor-pointer hover:shadow-md transition-shadow">
+        {/* Logout Button */}
+        <Card 
+          onClick={() => setShowLogoutModal(true)}
+          className="border-2 border-red-200 bg-red-50 cursor-pointer hover:shadow-md transition-shadow"
+        >
           <div className="flex items-center gap-3 p-2">
             <LogOut size={24} className="text-red-600" strokeWidth={1.5} />
             <div>
-              <h4 className="font-medium text-red-600">Clear All Data</h4>
-              <p className="text-red-500 text-sm">Delete all local workout data</p>
+              <h4 className="font-medium text-red-600">Log Out</h4>
+              <p className="text-red-500 text-sm">Sign out of your account</p>
             </div>
           </div>
         </Card>
@@ -107,6 +134,35 @@ function ProfilePage() {
           <p className="text-text-inactive text-xs mt-3">Made for fitness enthusiasts</p>
         </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        title="Log Out"
+      >
+        <p className="text-text-secondary mb-6">
+          Are you sure you want to log out? You'll need to sign in again to access your workouts.
+        </p>
+        <div className="flex gap-3">
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={() => setShowLogoutModal(false)}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            fullWidth
+            onClick={handleLogout}
+            disabled={loading}
+            className="bg-red-500 hover:bg-red-600"
+          >
+            {loading ? 'Logging out...' : 'Log Out'}
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }

@@ -1,0 +1,95 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║                    🔥 FIRESTORE SECURITY RULES                         ║
+║              Copy and paste into Firebase Console                      ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+🔗 Go to: https://console.firebase.google.com/project/gymzarsko/firestore/rules
+
+📋 COPY EVERYTHING BELOW THIS LINE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Workouts collection - users can only access their own workouts
+    match /workouts/{workoutId} {
+      // Users can read their own workouts
+      allow read: if isAuthenticated() && 
+                     resource.data.userId == request.auth.uid;
+      
+      // Users can create workouts with their userId
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      
+      // Users can update their own workouts
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == request.auth.uid;
+      
+      // Users can delete their own workouts
+      allow delete: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
+    }
+    
+    // User profiles collection
+    match /users/{userId} {
+      // Users can read their own profile
+      allow read: if isAuthenticated() && isOwner(userId);
+      
+      // Users can create/update their own profile
+      allow create, update: if isAuthenticated() && isOwner(userId);
+      
+      // Users cannot delete their profile (optional - remove if you want deletion)
+      allow delete: if false;
+    }
+    
+    // Templates collection (shared templates)
+    match /templates/{templateId} {
+      // All authenticated users can read templates
+      allow read: if isAuthenticated();
+      
+      // Only template creator can modify their templates
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      
+      allow update, delete: if isAuthenticated() && 
+                               resource.data.userId == request.auth.uid;
+    }
+    
+    // Block everything else by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 COPY EVERYTHING ABOVE THIS LINE
+
+✅ After pasting:
+   1. Click "Publish" button
+   2. Wait for confirmation message
+   3. Rules are now active!
+
+🔐 What these rules do:
+   ✅ Only authenticated users can access the app
+   ✅ Users can only see/edit their own workouts
+   ✅ Each workout is tied to a specific user ID
+   ✅ Templates can be shared among all authenticated users
+   ✅ Everything else is blocked by default
+
+⚠️ IMPORTANT:
+   These rules require that all workout documents include a "userId" field.
+   I'm updating the app code to automatically add this field now.
+

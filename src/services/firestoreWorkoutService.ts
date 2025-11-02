@@ -12,11 +12,22 @@ import {
   Timestamp,
   serverTimestamp,
 } from 'firebase/firestore'
-import { db } from '../lib/firebase'
+import { db, auth } from '../lib/firebase'
 import type { Workout, WorkoutType } from '../types'
 import { mockExercises } from './mockData'
 
 const WORKOUTS_COLLECTION = 'workouts'
+
+/**
+ * Get current user ID
+ */
+function getUserId(): string {
+  const userId = auth.currentUser?.uid
+  if (!userId) {
+    throw new Error('User must be authenticated to perform this action')
+  }
+  return userId
+}
 
 /**
  * Convert Firestore document to Workout object
@@ -49,8 +60,13 @@ function workoutToFirestore(workout: Workout) {
  */
 export async function getWorkouts(): Promise<Workout[]> {
   try {
+    const userId = getUserId()
     const workoutsRef = collection(db, WORKOUTS_COLLECTION)
-    const q = query(workoutsRef, orderBy('date', 'desc'))
+    const q = query(
+      workoutsRef,
+      where('userId', '==', userId),
+      orderBy('date', 'desc')
+    )
     const querySnapshot = await getDocs(q)
     
     const workouts: Workout[] = []
@@ -87,6 +103,8 @@ export async function getWorkoutById(id: string): Promise<Workout | null> {
  * Start a new workout
  */
 export async function startWorkout(type: WorkoutType): Promise<Workout> {
+  const userId = getUserId()
+  
   // Get exercises for this workout type
   const exercises = mockExercises
     .filter(ex => ex.category === type)
@@ -103,17 +121,21 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
       })),
     }))
 
-  const newWorkout: Omit<Workout, 'id'> = {
+  const newWorkout = {
     type,
     date: new Date(),
     startTime: new Date(),
     exercises,
     completed: false,
+    userId, // Add userId for security rules
   }
 
   try {
     const workoutsRef = collection(db, WORKOUTS_COLLECTION)
-    const docRef = await addDoc(workoutsRef, workoutToFirestore(newWorkout as Workout))
+    const docRef = await addDoc(workoutsRef, {
+      ...workoutToFirestore(newWorkout as Workout),
+      userId, // Ensure userId is included in Firestore doc
+    })
     
     return {
       ...newWorkout,
@@ -177,9 +199,11 @@ export async function deleteWorkout(id: string): Promise<void> {
  */
 export async function getCurrentWorkout(): Promise<Workout | null> {
   try {
+    const userId = getUserId()
     const workoutsRef = collection(db, WORKOUTS_COLLECTION)
     const q = query(
       workoutsRef,
+      where('userId', '==', userId),
       where('endTime', '==', null),
       orderBy('startTime', 'desc')
     )
