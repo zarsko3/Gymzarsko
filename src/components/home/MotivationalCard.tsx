@@ -58,7 +58,7 @@ function MotivationalCard({ message, icon }: MotivationalCardProps) {
   return (
     <div className="bg-accent-mint rounded-2xl p-8 text-center">
       <div className="flex justify-center mb-4 text-primary-600">
-        <Icon size={40} strokeWidth={2} />
+        <Icon className="w-10 h-10" strokeWidth={2} />
       </div>
       <p className="text-text-primary font-medium text-base leading-relaxed">
         {displayMessage}
