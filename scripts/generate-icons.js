@@ -10,9 +10,13 @@
  * node scripts/generate-icons.js
  */
 
-const sharp = require('sharp')
-const fs = require('fs')
-const path = require('path')
+import sharp from 'sharp'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const sizes = [
   16, 32, 72, 96, 128, 144, 152, 167, 180, 192, 384, 512
@@ -52,4 +56,3 @@ async function generateIcons() {
 }
 
 generateIcons().catch(console.error)
-
