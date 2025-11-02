@@ -35,11 +35,12 @@ function firestoreToWorkout(docId: string, data: any): Workout {
  * Convert Workout object to Firestore document
  */
 function workoutToFirestore(workout: Workout) {
+  const { startTime, endTime, ...rest } = workout
   return {
-    ...workout,
+    ...rest,
     date: Timestamp.fromDate(workout.date),
-    startTime: Timestamp.fromDate(workout.startTime),
-    endTime: workout.endTime ? Timestamp.fromDate(workout.endTime) : null,
+    startTime: startTime ? Timestamp.fromDate(startTime) : null,
+    endTime: endTime ? Timestamp.fromDate(endTime) : null,
   }
 }
 
@@ -106,7 +107,6 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
     type,
     date: new Date(),
     startTime: new Date(),
-    duration: 0,
     exercises,
     completed: false,
   }
@@ -142,11 +142,9 @@ export async function updateWorkout(workout: Workout): Promise<void> {
  * Complete a workout
  */
 export async function completeWorkout(workout: Workout): Promise<Workout> {
-  const startTime = workout.startTime || workout.date
   const completedWorkout = {
     ...workout,
     endTime: new Date(),
-    duration: (new Date().getTime() - startTime.getTime()) / 1000,
     completed: true,
   }
 
