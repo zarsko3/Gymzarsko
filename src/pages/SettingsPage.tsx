@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ChevronLeft,
   User,
-  Camera,
   Mail,
   Palette,
   Bell,
@@ -23,8 +22,6 @@ import {
   getUserProfile,
   updateDisplayName,
   updateUserProfile,
-  uploadProfileImage,
-  deleteProfileImage,
   changePassword,
   deleteUserAccount,
 } from '../services/userProfileService'
@@ -33,7 +30,6 @@ import type { UserProfile } from '../types'
 function SettingsPage() {
   const navigate = useNavigate()
   const { currentUser, logout } = useAuth()
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // State
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -111,51 +107,6 @@ function SettingsPage() {
     } catch (error) {
       console.error('Error updating display name:', error)
       showMessage('error', 'Failed to update display name')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // Handle profile image upload
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      showMessage('error', 'Image must be less than 5MB')
-      return
-    }
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      showMessage('error', 'File must be an image')
-      return
-    }
-
-    try {
-      setSaving(true)
-      const photoURL = await uploadProfileImage(file)
-      setProfile(prev => prev ? { ...prev, photoURL } : null)
-      showMessage('success', 'Profile image updated successfully')
-    } catch (error) {
-      console.error('Error uploading image:', error)
-      showMessage('error', 'Failed to upload image')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // Handle profile image deletion
-  async function handleDeleteImage() {
-    try {
-      setSaving(true)
-      await deleteProfileImage()
-      setProfile(prev => prev ? { ...prev, photoURL: undefined } : null)
-      showMessage('success', 'Profile image removed')
-    } catch (error) {
-      console.error('Error deleting image:', error)
-      showMessage('error', 'Failed to remove image')
     } finally {
       setSaving(false)
     }
@@ -319,50 +270,19 @@ function SettingsPage() {
         <section>
           <h2 className="text-lg font-semibold text-text-primary mb-3">Profile Settings</h2>
 
-          {/* Profile Image */}
-          <Card className="bg-white mb-3">
-            <div className="p-4 flex items-center gap-4">
-              <div className="relative">
-                {profile?.photoURL ? (
-                  <img
-                    src={profile.photoURL}
-                    alt="Profile"
-                    className="w-20 h-20 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-20 h-20 rounded-full bg-primary-100 flex items-center justify-center">
-                    <User className="w-10 h-10 text-primary-600" />
-                  </div>
-                )}
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={saving}
-                  className="absolute -bottom-1 -right-1 w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white hover:bg-primary-600 transition-colors disabled:opacity-50"
-                >
-                  <Camera className="w-4 h-4" />
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
+          {/* User Info Card */}
+          <Card className="bg-gradient-to-br from-primary-50 to-primary-100 border-2 border-primary-200 mb-3">
+            <div className="p-6 flex items-center gap-4">
+              <div className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center flex-shrink-0">
+                <User className="w-10 h-10 text-white" strokeWidth={2} />
               </div>
-              <div className="flex-1">
-                <h3 className="font-medium text-text-primary">Profile Photo</h3>
-                <p className="text-sm text-text-secondary mt-1">
-                  JPG, PNG or GIF. Max 5MB
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xl font-bold text-text-primary truncate">
+                  {displayName || currentUser?.email?.split('@')[0] || 'User'}
+                </h3>
+                <p className="text-text-secondary text-sm mt-1 truncate">
+                  {email || currentUser?.email || 'No email'}
                 </p>
-                {profile?.photoURL && (
-                  <button
-                    onClick={handleDeleteImage}
-                    disabled={saving}
-                    className="text-sm text-red-500 hover:text-red-600 mt-2 disabled:opacity-50"
-                  >
-                    Remove photo
-                  </button>
-                )}
               </div>
             </div>
           </Card>

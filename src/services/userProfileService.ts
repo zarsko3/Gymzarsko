@@ -14,8 +14,7 @@ import {
   reauthenticateWithCredential,
   deleteUser,
 } from 'firebase/auth'
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
-import { db, auth, storage } from '../lib/firebase'
+import { db, auth } from '../lib/firebase'
 import type { UserProfile } from '../types'
 
 const USERS_COLLECTION = 'users'
@@ -133,67 +132,6 @@ export async function updateDisplayName(displayName: string): Promise<void> {
 }
 
 /**
- * Upload profile image to Firebase Storage
- */
-export async function uploadProfileImage(file: File): Promise<string> {
-  try {
-    const userId = getUserId()
-
-    const storageRef = ref(storage, `profile-images/${userId}`)
-    
-    // Upload file
-    await uploadBytes(storageRef, file)
-    
-    // Get download URL
-    const photoURL = await getDownloadURL(storageRef)
-    
-    // Update Auth profile
-    if (auth.currentUser) {
-      await updateProfile(auth.currentUser, { photoURL })
-    }
-    
-    // Update Firestore profile
-    await updateUserProfile({ photoURL })
-    
-    return photoURL
-  } catch (error) {
-    console.error('Error uploading profile image:', error)
-    throw error
-  }
-}
-
-/**
- * Delete profile image
- */
-export async function deleteProfileImage(): Promise<void> {
-  try {
-    const userId = getUserId()
-
-    const storageRef = ref(storage, `profile-images/${userId}`)
-    
-    try {
-      await deleteObject(storageRef)
-    } catch (error: any) {
-      // Ignore if file doesn't exist
-      if (error.code !== 'storage/object-not-found') {
-        throw error
-      }
-    }
-
-    // Update Auth profile
-    if (auth.currentUser) {
-      await updateProfile(auth.currentUser, { photoURL: null })
-    }
-
-    // Update Firestore profile
-    await updateUserProfile({ photoURL: undefined })
-  } catch (error) {
-    console.error('Error deleting profile image:', error)
-    throw error
-  }
-}
-
-/**
  * Change user password (requires re-authentication)
  */
 export async function changePassword(
@@ -275,13 +213,6 @@ export async function deleteUserAccount(password: string): Promise<void> {
       password
     )
     await reauthenticateWithCredential(auth.currentUser, credential)
-
-    // Delete profile image if exists
-    try {
-      await deleteProfileImage()
-    } catch (error) {
-      console.warn('Failed to delete profile image:', error)
-    }
 
     // Delete Firestore profile
     const userRef = doc(db, USERS_COLLECTION, userId)
