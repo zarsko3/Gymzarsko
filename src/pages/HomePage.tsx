@@ -17,6 +17,14 @@ function HomePage() {
   const [allWorkouts, setAllWorkouts] = useState<Workout[]>([])
   const [isLoading, setIsLoading] = useState(true)
   
+  // Generate random banner on each mount - use lazy initialization to ensure true randomness
+  // This runs once per component mount, ensuring a fresh random selection on each page load
+  const [randomBanner] = useState(() => {
+    const banners = ['/Baner1.svg', '/Baner2.svg']
+    const randomIndex = Math.floor(Math.random() * banners.length)
+    return banners[randomIndex]
+  })
+  
   // Subscribe to workout data for real-time updates
   useEffect(() => {
     setIsLoading(true)
@@ -99,15 +107,18 @@ function HomePage() {
             <img 
               src="/Logo.png" 
               alt="Gymzarsko Logo" 
-              className="max-w-full md:w-[576px] w-[448px] h-auto"
+              className="max-w-full md:w-[576px] w-[448px] h-auto mx-auto block"
+              style={{ objectFit: 'contain' }}
             />
           </div>
         ) : (
           <div className="flex justify-center items-center my-6">
             <img 
-              src="/Baner1.svg" 
+              key={randomBanner}
+              src={randomBanner} 
               alt="Gymzarsko Banner" 
-              className="max-w-full md:w-[576px] w-[448px] h-auto"
+              className="max-w-full md:w-[576px] w-[448px] h-auto mx-auto block"
+              style={{ objectFit: 'contain' }}
             />
           </div>
         )}
