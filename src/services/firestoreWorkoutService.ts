@@ -85,14 +85,22 @@ export async function getWorkouts(): Promise<Workout[]> {
 
 /**
  * Get a single workout by ID
+ * Verifies that the workout belongs to the current user
  */
 export async function getWorkoutById(id: string): Promise<Workout | null> {
   try {
+    const userId = getUserId()
     const workoutRef = doc(db, WORKOUTS_COLLECTION, id)
     const workoutDoc = await getDoc(workoutRef)
     
     if (workoutDoc.exists()) {
-      return firestoreToWorkout(workoutDoc.id, workoutDoc.data())
+      const data = workoutDoc.data()
+      // Verify workout belongs to current user
+      if (data.userId !== userId) {
+        console.warn('Attempted to access workout that does not belong to current user')
+        return null
+      }
+      return firestoreToWorkout(workoutDoc.id, data)
     }
     return null
   } catch (error) {
