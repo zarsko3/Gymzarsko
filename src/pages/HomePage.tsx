@@ -99,7 +99,7 @@ function HomePage() {
             <img 
               src="/Logo.png" 
               alt="Gymzarsko Logo" 
-              className="w-[120px] h-auto max-w-full"
+              className="max-w-full md:w-[576px] w-[448px] h-auto"
             />
           </div>
         ) : (
@@ -107,7 +107,7 @@ function HomePage() {
             <img 
               src="/Baner1.svg" 
               alt="Gymzarsko Banner" 
-              className="w-[120px] h-auto max-w-full"
+              className="max-w-full md:w-[576px] w-[448px] h-auto"
             />
           </div>
         )}
