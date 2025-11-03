@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, MoreVertical, ChevronRight, Dumbbell, Flame, Activity } from 'lucide-react'
 import { startOfWeek, endOfWeek, isWithinInterval } from 'date-fns'
-import type { WorkoutType } from '../types'
 import Card from '../components/ui/Card'
 import { getWorkouts } from '../services/workoutServiceFacade'
-import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
 
 const workoutTypes = [
   {
@@ -39,7 +37,6 @@ interface WeeklyStats {
 
 function WorkoutsPage() {
   const navigate = useNavigate()
-  const [showWorkoutModal, setShowWorkoutModal] = useState(false)
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStats>({
     push: 0,
     pull: 0,
@@ -120,7 +117,7 @@ function WorkoutsPage() {
           {workoutTypes.map((workout) => (
             <Card
               key={workout.id}
-              onClick={() => setShowWorkoutModal(true)}
+              onClick={() => navigate('/workout/start')}
               className={`${workout.color} border-2 hover:shadow-md transition-all cursor-pointer`}
             >
               <div className="flex items-center justify-between p-2">
@@ -174,15 +171,6 @@ function WorkoutsPage() {
           )}
         </div>
       </div>
-
-      {/* Workout Type Selection Modal */}
-      <WorkoutTypeModal
-        isOpen={showWorkoutModal}
-        onClose={() => setShowWorkoutModal(false)}
-        onSelectWorkout={(type: WorkoutType) => {
-          navigate(`/workout/active?type=${type}`)
-        }}
-      />
     </div>
   )
 }
