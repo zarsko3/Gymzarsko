@@ -1,4 +1,5 @@
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns'
+import { motion, useReducedMotion } from 'framer-motion'
 
 interface WeeklyCalendarProps {
   workoutDays?: Date[]
@@ -6,7 +7,22 @@ interface WeeklyCalendarProps {
   onTodayClick?: () => void
 }
 
+const getChipVariants = (shouldReduceMotion: boolean) => ({
+  initial: shouldReduceMotion ? {} : { opacity: 0, scale: 0.9 },
+  animate: { opacity: 1, scale: 1 },
+})
+
+const getContainerVariants = (shouldReduceMotion: boolean) => ({
+  initial: {},
+  animate: {
+    transition: shouldReduceMotion ? {} : {
+      staggerChildren: 0.06,
+    },
+  },
+})
+
 function WeeklyCalendar({ workoutDays = [], currentDate = new Date(), onTodayClick }: WeeklyCalendarProps) {
+  const shouldReduceMotion = useReducedMotion()
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 }) // Start on Sunday (U.S. calendar)
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
@@ -48,20 +64,31 @@ function WeeklyCalendar({ workoutDays = [], currentDate = new Date(), onTodayCli
   return (
     <div className="w-full max-w-full space-y-3">
       <h3 className="text-lg font-semibold text-text-primary">Your Week</h3>
-      <div className="flex justify-between items-center gap-1.5 py-1.5 px-0.5 overflow-visible">
+      <motion.div 
+        className="flex justify-between items-center gap-1.5 py-1.5 px-0.5 overflow-visible"
+        variants={getContainerVariants(shouldReduceMotion)}
+        initial="initial"
+        animate="animate"
+      >
         {days.map((day, index) => {
           return (
-            <div key={index} className="flex flex-col items-center gap-1 flex-shrink-0">
+            <motion.div 
+              key={index} 
+              className="flex flex-col items-center gap-1 flex-shrink-0"
+              variants={getChipVariants(shouldReduceMotion)}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2, ease: 'easeOut' }}
+              style={{ willChange: 'transform, opacity' }}
+            >
               <div 
                 className={getDayClasses(day)}
                 onClick={() => handleDayClick(day)}
               >
                 {format(day, 'EEEEE')}
               </div>
-            </div>
+            </motion.div>
           )
         })}
-      </div>
+      </motion.div>
     </div>
   )
 }

@@ -5,6 +5,7 @@ import { CheckCircle, Clock, TrendingUp, Home, Dumbbell, Plus } from 'lucide-rea
 import type { Workout, WorkoutExercise, WorkoutSet } from '../types'
 import { getWorkouts, getWorkoutById } from '../services/workoutServiceFacade'
 import { addExerciseToWorkout } from '../services/firestoreExerciseService'
+import { useToast } from '../hooks/useToast'
 import { formatDuration, calculateVolume } from '../utils/formatters'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -13,6 +14,7 @@ import Input from '../components/ui/Input'
 
 function WorkoutSummaryPage() {
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [workout, setWorkout] = useState<Workout | null>(null)
   const [showAddExercise, setShowAddExercise] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -127,9 +129,11 @@ function WorkoutSummaryPage() {
       })
       setShowAddExercise(false)
       setFormError('')
+      showToast('success', 'Exercise added successfully 💪')
     } catch (error) {
       console.error('Error adding exercise:', error)
       setFormError('Failed to add exercise. Please try again.')
+      showToast('error', 'Failed to add exercise. Please try again.')
     } finally {
       setIsSubmitting(false)
     }

@@ -4,6 +4,7 @@ import { ChevronLeft, Clock, Plus, Trash2, Check, Timer, MessageSquare, FileText
 import type { Workout, WorkoutType, WorkoutExercise, WorkoutSet, Exercise } from '../types'
 import { startWorkout, updateWorkout, completeWorkout, getCurrentWorkout } from '../services/workoutServiceFacade'
 import { updateExerciseName } from '../services/firestoreExerciseService'
+import { useToast } from '../hooks/useToast'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
@@ -13,6 +14,7 @@ import RestTimer from '../components/workout/RestTimer'
 function ActiveWorkoutPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { showToast } = useToast()
   const workoutType = searchParams.get('type') as WorkoutType
   
   const [workout, setWorkout] = useState<Workout | null>(null)
@@ -219,10 +221,11 @@ function ActiveWorkoutPage() {
     
     try {
       await completeWorkout(workout)
-    navigate('/workout/summary')
+      showToast('success', 'Workout saved 💪')
+      navigate('/workout/summary')
     } catch (error) {
       console.error('Error completing workout:', error)
-      alert('Failed to complete workout. Please try again.')
+      showToast('error', 'Failed to complete workout. Please try again.')
     }
   }
 

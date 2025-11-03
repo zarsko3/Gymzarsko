@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { ToastProvider } from './contexts/ToastContext'
 import PrivateRoute from './components/auth/PrivateRoute'
 import Layout from './components/layout/Layout'
 import HomePage from './pages/HomePage'
@@ -18,31 +19,33 @@ import SignupPage from './pages/SignupPage'
 function App() {
   return (
     <AuthProvider>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        
-        {/* Protected routes */}
-        <Route path="/*" element={
-          <PrivateRoute>
-            <Layout>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/history" element={<HistoryPage />} />
-                <Route path="/workout/detail/:workoutId" element={<WorkoutDetailPage />} />
-                <Route path="/workouts" element={<WorkoutsPage />} />
-                <Route path="/workout/active" element={<ActiveWorkoutPage />} />
-                <Route path="/workout/summary" element={<WorkoutSummaryPage />} />
-                <Route path="/progress" element={<ProgressPage />} />
-                <Route path="/progress/exercise/:exerciseId" element={<ExerciseDetailPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-              </Routes>
-            </Layout>
-          </PrivateRoute>
-        } />
-      </Routes>
+      <ToastProvider>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          
+          {/* Protected routes */}
+          <Route path="/*" element={
+            <PrivateRoute>
+              <Layout>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/history" element={<HistoryPage />} />
+                  <Route path="/workout/detail/:workoutId" element={<WorkoutDetailPage />} />
+                  <Route path="/workouts" element={<WorkoutsPage />} />
+                  <Route path="/workout/active" element={<ActiveWorkoutPage />} />
+                  <Route path="/workout/summary" element={<WorkoutSummaryPage />} />
+                  <Route path="/progress" element={<ProgressPage />} />
+                  <Route path="/progress/exercise/:exerciseId" element={<ExerciseDetailPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                </Routes>
+              </Layout>
+            </PrivateRoute>
+          } />
+        </Routes>
+      </ToastProvider>
     </AuthProvider>
   )
 }

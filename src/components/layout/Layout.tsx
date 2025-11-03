@@ -1,11 +1,49 @@
 import type { ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import BottomNav from './BottomNav'
 
 interface LayoutProps {
   children: ReactNode
 }
 
+// Container variants for staggered children
+const getContainerVariants = (shouldReduceMotion: boolean) => ({
+  initial: {},
+  animate: {
+    transition: shouldReduceMotion ? {} : {
+      staggerChildren: 0.05,
+      delayChildren: 0.02,
+    },
+  },
+  exit: {},
+})
+
 function Layout({ children }: LayoutProps) {
+  const location = useLocation()
+  const shouldReduceMotion = useReducedMotion()
+
+  // Page transition variants - respect reduced motion
+  const pageVariants = {
+    initial: shouldReduceMotion ? {} : {
+      opacity: 0,
+      y: 8,
+    },
+    animate: {
+      opacity: 1,
+      y: 0,
+    },
+    exit: shouldReduceMotion ? {} : {
+      opacity: 0,
+      y: -8,
+    },
+  }
+
+  const pageTransition = shouldReduceMotion ? { duration: 0 } : {
+    duration: 0.22,
+    ease: 'easeOut',
+  }
+
   return (
     <div className="flex flex-col min-h-[100dvh] bg-accent-card max-w-full w-full">
       {/* Main content area */}
@@ -16,9 +54,24 @@ function Layout({ children }: LayoutProps) {
           paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 64px)',
         }}
       >
-        <div className="max-w-md mx-auto w-full overflow-x-hidden px-0">
-          {children}
-        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            className="max-w-md mx-auto w-full overflow-x-hidden px-0"
+            variants={getContainerVariants(shouldReduceMotion)}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <motion.div
+              variants={pageVariants}
+              transition={pageTransition}
+              style={{ willChange: 'transform, opacity' }}
+            >
+              {children}
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Bottom navigation */}

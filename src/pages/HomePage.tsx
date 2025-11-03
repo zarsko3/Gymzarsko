@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format, addDays, subDays, startOfWeek, isWithinInterval } from 'date-fns'
+import { motion, useReducedMotion } from 'framer-motion'
 import type { Workout, WorkoutType } from '../types'
 import WeeklyCalendar from '../components/home/WeeklyCalendar'
 import MotivationalCard from '../components/home/MotivationalCard'
@@ -13,6 +14,7 @@ import { calculateVolume } from '../utils/formatters'
 function HomePage() {
   const navigate = useNavigate()
   const today = new Date()
+  const shouldReduceMotion = useReducedMotion()
   const [showWorkoutModal, setShowWorkoutModal] = useState(false)
   const [allWorkouts, setAllWorkouts] = useState<Workout[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -103,24 +105,48 @@ function HomePage() {
       <div className="w-full max-w-full px-4 py-6 space-y-6">
         {/* Banner Logo */}
         {isRestDay ? (
-          <div className="flex justify-center items-center my-6">
+          <motion.div 
+            className="flex justify-center items-center my-6"
+            initial={shouldReduceMotion ? {} : { scale: 0.96, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.22, ease: 'easeOut' }}
+            style={{ willChange: 'transform, opacity' }}
+          >
             <img 
               src="/Logo.png" 
               alt="Gymzarsko Logo" 
               className="max-w-full md:w-[576px] w-[448px] h-auto mx-auto block"
               style={{ objectFit: 'contain' }}
+              role="img"
+              aria-label="Gymzarsko Logo"
             />
-          </div>
+          </motion.div>
         ) : (
-          <div className="flex justify-center items-center my-6">
-            <img 
+          <motion.div 
+            className="flex justify-center items-center my-6"
+            initial={shouldReduceMotion ? {} : { scale: 0.96, opacity: 0 }}
+            animate={{ 
+              scale: 1, 
+              opacity: 1,
+              ...(shouldReduceMotion ? {} : { y: [0, 2, 0] }),
+            }}
+            transition={shouldReduceMotion ? { duration: 0 } : {
+              scale: { duration: 0.22, ease: 'easeOut' },
+              opacity: { duration: 0.22, ease: 'easeOut' },
+              y: { duration: 6, repeat: Infinity, ease: 'easeInOut' },
+            }}
+            style={{ willChange: 'transform, opacity' }}
+          >
+            <motion.img 
               key={randomBanner}
               src={randomBanner} 
               alt="Gymzarsko Banner" 
-              className="max-w-full md:w-[576px] w-[448px] h-auto mx-auto block"
+              className="w-72 sm:w-80 md:w-96 h-auto mx-auto block"
               style={{ objectFit: 'contain' }}
+              role="img"
+              aria-label="Gymzarsko Banner"
             />
-          </div>
+          </motion.div>
         )}
 
         {/* Motivational Card */}

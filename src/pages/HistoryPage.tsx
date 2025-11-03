@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import { ChevronLeft, MoreVertical, Clock, TrendingUp, Calendar, Dumbbell, Search, X, Flame, Activity } from 'lucide-react'
 import type { Workout, WorkoutType } from '../types'
 import { getWorkouts, deleteWorkout, subscribeToWorkouts } from '../services/workoutServiceFacade'
+import { useToast } from '../hooks/useToast'
 import { formatDuration, calculateVolume } from '../utils/formatters'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
@@ -11,6 +12,7 @@ import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
 
 function HistoryPage() {
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [showWorkoutModal, setShowWorkoutModal] = useState(false)
   const [workouts, setWorkouts] = useState<Workout[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -58,9 +60,10 @@ function HistoryPage() {
         // Refresh workouts after deletion
         const fetchedWorkouts = await getWorkouts()
         setWorkouts(fetchedWorkouts)
+        showToast('success', 'Workout deleted successfully')
       } catch (error) {
         console.error('Error deleting workout:', error)
-        alert('Failed to delete workout. Please try again.')
+        showToast('error', 'Failed to delete workout. Please try again.')
       }
     }
   }
