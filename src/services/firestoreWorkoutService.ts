@@ -105,16 +105,25 @@ export async function getWorkoutById(id: string): Promise<Workout | null> {
 export async function startWorkout(type: WorkoutType): Promise<Workout> {
   const userId = getUserId()
   
-  // Get exercises for this workout type
+  // Define number of sets per exercise based on workout program
+  const setsPerExercise: Record<string, number> = {
+    // Push: 4, 4, 3, 3, 3, 3, 3 sets
+    'push-1': 4, 'push-2': 4, 'push-3': 3, 'push-4': 3, 'push-5': 3, 'push-6': 3, 'push-7': 3,
+    // Pull: 4, 4, 3, 3, 3, 3, 3 sets
+    'pull-1': 4, 'pull-2': 4, 'pull-3': 3, 'pull-4': 3, 'pull-5': 3, 'pull-6': 3, 'pull-7': 3,
+    // Legs: 3, 4, 4, 3, 3, 3 sets
+    'legs-1': 3, 'legs-2': 4, 'legs-3': 4, 'legs-4': 3, 'legs-5': 3, 'legs-6': 3,
+  }
+  
+  // Get all exercises for this workout type (not limited)
   const exercises = mockExercises
     .filter(ex => ex.category === type)
-    .slice(0, 5)
     .map(exercise => ({
-      id: `we-${exercise.id}-${Date.now()}`,
+      id: `we-${exercise.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       exerciseId: exercise.id,
       exercise,
-      sets: Array(3).fill(null).map((_, i) => ({
-        id: `set-${i}-${Date.now()}`,
+      sets: Array(setsPerExercise[exercise.id] || 3).fill(null).map((_, i) => ({
+        id: `set-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         weight: 0,
         reps: 0,
         completed: false,
