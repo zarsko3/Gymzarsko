@@ -16,14 +16,20 @@ function ActiveWorkoutPage() {
   const workoutType = searchParams.get('type') as WorkoutType
   
   const [workout, setWorkout] = useState(() => {
-    // First check if there's a current workout in localStorage
+    // Always check URL parameter first - if type is specified, use it
+    if (workoutType) {
+      // Check if there's a current workout that matches the requested type
+      const currentWorkout = getCurrentWorkout()
+      if (currentWorkout && currentWorkout.type === workoutType) {
+        return currentWorkout
+      }
+      // Otherwise, start a new workout with the requested type
+      return startWorkout(workoutType)
+    }
+    // If no type in URL, check for existing workout
     const currentWorkout = getCurrentWorkout()
     if (currentWorkout) {
       return currentWorkout
-    }
-    // Otherwise, start a new workout from type query param
-    if (workoutType) {
-      return startWorkout(workoutType)
     }
     return null
   })
