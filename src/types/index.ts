@@ -62,25 +62,4 @@ export interface ProgressEntry {
   volume: number // weight * reps
 }
 
-// Workout Templates
-export interface TemplateExercise {
-  exerciseId: string
-  exercise: Exercise
-  sets: number // Number of sets
-  targetWeight?: number // Optional target weight
-  targetReps?: number // Optional target reps
-  notes?: string
-}
-
-export interface WorkoutTemplate {
-  id: string
-  name: string
-  type: WorkoutType
-  description?: string
-  exercises: TemplateExercise[]
-  createdAt: Date
-  lastUsed?: Date
-  useCount: number
-  isCustom: boolean // true if user-created, false if default template
-}
 

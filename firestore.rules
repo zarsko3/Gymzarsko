@@ -3,20 +3,28 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // ⚠️ TEMPORARY RULES FOR TESTING
-    // This allows public read/write access
-    // Replace with Option 2 once you add authentication
-    
-    match /workouts/{workoutId} {
-      // Anyone can read and write workouts
-      allow read, write: if true;
+    // Helper function to check authentication
+    function isAuthenticated() {
+      return request.auth != null;
     }
     
-    match /templates/{templateId} {
-      // Anyone can read templates
-      allow read: if true;
-      // Only allow writing if you add custom templates later
-      allow write: if true;
+    // Workouts collection
+    match /workouts/{workoutId} {
+      // Users can only read/update/delete their own workouts
+      allow read, update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Users can create workouts with their own userId
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      
+      // Subcollection for exercises within a workout
+      match /exercises/{exerciseId} {
+        // Users can only read/write exercises in their own workouts
+        allow read, update, delete: if isAuthenticated() && 
+          get(/databases/$(database)/documents/workouts/$(workoutId)).data.userId == request.auth.uid;
+        // Users can create exercises in their own workouts
+        allow create: if isAuthenticated() && 
+          get(/databases/$(database)/documents/workouts/$(workoutId)).data.userId == request.auth.uid &&
+          request.resource.data.userId == request.auth.uid;
+      }
     }
     
     // Block everything else by default
