@@ -225,7 +225,7 @@ function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen pb-20 bg-accent-card">
+    <div className="min-h-full bg-accent-card">
       {/* Header */}
       <div className="sticky top-0 bg-white border-b border-gray-100 z-10 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">

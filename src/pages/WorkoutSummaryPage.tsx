@@ -49,7 +49,7 @@ function WorkoutSummaryPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen pb-20 bg-accent-card flex items-center justify-center">
+      <div className="min-h-full bg-accent-card flex items-center justify-center">
         <p className="text-text-secondary">Loading...</p>
       </div>
     )
@@ -142,7 +142,7 @@ function WorkoutSummaryPage() {
   }
 
   return (
-    <div className="min-h-screen pb-20 bg-accent-card">
+    <div className="min-h-full bg-accent-card">
       <div className="px-4 py-8 space-y-6">
         {/* Success Icon */}
         <div className="text-center">

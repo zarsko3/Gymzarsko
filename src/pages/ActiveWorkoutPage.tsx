@@ -424,7 +424,7 @@ function ActiveWorkoutPage() {
 
   if (isLoadingWorkout || !workout) {
     return (
-      <div className="min-h-screen pb-20 bg-accent-card flex items-center justify-center">
+      <div className="min-h-full bg-accent-card flex items-center justify-center">
         <div className="text-center">
           <div className="text-text-secondary">Loading workout...</div>
         </div>
@@ -439,7 +439,7 @@ function ActiveWorkoutPage() {
   }
 
   return (
-    <div className="min-h-screen pb-20 bg-accent-card">
+    <div className="min-h-full bg-accent-card">
       {/* Header */}
       <div className="sticky top-0 bg-white border-b border-gray-200 z-10 shadow-sm">
         <div className="flex items-center justify-between px-4 py-4">

@@ -23,7 +23,7 @@ function ExerciseDetailPage() {
 
   if (!exercise || history.length === 0) {
     return (
-      <div className="min-h-screen pb-20 flex items-center justify-center px-4">
+      <div className="min-h-full flex items-center justify-center px-4">
         <div className="max-w-sm w-full text-center">
           {/* Icon */}
           <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-accent-mint flex items-center justify-center">
@@ -72,7 +72,7 @@ function ExerciseDetailPage() {
   }))
 
   return (
-    <div className="min-h-screen pb-20 bg-accent-card">
+    <div className="min-h-full bg-accent-card">
       {/* Header */}
       <div className="sticky top-0 bg-white border-b border-gray-200 z-10 shadow-sm">
         <div className="flex items-center justify-between px-4 py-4">

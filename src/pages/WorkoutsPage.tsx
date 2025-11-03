@@ -83,7 +83,7 @@ function WorkoutsPage() {
   }, [])
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-full">
       {/* Header */}
       <div className="sticky top-0 bg-accent-card border-b border-gray-100 z-10">
         <div className="flex items-center justify-between px-4 py-4">

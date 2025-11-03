@@ -78,7 +78,7 @@ function HomePage() {
   // Show loading state if needed
   if (isLoading) {
     return (
-      <div className="min-h-screen pb-20 max-w-full overflow-x-hidden flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <div className="text-text-secondary">Loading...</div>
       </div>
     )
@@ -93,7 +93,7 @@ function HomePage() {
   }
 
   return (
-    <div className="min-h-screen pb-20 max-w-full overflow-x-hidden">
+    <div className="w-full max-w-full overflow-x-hidden">
       <div className="w-full max-w-full px-4 py-6 space-y-6">
         {/* Workout Status */}
         <div className="text-center pt-2">
