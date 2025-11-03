@@ -415,8 +415,14 @@ function ActiveWorkoutPage() {
     }
   }
 
-  if (!workout) {
-    return null
+  if (isLoadingWorkout || !workout) {
+    return (
+      <div className="min-h-screen pb-20 bg-accent-card flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-text-secondary">Loading workout...</div>
+        </div>
+      </div>
+    )
   }
 
   const workoutTypeNames = {
