@@ -14,7 +14,7 @@ import { calculateVolume } from '../utils/formatters'
 function HomePage() {
   const navigate = useNavigate()
   const today = new Date()
-  const shouldReduceMotion = useReducedMotion()
+  const shouldReduceMotion = useReducedMotion() ?? false
   const [showWorkoutModal, setShowWorkoutModal] = useState(false)
   const [allWorkouts, setAllWorkouts] = useState<Workout[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -109,7 +109,7 @@ function HomePage() {
             className="flex justify-center items-center my-6"
             initial={shouldReduceMotion ? {} : { scale: 0.96, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.22, ease: 'easeOut' }}
+            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
             style={{ willChange: 'transform, opacity' }}
           >
             <img 
@@ -131,9 +131,9 @@ function HomePage() {
               ...(shouldReduceMotion ? {} : { y: [0, 2, 0] }),
             }}
             transition={shouldReduceMotion ? { duration: 0 } : {
-              scale: { duration: 0.22, ease: 'easeOut' },
-              opacity: { duration: 0.22, ease: 'easeOut' },
-              y: { duration: 6, repeat: Infinity, ease: 'easeInOut' },
+              scale: { duration: 0.22, ease: [0.16, 1, 0.3, 1] },
+              opacity: { duration: 0.22, ease: [0.16, 1, 0.3, 1] },
+              y: { duration: 6, repeat: Infinity, ease: [0.42, 0, 0.58, 1] },
             }}
             style={{ willChange: 'transform, opacity' }}
           >

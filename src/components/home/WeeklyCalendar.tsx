@@ -22,7 +22,7 @@ const getContainerVariants = (shouldReduceMotion: boolean) => ({
 })
 
 function WeeklyCalendar({ workoutDays = [], currentDate = new Date(), onTodayClick }: WeeklyCalendarProps) {
-  const shouldReduceMotion = useReducedMotion()
+  const shouldReduceMotion = useReducedMotion() ?? false
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 }) // Start on Sunday (U.S. calendar)
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
@@ -76,7 +76,7 @@ function WeeklyCalendar({ workoutDays = [], currentDate = new Date(), onTodayCli
               key={index} 
               className="flex flex-col items-center gap-1 flex-shrink-0"
               variants={getChipVariants(shouldReduceMotion)}
-              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2, ease: 'easeOut' }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               style={{ willChange: 'transform, opacity' }}
             >
               <div 

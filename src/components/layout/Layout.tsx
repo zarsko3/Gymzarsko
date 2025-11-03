@@ -21,7 +21,7 @@ const getContainerVariants = (shouldReduceMotion: boolean) => ({
 
 function Layout({ children }: LayoutProps) {
   const location = useLocation()
-  const shouldReduceMotion = useReducedMotion()
+  const shouldReduceMotion = useReducedMotion() ?? false
 
   // Page transition variants - respect reduced motion
   const pageVariants = {
@@ -41,7 +41,7 @@ function Layout({ children }: LayoutProps) {
 
   const pageTransition = shouldReduceMotion ? { duration: 0 } : {
     duration: 0.22,
-    ease: 'easeOut',
+    ease: [0.16, 1, 0.3, 1] as const, // easeOut cubic bezier
   }
 
   return (
