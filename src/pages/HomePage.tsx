@@ -141,9 +141,10 @@ function HomePage() {
               key={randomBanner}
               src={randomBanner} 
               alt="Gymzarsko Banner" 
-              className="max-w-full w-56 sm:w-72 md:w-96 h-auto mx-auto block"
+              className="w-[90%] sm:w-[85%] md:w-[80%] max-w-[576px] h-auto mx-auto block"
               style={{ 
                 objectFit: 'contain',
+                width: 'clamp(240px, 85vw, 576px)',
               }}
               role="img"
               aria-label="Gymzarsko Banner"
