@@ -6,7 +6,6 @@ import HomePage from './pages/HomePage'
 import HistoryPage from './pages/HistoryPage'
 import WorkoutDetailPage from './pages/WorkoutDetailPage'
 import WorkoutsPage from './pages/WorkoutsPage'
-import StartWorkoutPage from './pages/StartWorkoutPage'
 import ActiveWorkoutPage from './pages/ActiveWorkoutPage'
 import WorkoutSummaryPage from './pages/WorkoutSummaryPage'
 import ProgressPage from './pages/ProgressPage'
@@ -33,7 +32,6 @@ function App() {
                 <Route path="/history" element={<HistoryPage />} />
                 <Route path="/workout/detail/:workoutId" element={<WorkoutDetailPage />} />
                 <Route path="/workouts" element={<WorkoutsPage />} />
-                <Route path="/workout/start" element={<StartWorkoutPage />} />
                 <Route path="/workout/active" element={<ActiveWorkoutPage />} />
                 <Route path="/workout/summary" element={<WorkoutSummaryPage />} />
                 <Route path="/progress" element={<ProgressPage />} />

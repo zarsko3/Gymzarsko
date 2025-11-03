@@ -1,27 +1,28 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, MoreVertical, ChevronRight, Dumbbell, Flame, Activity } from 'lucide-react'
+import { ChevronLeft, MoreVertical, Dumbbell, Flame, Activity } from 'lucide-react'
 import { startOfWeek, endOfWeek, isWithinInterval } from 'date-fns'
+import type { WorkoutType } from '../types'
 import Card from '../components/ui/Card'
 import { getWorkouts } from '../services/workoutServiceFacade'
 
 const workoutTypes = [
   {
-    id: 'push',
+    id: 'push' as WorkoutType,
     name: 'Push Day',
     description: 'Chest, Shoulders, Triceps',
     color: 'bg-blue-50 border-blue-200',
     Icon: Dumbbell,
   },
   {
-    id: 'pull',
+    id: 'pull' as WorkoutType,
     name: 'Pull Day',
     description: 'Back, Biceps, Rear Delts',
     color: 'bg-green-50 border-green-200',
     Icon: Flame,
   },
   {
-    id: 'legs',
+    id: 'legs' as WorkoutType,
     name: 'Legs Day',
     description: 'Quads, Hamstrings, Calves',
     color: 'bg-purple-50 border-purple-200',
@@ -117,7 +118,7 @@ function WorkoutsPage() {
           {workoutTypes.map((workout) => (
             <Card
               key={workout.id}
-              onClick={() => navigate('/workout/start')}
+              onClick={() => navigate(`/workout/active?type=${workout.id}`)}
               className={`${workout.color} border-2 hover:shadow-md transition-all cursor-pointer`}
             >
               <div className="flex items-center justify-between p-2">
@@ -134,7 +135,6 @@ function WorkoutsPage() {
                     </p>
                   </div>
                 </div>
-                <ChevronRight size={24} className="text-text-secondary" />
               </div>
             </Card>
           ))}
