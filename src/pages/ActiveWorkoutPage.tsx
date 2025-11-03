@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, Clock, Plus, Trash2, Check, Timer, MessageSquare, FileText, Edit2, X } from 'lucide-react'
-import type { WorkoutType, WorkoutExercise, WorkoutSet, Exercise } from '../types'
-import { startWorkout, updateCurrentWorkout, completeWorkout, getCurrentWorkout } from '../services/workoutServiceFacade'
+import type { Workout, WorkoutType, WorkoutExercise, WorkoutSet, Exercise } from '../types'
+import { startWorkout, updateWorkout, completeWorkout, getCurrentWorkout } from '../services/workoutServiceFacade'
 import { updateExerciseName } from '../services/firestoreExerciseService'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -114,7 +114,7 @@ function ActiveWorkoutPage() {
     newWorkout.exercises[exerciseIndex].sets[setIndex][field] = numValue
     
     setWorkout(newWorkout)
-    updateCurrentWorkout(newWorkout)
+    updateWorkout(newWorkout)
   }
 
   const handleToggleSet = (exerciseIndex: number, setIndex: number) => {
@@ -126,7 +126,7 @@ function ActiveWorkoutPage() {
     set.completed = !set.completed
     
     setWorkout(newWorkout)
-    updateCurrentWorkout(newWorkout)
+    updateWorkout(newWorkout)
 
     // Show rest timer when completing a set
     if (!wasCompleted && set.completed) {
@@ -148,7 +148,7 @@ function ActiveWorkoutPage() {
     })
     
     setWorkout(newWorkout)
-    updateCurrentWorkout(newWorkout)
+    updateWorkout(newWorkout)
   }
 
   const handleRemoveSet = (exerciseIndex: number, setIndex: number) => {
@@ -158,7 +158,7 @@ function ActiveWorkoutPage() {
     newWorkout.exercises[exerciseIndex].sets.splice(setIndex, 1)
     
     setWorkout(newWorkout)
-    updateCurrentWorkout(newWorkout)
+    updateWorkout(newWorkout)
   }
 
   const handleExerciseNoteChange = (exerciseIndex: number, notes: string) => {
@@ -168,7 +168,7 @@ function ActiveWorkoutPage() {
     newWorkout.exercises[exerciseIndex].notes = notes
     
     setWorkout(newWorkout)
-    updateCurrentWorkout(newWorkout)
+    updateWorkout(newWorkout)
   }
 
   const handleWorkoutNoteChange = (notes: string) => {
@@ -178,7 +178,7 @@ function ActiveWorkoutPage() {
     newWorkout.notes = notes
     
     setWorkout(newWorkout)
-    updateCurrentWorkout(newWorkout)
+    updateWorkout(newWorkout)
   }
 
   const toggleExerciseNotes = (exerciseIndex: number) => {
@@ -198,8 +198,8 @@ function ActiveWorkoutPage() {
     }
 
     // Check if any sets have been completed
-    const hasProgress = workout.exercises.some(ex => 
-      ex.sets.some(set => set.completed || set.weight > 0 || set.reps > 0)
+    const hasProgress = workout.exercises.some((ex: WorkoutExercise) => 
+      ex.sets.some((set: WorkoutSet) => set.completed || set.weight > 0 || set.reps > 0)
     )
 
     if (hasProgress) {
@@ -269,7 +269,7 @@ function ActiveWorkoutPage() {
     }
     
     // Update weight and reps for all incomplete sets
-    exercise.sets.forEach((set, index) => {
+    exercise.sets.forEach((set: WorkoutSet, index: number) => {
       if (!set.completed) {
         if (exerciseForm.targetWeight > 0) {
           set.weight = exerciseForm.targetWeight
@@ -281,7 +281,7 @@ function ActiveWorkoutPage() {
     })
     
     setWorkout(newWorkout)
-    updateCurrentWorkout(newWorkout)
+    updateWorkout(newWorkout)
     setEditingExerciseIndex(null)
     setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
   }
@@ -314,7 +314,7 @@ function ActiveWorkoutPage() {
     }
 
     setWorkout(newWorkout)
-    updateCurrentWorkout(newWorkout)
+    updateWorkout(newWorkout)
     setShowAddExercise(false)
     setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
   }
@@ -326,7 +326,7 @@ function ActiveWorkoutPage() {
       const newWorkout = { ...workout }
       newWorkout.exercises.splice(exerciseIndex, 1)
       setWorkout(newWorkout)
-      updateCurrentWorkout(newWorkout)
+      updateWorkout(newWorkout)
     }
   }
 
@@ -380,7 +380,7 @@ function ActiveWorkoutPage() {
       },
     }
     setWorkout(newWorkout)
-    updateCurrentWorkout(newWorkout)
+    updateWorkout(newWorkout)
     setEditingExerciseNameIndex(null)
     setEditingExerciseNameValue('')
 
@@ -401,7 +401,7 @@ function ActiveWorkoutPage() {
         },
       }
       setWorkout(revertedWorkout)
-      updateCurrentWorkout(revertedWorkout)
+      updateWorkout(revertedWorkout)
       // Show error toast (you can add a toast library here)
       alert('Failed to save exercise name. Please try again.')
     }
@@ -427,7 +427,7 @@ function ActiveWorkoutPage() {
     )
   }
 
-  const workoutTypeNames = {
+  const workoutTypeNames: Record<WorkoutType, string> = {
     push: 'Push Day',
     pull: 'Pull Day',
     legs: 'Legs Day',
@@ -464,14 +464,14 @@ function ActiveWorkoutPage() {
       <div className="px-4 py-6 space-y-4">
         {/* Action Buttons */}
         <div className="flex gap-2">
-          <Button
-            fullWidth
-            variant="secondary"
-            onClick={() => setShowRestTimer(true)}
-          >
-            <Timer size={20} />
-            Start Rest Timer
-          </Button>
+        <Button
+          fullWidth
+          variant="secondary"
+          onClick={() => setShowRestTimer(true)}
+        >
+          <Timer size={20} />
+          Start Rest Timer
+        </Button>
           <Button
             fullWidth
             variant="secondary"
@@ -486,7 +486,7 @@ function ActiveWorkoutPage() {
         </div>
 
         {/* Exercises */}
-        {workout.exercises.map((exercise, exerciseIndex) => (
+        {workout.exercises.map((exercise: WorkoutExercise, exerciseIndex: number) => (
           <Card key={exercise.id} className="bg-white group">
             <div className="space-y-4">
               {/* Exercise Header */}
@@ -525,9 +525,9 @@ function ActiveWorkoutPage() {
                   ) : (
                     <>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-text-primary text-lg">
-                          {exercise.exercise.name}
-                        </h3>
+                <h3 className="font-semibold text-text-primary text-lg">
+                  {exercise.exercise.name}
+                </h3>
                         <button
                           onClick={() => handleStartEditingExerciseName(exerciseIndex)}
                           className="p-1 hover:bg-gray-100 rounded transition-colors text-primary-500"
@@ -536,9 +536,9 @@ function ActiveWorkoutPage() {
                           <Edit2 size={16} />
                         </button>
                       </div>
-                      <p className="text-text-secondary text-sm">
-                        {exercise.exercise.muscleGroup}
-                      </p>
+                <p className="text-text-secondary text-sm">
+                  {exercise.exercise.muscleGroup}
+                </p>
                     </>
                   )}
                 </div>
@@ -571,7 +571,7 @@ function ActiveWorkoutPage() {
                   <div className="w-20"></div>
                 </div>
 
-                {exercise.sets.map((set, setIndex) => (
+                {exercise.sets.map((set: WorkoutSet, setIndex: number) => (
                   <div 
                     key={set.id}
                     className={`flex items-center gap-2 ${
