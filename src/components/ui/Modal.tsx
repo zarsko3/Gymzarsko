@@ -53,6 +53,7 @@ function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalP
             mb-0 sm:mb-0
           `}
           style={{ maxHeight: '75vh' }}
+          onClick={(e) => e.stopPropagation()}
         >
         {/* Drag Handle (Mobile Only) */}
         <div className="sm:hidden flex justify-center pt-3 pb-2 flex-shrink-0">

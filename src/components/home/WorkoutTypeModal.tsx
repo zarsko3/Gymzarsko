@@ -34,9 +34,18 @@ const workoutTypes = [
 ]
 
 function WorkoutTypeModal({ isOpen, onClose, onSelectWorkout }: WorkoutTypeModalProps) {
-  const handleSelect = (type: WorkoutType) => {
-    onSelectWorkout(type)
+  const handleSelect = (type: WorkoutType, e: React.MouseEvent) => {
+    // Stop event propagation to prevent bubbling to modal backdrop
+    e.stopPropagation()
+    
+    // Close the modal FIRST
     onClose()
+    
+    // Small delay to ensure modal closes before navigation
+    // This prevents the second modal from appearing
+    setTimeout(() => {
+      onSelectWorkout(type)
+    }, 100)
   }
 
   return (
@@ -47,10 +56,11 @@ function WorkoutTypeModal({ isOpen, onClose, onSelectWorkout }: WorkoutTypeModal
         </p>
         <div className="space-y-3">
           {workoutTypes.map((workout) => (
-            <Card
+            <button
               key={workout.id}
-              onClick={() => handleSelect(workout.id)}
-              className={`${workout.color} border-2 hover:shadow-md transition-all cursor-pointer active:scale-[0.98]`}
+              onClick={(e) => handleSelect(workout.id, e)}
+              className={`w-full ${workout.color} border-2 hover:shadow-md transition-all cursor-pointer active:scale-[0.98] rounded-xl text-left`}
+              type="button"
             >
               <div className="flex items-center gap-4 p-4">
                 <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 flex-shrink-0">
@@ -65,7 +75,7 @@ function WorkoutTypeModal({ isOpen, onClose, onSelectWorkout }: WorkoutTypeModal
                   </p>
                 </div>
               </div>
-            </Card>
+            </button>
           ))}
         </div>
       </div>
