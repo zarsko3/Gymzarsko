@@ -77,14 +77,16 @@ function ActiveWorkoutPage() {
       if (workoutType && workout) {
         // If URL type doesn't match current workout type, start new workout
         if (workout.type !== workoutType) {
+          setIsLoadingWorkout(true)
           const newWorkout = await startWorkout(workoutType)
           setWorkout(newWorkout)
+          setIsLoadingWorkout(false)
         }
       }
     }
     
     handleTypeChange()
-  }, [workoutType])
+  }, [workoutType, workout])
 
   // Timer effect
   useEffect(() => {
