@@ -4,8 +4,18 @@
 
 /* Custom base styles */
 @layer base {
+  * {
+    box-sizing: border-box;
+  }
+
   html {
     @apply h-full;
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
   }
   
   body {
@@ -14,12 +24,23 @@
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
     max-width: 100vw;
+    width: 100%;
+    position: relative;
+    margin: 0;
+    padding: 0;
   }
 
   #root {
     @apply h-full;
     overflow-x: hidden;
     max-width: 100vw;
+    width: 100%;
+    position: relative;
+  }
+
+  /* Prevent horizontal scroll on all containers */
+  div, section, main, article, aside, header, footer {
+    max-width: 100%;
   }
 
   /* Ensure touch targets are at least 44x44px */
@@ -29,6 +50,14 @@
   select,
   textarea {
     @apply min-h-[44px];
+  }
+
+  /* Safe area insets for notched devices */
+  @supports (padding: max(0px)) {
+    body {
+      padding-left: max(0px, env(safe-area-inset-left));
+      padding-right: max(0px, env(safe-area-inset-right));
+    }
   }
 }
 
@@ -72,6 +101,48 @@
       transform: translateY(0);
       opacity: 1;
     }
+  }
+
+  /* Prevent text overflow */
+  .text-overflow-ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Contain all content within viewport */
+  .contain-viewport {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    position: relative;
+  }
+}
+
+/* Global utility to prevent horizontal scroll */
+@media screen {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Ensure images and media respect container width */
+  img, video, iframe, embed, object {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* Prevent long words from breaking layout */
+  p, span, div, h1, h2, h3, h4, h5, h6 {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  /* Ensure tables are scrollable on mobile */
+  table {
+    display: block;
+    overflow-x: auto;
+    width: 100%;
+    max-width: 100%;
   }
 }
 
