@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import { ChevronLeft, Clock, Calendar, TrendingUp, Trash2, CheckCircle, FileText, MessageSquare } from 'lucide-react'
-import { getWorkouts, deleteWorkout } from '../services/workoutService'
+import type { Workout } from '../types'
+import { getWorkoutById, deleteWorkout } from '../services/workoutServiceFacade'
 import { formatDuration, calculateVolume } from '../utils/formatters'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
@@ -9,8 +11,64 @@ import Button from '../components/ui/Button'
 function WorkoutDetailPage() {
   const navigate = useNavigate()
   const { workoutId } = useParams<{ workoutId: string }>()
+  const [workout, setWorkout] = useState<Workout | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   
-  const workout = getWorkouts().find(w => w.id === workoutId)
+  useEffect(() => {
+    async function loadWorkout() {
+      if (!workoutId) {
+        setIsLoading(false)
+        return
+      }
+      
+      setIsLoading(true)
+      try {
+        const fetchedWorkout = await getWorkoutById(workoutId)
+        setWorkout(fetchedWorkout)
+      } catch (error) {
+        console.error('Error loading workout:', error)
+        setWorkout(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    loadWorkout()
+  }, [workoutId])
+
+  const workoutTypeNames = {
+    push: 'Push Day',
+    pull: 'Pull Day',
+    legs: 'Legs Day',
+  }
+
+  const workoutTypeColors = {
+    push: 'bg-blue-50 text-blue-600 border-blue-200',
+    pull: 'bg-green-50 text-green-600 border-green-200',
+    legs: 'bg-purple-50 text-purple-600 border-purple-200',
+  }
+
+  const handleDelete = async () => {
+    if (!workout) return
+    
+    if (confirm('Are you sure you want to delete this workout? This cannot be undone.')) {
+      try {
+        await deleteWorkout(workout.id)
+        navigate('/history')
+      } catch (error) {
+        console.error('Error deleting workout:', error)
+        alert('Failed to delete workout. Please try again.')
+      }
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-full flex items-center justify-center px-4">
+        <div className="text-text-secondary">Loading workout...</div>
+      </div>
+    )
+  }
 
   if (!workout) {
     return (
@@ -42,18 +100,6 @@ function WorkoutDetailPage() {
     )
   }
 
-  const workoutTypeNames = {
-    push: 'Push Day',
-    pull: 'Pull Day',
-    legs: 'Legs Day',
-  }
-
-  const workoutTypeColors = {
-    push: 'bg-blue-50 text-blue-600 border-blue-200',
-    pull: 'bg-green-50 text-green-600 border-green-200',
-    legs: 'bg-purple-50 text-purple-600 border-purple-200',
-  }
-
   const totalSets = workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0)
   const completedSets = workout.exercises.reduce(
     (sum, ex) => sum + ex.sets.filter(s => s.completed).length,
@@ -66,13 +112,6 @@ function WorkoutDetailPage() {
   const duration = workout.startTime && workout.endTime
     ? formatDuration(workout.startTime, workout.endTime)
     : 'N/A'
-
-  const handleDelete = () => {
-    if (confirm('Are you sure you want to delete this workout? This cannot be undone.')) {
-      deleteWorkout(workout.id)
-      navigate('/history')
-    }
-  }
 
   return (
     <div className="min-h-full bg-accent-card">
