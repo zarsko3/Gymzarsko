@@ -24,10 +24,10 @@ function StatCard({ title, value, chart, trend }: StatCardProps) {
       style={{ willChange: 'transform, opacity' }}
     >
       <div className="text-text-secondary text-xs font-medium mb-2">{title}</div>
-      <div className="flex items-end justify-between">
+      <div className="flex items-end justify-between gap-3">
         <div className="text-2xl font-bold text-text-primary">{value}</div>
         {chart && (
-          <div className="flex-1 ml-3 h-12 flex items-end">
+          <div className="flex-1 min-w-0 ml-3 h-12 flex items-end">
             {chart}
           </div>
         )}

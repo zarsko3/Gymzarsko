@@ -101,7 +101,7 @@ function AnimatedChart({
       initial="initial"
       animate="animate"
       transition={containerTransition}
-      className="w-full h-full"
+      className="w-full h-full min-w-0"
       style={{ height: `${height}px`, willChange: 'transform, opacity' }}
     >
       <ResponsiveContainer width="100%" height="100%">
