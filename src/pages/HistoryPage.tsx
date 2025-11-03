@@ -1,19 +1,24 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
-import { ChevronLeft, MoreVertical, Clock, TrendingUp, Calendar, Dumbbell, Search, X, Flame, Activity } from 'lucide-react'
+import { ChevronLeft, MoreVertical, Clock, TrendingUp, Calendar, Dumbbell, Search, X, Flame, Activity, Plus, Edit2 } from 'lucide-react'
 import type { Workout, WorkoutType } from '../types'
-import { getWorkouts, deleteWorkout, subscribeToWorkouts } from '../services/workoutServiceFacade'
+import { getWorkouts, deleteWorkout, subscribeToWorkouts, createWorkoutWithDate, updateWorkout } from '../services/workoutServiceFacade'
 import { useToast } from '../hooks/useToast'
 import { formatDuration, calculateVolume } from '../utils/formatters'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
+import AddWorkoutModal from '../components/history/AddWorkoutModal'
+import EditWorkoutModal from '../components/history/EditWorkoutModal'
 
 function HistoryPage() {
   const navigate = useNavigate()
   const { showToast } = useToast()
   const [showWorkoutModal, setShowWorkoutModal] = useState(false)
+  const [showAddWorkoutModal, setShowAddWorkoutModal] = useState(false)
+  const [showEditWorkoutModal, setShowEditWorkoutModal] = useState(false)
+  const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null)
   const [workouts, setWorkouts] = useState<Workout[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -56,15 +61,78 @@ function HistoryPage() {
   const handleDeleteWorkout = async (workoutId: string) => {
     if (confirm('Are you sure you want to delete this workout? This cannot be undone.')) {
       try {
+        // Optimistic update
+        const previousWorkouts = [...workouts]
+        setWorkouts(workouts.filter(w => w.id !== workoutId))
+        
         await deleteWorkout(workoutId)
-        // Refresh workouts after deletion
-        const fetchedWorkouts = await getWorkouts()
-        setWorkouts(fetchedWorkouts)
         showToast('success', 'Workout deleted successfully')
       } catch (error) {
         console.error('Error deleting workout:', error)
+        // Revert optimistic update
+        const fetchedWorkouts = await getWorkouts()
+        setWorkouts(fetchedWorkouts)
         showToast('error', 'Failed to delete workout. Please try again.')
       }
+    }
+  }
+
+  const handleAddWorkout = async (type: WorkoutType, date: Date) => {
+    const tempId = `temp-${Date.now()}`
+    try {
+      // Optimistic update - add placeholder workout
+      const placeholderWorkout: Workout = {
+        id: tempId,
+        type,
+        date,
+        startTime: date,
+        exercises: [],
+        completed: true,
+        userId: '',
+      }
+      setWorkouts([placeholderWorkout, ...workouts].sort((a, b) => b.date.getTime() - a.date.getTime()))
+
+      // Create workout in Firestore
+      const newWorkout = await createWorkoutWithDate(type, date)
+      
+      // Replace placeholder with real workout
+      setWorkouts(prev => 
+        prev.map(w => w.id === tempId ? newWorkout : w)
+          .sort((a, b) => b.date.getTime() - a.date.getTime())
+      )
+      
+      showToast('success', 'Workout added successfully ✅')
+    } catch (error) {
+      console.error('Error adding workout:', error)
+      // Revert optimistic update
+      setWorkouts(prev => prev.filter(w => w.id !== tempId))
+      showToast('error', 'Failed to add workout. Please try again.')
+      throw error
+    }
+  }
+
+  const handleEditWorkout = (workout: Workout) => {
+    setEditingWorkout(workout)
+    setShowEditWorkoutModal(true)
+  }
+
+  const handleSaveWorkout = async (workout: Workout) => {
+    try {
+      // Optimistic update
+      const previousWorkouts = [...workouts]
+      setWorkouts(workouts.map(w => w.id === workout.id ? workout : w))
+
+      // Save to Firestore
+      await updateWorkout(workout)
+      
+      showToast('success', 'Workout updated ✅')
+    } catch (error) {
+      console.error('Error updating workout:', error)
+      // Revert optimistic update
+      const fetchedWorkouts = await getWorkouts()
+      setWorkouts(fetchedWorkouts)
+      showToast('error', 'Failed to update workout. Please try again.')
+      throw error
     }
   }
 
@@ -151,8 +219,12 @@ function HistoryPage() {
             <span>Back</span>
           </button>
           <h1 className="text-lg font-semibold text-primary-600">History</h1>
-          <button className="text-text-secondary hover:text-text-primary min-h-[44px] min-w-[44px] flex items-center justify-center">
-            <MoreVertical size={24} />
+          <button 
+            onClick={() => setShowAddWorkoutModal(true)}
+            className="text-primary-500 hover:text-primary-600 min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Add workout"
+          >
+            <Plus size={24} />
           </button>
         </div>
       </div>
@@ -312,15 +384,28 @@ function HistoryPage() {
                         {typeInfo.name}
                       </div>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteWorkout(workout.id)
-                      }}
-                      className="text-text-secondary hover:text-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                    >
-                      <MoreVertical size={20} />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleEditWorkout(workout)
+                        }}
+                        className="text-text-secondary hover:text-primary-500 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                        aria-label="Edit workout"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteWorkout(workout.id)
+                        }}
+                        className="text-text-secondary hover:text-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                        aria-label="Delete workout"
+                      >
+                        <MoreVertical size={20} />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Date */}
@@ -371,6 +456,24 @@ function HistoryPage() {
         onSelectWorkout={(type: WorkoutType) => {
           navigate(`/workout/active?type=${type}`)
         }}
+      />
+
+      {/* Add Workout Modal */}
+      <AddWorkoutModal
+        isOpen={showAddWorkoutModal}
+        onClose={() => setShowAddWorkoutModal(false)}
+        onSave={handleAddWorkout}
+      />
+
+      {/* Edit Workout Modal */}
+      <EditWorkoutModal
+        isOpen={showEditWorkoutModal}
+        onClose={() => {
+          setShowEditWorkoutModal(false)
+          setEditingWorkout(null)
+        }}
+        workout={editingWorkout}
+        onSave={handleSaveWorkout}
       />
     </div>
   )

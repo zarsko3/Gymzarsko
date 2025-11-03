@@ -167,12 +167,76 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
 }
 
 /**
+ * Create a workout with a specific date (for adding past workouts)
+ */
+export async function createWorkoutWithDate(type: WorkoutType, date: Date): Promise<Workout> {
+  const userId = getUserId()
+  
+  // Define number of sets per exercise based on workout program
+  const setsPerExercise: Record<string, number> = {
+    // Push: 4, 4, 3, 3, 3, 3, 3 sets
+    'push-1': 4, 'push-2': 4, 'push-3': 3, 'push-4': 3, 'push-5': 3, 'push-6': 3, 'push-7': 3,
+    // Pull: 4, 4, 3, 3, 3, 3, 3 sets
+    'pull-1': 4, 'pull-2': 4, 'pull-3': 3, 'pull-4': 3, 'pull-5': 3, 'pull-6': 3, 'pull-7': 3,
+    // Legs: 3, 4, 4, 3, 3, 3 sets
+    'legs-1': 3, 'legs-2': 4, 'legs-3': 4, 'legs-4': 3, 'legs-5': 3, 'legs-6': 3,
+  }
+  
+  // Get all exercises for this workout type
+  const exercises = mockExercises
+    .filter(ex => ex.category === type)
+    .map(exercise => ({
+      id: `we-${exercise.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      exerciseId: exercise.id,
+      exercise,
+      sets: Array(setsPerExercise[exercise.id] || 3).fill(null).map((_, i) => ({
+        id: `set-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        weight: 0,
+        reps: 0,
+        completed: false,
+      })),
+    }))
+
+  // Set the date to start of day for consistency
+  const workoutDate = new Date(date)
+  workoutDate.setHours(0, 0, 0, 0)
+
+  const newWorkout = {
+    type,
+    date: workoutDate,
+    startTime: workoutDate,
+    exercises,
+    completed: true, // Mark as completed since it's a past workout
+    userId,
+  }
+
+  try {
+    const workoutsRef = collection(db, WORKOUTS_COLLECTION)
+    const docRef = await addDoc(workoutsRef, {
+      ...workoutToFirestore(newWorkout as Workout),
+      userId,
+    })
+    
+    return {
+      ...newWorkout,
+      id: docRef.id,
+    } as Workout
+  } catch (error) {
+    console.error('Error creating workout with date:', error)
+    throw error
+  }
+}
+
+/**
  * Update an existing workout
  */
 export async function updateWorkout(workout: Workout): Promise<void> {
   try {
     const workoutRef = doc(db, WORKOUTS_COLLECTION, workout.id)
-    await updateDoc(workoutRef, workoutToFirestore(workout))
+    await updateDoc(workoutRef, {
+      ...workoutToFirestore(workout),
+      updatedAt: serverTimestamp(),
+    })
   } catch (error) {
     console.error('Error updating workout:', error)
     throw error

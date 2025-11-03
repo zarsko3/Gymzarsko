@@ -46,6 +46,22 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
 }
 
 /**
+ * Create a workout with a specific date (for adding past workouts)
+ */
+export async function createWorkoutWithDate(type: WorkoutType, date: Date): Promise<Workout> {
+  if (USE_FIRESTORE) {
+    return await firestoreService.createWorkoutWithDate(type, date)
+  }
+  // For localStorage, create workout with custom date
+  const workout = localStorageService.startWorkout(type)
+  workout.date = new Date(date)
+  workout.date.setHours(0, 0, 0, 0)
+  workout.completed = true
+  localStorageService.completeWorkout(workout)
+  return workout
+}
+
+/**
  * Update workout
  */
 export async function updateWorkout(workout: Workout): Promise<void> {
