@@ -123,7 +123,7 @@ function HomePage() {
           </motion.div>
         ) : (
           <motion.div 
-            className="flex justify-center items-center my-6"
+            className="flex justify-center items-center my-6 w-full max-w-full"
             initial={shouldReduceMotion ? {} : { scale: 0.96, opacity: 0 }}
             animate={{ 
               scale: 1, 
@@ -141,8 +141,10 @@ function HomePage() {
               key={randomBanner}
               src={randomBanner} 
               alt="Gymzarsko Banner" 
-              className="w-72 sm:w-80 md:w-96 h-auto mx-auto block"
-              style={{ objectFit: 'contain' }}
+              className="max-w-full w-56 sm:w-72 md:w-96 h-auto mx-auto block"
+              style={{ 
+                objectFit: 'contain',
+              }}
               role="img"
               aria-label="Gymzarsko Banner"
             />
