@@ -60,6 +60,17 @@ function ActiveWorkoutPage() {
     }
   }, [workout, navigate])
 
+  // Handle workout type changes in URL - if type changes, start new workout
+  useEffect(() => {
+    if (workoutType && workout) {
+      // If URL type doesn't match current workout type, start new workout
+      if (workout.type !== workoutType) {
+        const newWorkout = startWorkout(workoutType)
+        setWorkout(newWorkout)
+      }
+    }
+  }, [workoutType])
+
   // Timer effect
   useEffect(() => {
     if (!workout) return
