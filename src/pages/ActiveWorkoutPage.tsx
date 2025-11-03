@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, Clock, Plus, Trash2, Check, Timer, MessageSquare, FileText, Edit2, X } from 'lucide-react'
 import type { WorkoutType, WorkoutExercise, WorkoutSet, Exercise } from '../types'
-import { startWorkout, updateCurrentWorkout, completeWorkout, getCurrentWorkout } from '../services/workoutService'
+import { startWorkout, updateCurrentWorkout, completeWorkout, getCurrentWorkout } from '../services/workoutServiceFacade'
 import { updateExerciseName } from '../services/firestoreExerciseService'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -15,24 +15,8 @@ function ActiveWorkoutPage() {
   const [searchParams] = useSearchParams()
   const workoutType = searchParams.get('type') as WorkoutType
   
-  const [workout, setWorkout] = useState(() => {
-    // Always check URL parameter first - if type is specified, use it
-    if (workoutType) {
-      // Check if there's a current workout that matches the requested type
-      const currentWorkout = getCurrentWorkout()
-      if (currentWorkout && currentWorkout.type === workoutType) {
-        return currentWorkout
-      }
-      // Otherwise, start a new workout with the requested type
-      return startWorkout(workoutType)
-    }
-    // If no type in URL, check for existing workout
-    const currentWorkout = getCurrentWorkout()
-    if (currentWorkout) {
-      return currentWorkout
-    }
-    return null
-  })
+  const [workout, setWorkout] = useState<Workout | null>(null)
+  const [isLoadingWorkout, setIsLoadingWorkout] = useState(true)
   
   const [elapsedTime, setElapsedTime] = useState(0)
   const [showRestTimer, setShowRestTimer] = useState(false)
@@ -53,22 +37,53 @@ function ActiveWorkoutPage() {
     targetReps: 10,
   })
 
-  // Navigate away if no workout
+  // Load workout based on URL type parameter
   useEffect(() => {
-    if (!workout) {
-      navigate('/')
+    async function loadWorkout() {
+      setIsLoadingWorkout(true)
+      
+      if (workoutType) {
+        // Check if there's a current workout that matches the requested type
+        const currentWorkout = await getCurrentWorkout()
+        if (currentWorkout && currentWorkout.type === workoutType) {
+          setWorkout(currentWorkout)
+          setIsLoadingWorkout(false)
+          return
+        }
+        // Otherwise, start a new workout with the requested type
+        const newWorkout = await startWorkout(workoutType)
+        setWorkout(newWorkout)
+        setIsLoadingWorkout(false)
+        return
+      }
+      
+      // If no type in URL, check for existing workout
+      const currentWorkout = await getCurrentWorkout()
+      if (currentWorkout) {
+        setWorkout(currentWorkout)
+      } else {
+        // No workout and no type specified - navigate away
+        navigate('/')
+      }
+      setIsLoadingWorkout(false)
     }
-  }, [workout, navigate])
+    
+    loadWorkout()
+  }, [workoutType, navigate])
 
   // Handle workout type changes in URL - if type changes, start new workout
   useEffect(() => {
-    if (workoutType && workout) {
-      // If URL type doesn't match current workout type, start new workout
-      if (workout.type !== workoutType) {
-        const newWorkout = startWorkout(workoutType)
-        setWorkout(newWorkout)
+    async function handleTypeChange() {
+      if (workoutType && workout) {
+        // If URL type doesn't match current workout type, start new workout
+        if (workout.type !== workoutType) {
+          const newWorkout = await startWorkout(workoutType)
+          setWorkout(newWorkout)
+        }
       }
     }
+    
+    handleTypeChange()
   }, [workoutType])
 
   // Timer effect
