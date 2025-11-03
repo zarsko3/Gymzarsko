@@ -2,13 +2,16 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { ChevronLeft, MoreVertical, Clock, TrendingUp, Calendar, Dumbbell, Search, X, Flame, Activity } from 'lucide-react'
+import type { WorkoutType } from '../types'
 import { getWorkouts, deleteWorkout } from '../services/workoutService'
 import { formatDuration, calculateVolume } from '../utils/formatters'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
+import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
 
 function HistoryPage() {
   const navigate = useNavigate()
+  const [showWorkoutModal, setShowWorkoutModal] = useState(false)
   const [workouts, setWorkouts] = useState(getWorkouts())
   const [filter, setFilter] = useState<'all' | 'push' | 'pull' | 'legs'>('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -90,7 +93,7 @@ function HistoryPage() {
 
             {/* CTA Button */}
             <Button 
-              onClick={() => navigate('/workout/start')}
+              onClick={() => setShowWorkoutModal(true)}
               className="min-w-[200px] shadow-sm hover:shadow-md mx-auto"
               size="lg"
             >
@@ -327,6 +330,15 @@ function HistoryPage() {
           })}
         </div>
       </div>
+
+      {/* Workout Type Selection Modal */}
+      <WorkoutTypeModal
+        isOpen={showWorkoutModal}
+        onClose={() => setShowWorkoutModal(false)}
+        onSelectWorkout={(type: WorkoutType) => {
+          navigate(`/workout/active?type=${type}`)
+        }}
+      />
     </div>
   )
 }

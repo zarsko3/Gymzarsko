@@ -88,7 +88,7 @@ function HomePage() {
             <Button
               fullWidth
               size="lg"
-              onClick={() => navigate('/workout/start')}
+              onClick={() => setShowWorkoutModal(true)}
             >
               <Flame size={20} strokeWidth={2} />
               Start Today's Workout
