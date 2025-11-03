@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format, addDays, subDays, startOfWeek, isWithinInterval } from 'date-fns'
-import { Flame } from 'lucide-react'
 import type { Workout, WorkoutType } from '../types'
 import WeeklyCalendar from '../components/home/WeeklyCalendar'
 import MotivationalCard from '../components/home/MotivationalCard'
 import StatCard from '../components/home/StatCard'
 import MiniChart from '../components/home/MiniChart'
-import Button from '../components/ui/Button'
 import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
 import { getWorkouts, subscribeToWorkouts } from '../services/workoutServiceFacade'
 import { calculateVolume } from '../utils/formatters'
@@ -95,38 +93,27 @@ function HomePage() {
   return (
     <div className="w-full max-w-full overflow-x-hidden min-h-full">
       <div className="w-full max-w-full px-4 py-6 space-y-6">
-        {/* Workout Status */}
-        <div className="text-center pt-2">
-          {isRestDay ? (
-            <div className="flex justify-center items-center">
-              <img 
-                src="/Logo.png" 
-                alt="Gymzarsko Logo" 
-                className="w-32 h-auto max-w-[150px] sm:max-w-[200px]"
-              />
-            </div>
-          ) : (
-            <h2 className="text-4xl font-bold text-text-primary tracking-tight">
-              PUSH DAY
-            </h2>
-          )}
-        </div>
-
-        {/* Motivational Card */}
+        {/* Banner Logo */}
         {isRestDay ? (
-          <MotivationalCard />
+          <div className="flex justify-center items-center my-6">
+            <img 
+              src="/Logo.png" 
+              alt="Gymzarsko Logo" 
+              className="w-32 h-auto max-w-[150px] sm:max-w-[200px]"
+            />
+          </div>
         ) : (
-          <div className="space-y-3">
-            <Button
-              fullWidth
-              size="lg"
-              onClick={() => setShowWorkoutModal(true)}
-            >
-              <Flame size={20} strokeWidth={2} />
-              Start Today's Workout
-            </Button>
+          <div className="flex justify-center items-center my-6">
+            <img 
+              src="/Baner1.svg" 
+              alt="Gymzarsko Banner" 
+              className="w-36 h-auto max-w-[150px] sm:max-w-[200px]"
+            />
           </div>
         )}
+
+        {/* Motivational Card */}
+        {isRestDay && <MotivationalCard />}
 
         {/* Date */}
         <p className="text-text-secondary text-base text-center">
