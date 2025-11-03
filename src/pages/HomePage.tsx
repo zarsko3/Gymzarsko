@@ -6,7 +6,7 @@ import type { Workout, WorkoutType } from '../types'
 import WeeklyCalendar from '../components/home/WeeklyCalendar'
 import MotivationalCard from '../components/home/MotivationalCard'
 import StatCard from '../components/home/StatCard'
-import MiniChart from '../components/home/MiniChart'
+import AnimatedChart from '../components/home/AnimatedChart'
 import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
 import { getWorkouts, subscribeToWorkouts } from '../services/workoutServiceFacade'
 import { calculateVolume } from '../utils/formatters'
@@ -174,12 +174,12 @@ function HomePage() {
             <StatCard
               title="Workouts Logged"
               value={totalWorkouts}
-              chart={<MiniChart data={workoutChartData} type="area" />}
+              chart={<AnimatedChart data={workoutChartData} type="area" color="#10B981" />}
             />
             <StatCard
               title="Total Volume (kg)"
               value={totalVolume > 1000 ? `${(totalVolume / 1000).toFixed(1)}k` : Math.round(totalVolume)}
-              chart={<MiniChart data={volumeChartData} type="line" />}
+              chart={<AnimatedChart data={volumeChartData} type="line" color="#10B981" />}
             />
           </div>
         </div>
