@@ -75,9 +75,19 @@ function HomePage() {
       <div className="w-full max-w-full px-4 py-6 space-y-6">
         {/* Workout Status */}
         <div className="text-center pt-2">
-          <h2 className="text-4xl font-bold text-text-primary tracking-tight">
-            {isRestDay ? 'REST DAY' : 'PUSH DAY'}
-          </h2>
+          {isRestDay ? (
+            <div className="flex justify-center items-center">
+              <img 
+                src="/Logo.png" 
+                alt="Gymzarsko Logo" 
+                className="w-32 h-auto max-w-[150px] sm:max-w-[200px]"
+              />
+            </div>
+          ) : (
+            <h2 className="text-4xl font-bold text-text-primary tracking-tight">
+              PUSH DAY
+            </h2>
+          )}
         </div>
 
         {/* Motivational Card */}
