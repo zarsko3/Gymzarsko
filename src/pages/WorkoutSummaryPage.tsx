@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { CheckCircle, Clock, TrendingUp, Home, Dumbbell, Plus } from 'lucide-react'
+import type { Workout, WorkoutExercise, WorkoutSet } from '../types'
 import { getWorkouts, getWorkoutById } from '../services/workoutServiceFacade'
 import { addExerciseToWorkout } from '../services/firestoreExerciseService'
 import { formatDuration, calculateVolume } from '../utils/formatters'
@@ -12,7 +13,7 @@ import Input from '../components/ui/Input'
 
 function WorkoutSummaryPage() {
   const navigate = useNavigate()
-  const [workout, setWorkout] = useState<any>(null)
+  const [workout, setWorkout] = useState<Workout | null>(null)
   const [showAddExercise, setShowAddExercise] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [exerciseForm, setExerciseForm] = useState({
@@ -59,13 +60,13 @@ function WorkoutSummaryPage() {
     return null
   }
 
-  const totalSets = workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0)
+  const totalSets = workout.exercises.reduce((sum: number, ex: WorkoutExercise) => sum + ex.sets.length, 0)
   const completedSets = workout.exercises.reduce(
-    (sum, ex) => sum + ex.sets.filter(s => s.completed).length,
+    (sum: number, ex: WorkoutExercise) => sum + ex.sets.filter((s: WorkoutSet) => s.completed).length,
     0
   )
   const totalVolume = workout.exercises.reduce(
-    (sum, ex) => sum + ex.sets.reduce((s, set) => s + calculateVolume(set.weight, set.reps), 0),
+    (sum: number, ex: WorkoutExercise) => sum + ex.sets.reduce((s: number, set: WorkoutSet) => s + calculateVolume(set.weight, set.reps), 0),
     0
   )
   const duration = workout.startTime && workout.endTime
@@ -171,7 +172,7 @@ function WorkoutSummaryPage() {
               <div className="flex items-center justify-between">
                 <span className="text-text-secondary">Workout Type</span>
                 <span className="font-semibold text-text-primary">
-                  {workoutTypeNames[workout.type]}
+                  {workoutTypeNames[workout.type as keyof typeof workoutTypeNames]}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -219,10 +220,10 @@ function WorkoutSummaryPage() {
               Add Exercise
             </Button>
           </div>
-          {workout.exercises.map((exercise: any) => {
-            const completedSets = exercise.sets.filter(s => s.completed).length
+          {workout.exercises.map((exercise: WorkoutExercise) => {
+            const completedSets = exercise.sets.filter((s: WorkoutSet) => s.completed).length
             const exerciseVolume = exercise.sets.reduce(
-              (sum, set) => sum + calculateVolume(set.weight, set.reps),
+              (sum: number, set: WorkoutSet) => sum + calculateVolume(set.weight, set.reps),
               0
             )
 
