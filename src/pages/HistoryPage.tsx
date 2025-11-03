@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { ChevronLeft, MoreVertical, Clock, TrendingUp, Calendar, Dumbbell, Search, X, Flame, Activity } from 'lucide-react'
-import type { WorkoutType } from '../types'
-import { getWorkouts, deleteWorkout } from '../services/workoutService'
+import type { Workout, WorkoutType } from '../types'
+import { getWorkouts, deleteWorkout, subscribeToWorkouts } from '../services/workoutServiceFacade'
 import { formatDuration, calculateVolume } from '../utils/formatters'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
@@ -12,7 +12,22 @@ import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
 function HistoryPage() {
   const navigate = useNavigate()
   const [showWorkoutModal, setShowWorkoutModal] = useState(false)
-  const [workouts, setWorkouts] = useState(getWorkouts())
+  const [workouts, setWorkouts] = useState<Workout[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Subscribe to workout data for real-time updates
+  useEffect(() => {
+    setIsLoading(true)
+    // Use real-time listener
+    const unsubscribe = subscribeToWorkouts((workouts) => {
+      setWorkouts(workouts)
+      setIsLoading(false)
+    })
+    
+    return () => {
+      unsubscribe()
+    }
+  }, [])
   const [filter, setFilter] = useState<'all' | 'push' | 'pull' | 'legs'>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -36,10 +51,17 @@ function HistoryPage() {
     legs: { name: 'Legs', Icon: Activity, color: 'bg-purple-50 text-purple-600 border-purple-200' },
   }
 
-  const handleDeleteWorkout = (workoutId: string) => {
+  const handleDeleteWorkout = async (workoutId: string) => {
     if (confirm('Are you sure you want to delete this workout? This cannot be undone.')) {
-      deleteWorkout(workoutId)
-      setWorkouts(getWorkouts())
+      try {
+        await deleteWorkout(workoutId)
+        // Refresh workouts after deletion
+        const fetchedWorkouts = await getWorkouts()
+        setWorkouts(fetchedWorkouts)
+      } catch (error) {
+        console.error('Error deleting workout:', error)
+        alert('Failed to delete workout. Please try again.')
+      }
     }
   }
 
@@ -54,6 +76,14 @@ function HistoryPage() {
       0
     )
     return { totalSets, completedSets, totalVolume }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen pb-20 flex items-center justify-center">
+        <div className="text-text-secondary">Loading...</div>
+      </div>
+    )
   }
 
   if (workouts.length === 0) {

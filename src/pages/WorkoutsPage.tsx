@@ -4,7 +4,7 @@ import { ChevronLeft, MoreVertical, Dumbbell, Flame, Activity } from 'lucide-rea
 import { startOfWeek, endOfWeek, isWithinInterval } from 'date-fns'
 import type { WorkoutType } from '../types'
 import Card from '../components/ui/Card'
-import { getWorkouts } from '../services/workoutServiceFacade'
+import { getWorkouts, subscribeToWorkouts } from '../services/workoutServiceFacade'
 
 const workoutTypes = [
   {
@@ -46,45 +46,40 @@ function WorkoutsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchWeeklyStats() {
-      try {
-        setLoading(true)
-        const allWorkouts = await getWorkouts()
+    setLoading(true)
+    // Use real-time listener
+    const unsubscribe = subscribeToWorkouts((allWorkouts) => {
+      // Get current week range (Sunday to Saturday)
+      const today = new Date()
+      const weekStart = startOfWeek(today, { weekStartsOn: 0 }) // 0 = Sunday (U.S. calendar)
+      const weekEnd = endOfWeek(today, { weekStartsOn: 0 })
+      
+      // Filter workouts for this week and count by type
+      const thisWeekWorkouts = allWorkouts.filter(workout => {
+        // Only count completed workouts
+        if (!workout.completed) return false
         
-        // Get current week range (Sunday to Saturday)
-        const today = new Date()
-        const weekStart = startOfWeek(today, { weekStartsOn: 0 }) // 0 = Sunday (U.S. calendar)
-        const weekEnd = endOfWeek(today, { weekStartsOn: 0 })
-        
-        // Filter workouts for this week and count by type
-        const thisWeekWorkouts = allWorkouts.filter(workout => {
-          // Only count completed workouts
-          if (!workout.completed) return false
-          
-          // Check if workout is within this week
-          return isWithinInterval(workout.date, {
-            start: weekStart,
-            end: weekEnd,
-          })
+        // Check if workout is within this week
+        return isWithinInterval(workout.date, {
+          start: weekStart,
+          end: weekEnd,
         })
-        
-        // Count by workout type
-        const stats: WeeklyStats = {
-          push: thisWeekWorkouts.filter(w => w.type === 'push').length,
-          pull: thisWeekWorkouts.filter(w => w.type === 'pull').length,
-          legs: thisWeekWorkouts.filter(w => w.type === 'legs').length,
-        }
-        
-        setWeeklyStats(stats)
-      } catch (error) {
-        console.error('Error fetching weekly stats:', error)
-        // Keep showing 0s if error occurs
-      } finally {
-        setLoading(false)
+      })
+      
+      // Count by workout type
+      const stats: WeeklyStats = {
+        push: thisWeekWorkouts.filter(w => w.type === 'push').length,
+        pull: thisWeekWorkouts.filter(w => w.type === 'pull').length,
+        legs: thisWeekWorkouts.filter(w => w.type === 'legs').length,
       }
+      
+      setWeeklyStats(stats)
+      setLoading(false)
+    })
+    
+    return () => {
+      unsubscribe()
     }
-
-    fetchWeeklyStats()
   }, [])
 
   return (

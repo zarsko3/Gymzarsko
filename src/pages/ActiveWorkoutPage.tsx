@@ -214,11 +214,16 @@ function ActiveWorkoutPage() {
     }
   }
 
-  const handleCompleteWorkout = () => {
+  const handleCompleteWorkout = async () => {
     if (!workout) return
     
-    completeWorkout(workout)
+    try {
+      await completeWorkout(workout)
     navigate('/workout/summary')
+    } catch (error) {
+      console.error('Error completing workout:', error)
+      alert('Failed to complete workout. Please try again.')
+    }
   }
 
   const handleEditExercise = (exerciseIndex: number) => {

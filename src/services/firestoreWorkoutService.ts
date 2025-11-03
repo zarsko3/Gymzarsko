@@ -11,6 +11,8 @@ import {
   orderBy,
   Timestamp,
   serverTimestamp,
+  onSnapshot,
+  Unsubscribe,
 } from 'firebase/firestore'
 import { db, auth } from '../lib/firebase'
 import type { Workout, WorkoutType } from '../types'
@@ -226,6 +228,43 @@ export async function getCurrentWorkout(): Promise<Workout | null> {
   } catch (error) {
     console.error('Error getting current workout:', error)
     return null
+  }
+}
+
+/**
+ * Subscribe to workouts for real-time updates
+ * Returns an unsubscribe function
+ */
+export function subscribeToWorkouts(
+  callback: (workouts: Workout[]) => void
+): Unsubscribe {
+  try {
+    const userId = getUserId()
+    const workoutsRef = collection(db, WORKOUTS_COLLECTION)
+    const q = query(
+      workoutsRef,
+      where('userId', '==', userId),
+      orderBy('date', 'desc')
+    )
+    
+    return onSnapshot(
+      q,
+      (querySnapshot) => {
+        const workouts: Workout[] = []
+        querySnapshot.forEach((doc) => {
+          workouts.push(firestoreToWorkout(doc.id, doc.data()))
+        })
+        callback(workouts)
+      },
+      (error) => {
+        console.error('Error in workouts subscription:', error)
+        callback([])
+      }
+    )
+  } catch (error) {
+    console.error('Error setting up workouts subscription:', error)
+    // Return a no-op unsubscribe function
+    return () => {}
   }
 }
 

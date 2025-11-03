@@ -87,3 +87,20 @@ export async function getCurrentWorkout(): Promise<Workout | null> {
   return Promise.resolve(localStorageService.getCurrentWorkout())
 }
 
+/**
+ * Subscribe to workouts for real-time updates (Firestore only)
+ * Returns an unsubscribe function
+ */
+export function subscribeToWorkouts(
+  callback: (workouts: Workout[]) => void
+): (() => void) {
+  if (USE_FIRESTORE) {
+    return firestoreService.subscribeToWorkouts(callback)
+  }
+  // For localStorage, just call the callback once with current data
+  const workouts = localStorageService.getWorkouts()
+  callback(workouts)
+  // Return a no-op unsubscribe function
+  return () => {}
+}
+

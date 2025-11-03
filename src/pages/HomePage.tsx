@@ -1,24 +1,37 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format, addDays, subDays, startOfWeek, isWithinInterval } from 'date-fns'
 import { Flame } from 'lucide-react'
-import type { WorkoutType } from '../types'
+import type { Workout, WorkoutType } from '../types'
 import WeeklyCalendar from '../components/home/WeeklyCalendar'
 import MotivationalCard from '../components/home/MotivationalCard'
 import StatCard from '../components/home/StatCard'
 import MiniChart from '../components/home/MiniChart'
 import Button from '../components/ui/Button'
 import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
-import { getWorkouts } from '../services/workoutService'
+import { getWorkouts, subscribeToWorkouts } from '../services/workoutServiceFacade'
 import { calculateVolume } from '../utils/formatters'
 
 function HomePage() {
   const navigate = useNavigate()
   const today = new Date()
   const [showWorkoutModal, setShowWorkoutModal] = useState(false)
+  const [allWorkouts, setAllWorkouts] = useState<Workout[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   
-  // Get actual workout data
-  const allWorkouts = getWorkouts()
+  // Subscribe to workout data for real-time updates
+  useEffect(() => {
+    setIsLoading(true)
+    // Use real-time listener
+    const unsubscribe = subscribeToWorkouts((workouts) => {
+      setAllWorkouts(workouts)
+      setIsLoading(false)
+    })
+    
+    return () => {
+      unsubscribe()
+    }
+  }, [])
   const weekStart = startOfWeek(today, { weekStartsOn: 0 }) // Start on Sunday (U.S. calendar)
   const weekEnd = addDays(weekStart, 6)
   
@@ -61,6 +74,15 @@ function HomePage() {
       }, 0)
     }, 0))
   })
+
+  // Show loading state if needed
+  if (isLoading) {
+    return (
+      <div className="min-h-screen pb-20 max-w-full overflow-x-hidden flex items-center justify-center">
+        <div className="text-text-secondary">Loading...</div>
+      </div>
+    )
+  }
 
   const handleTodayClick = () => {
     setShowWorkoutModal(true)
