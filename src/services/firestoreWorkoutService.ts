@@ -12,8 +12,8 @@ import {
   Timestamp,
   serverTimestamp,
   onSnapshot,
-  Unsubscribe,
 } from 'firebase/firestore'
+import type { Unsubscribe } from 'firebase/firestore'
 import { db, auth } from '../lib/firebase'
 import type { Workout, WorkoutType } from '../types'
 import { mockExercises } from './mockData'
