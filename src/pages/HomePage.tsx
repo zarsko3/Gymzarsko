@@ -93,7 +93,7 @@ function HomePage() {
   }
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden">
+    <div className="w-full max-w-full overflow-x-hidden min-h-full">
       <div className="w-full max-w-full px-4 py-6 space-y-6">
         {/* Workout Status */}
         <div className="text-center pt-2">

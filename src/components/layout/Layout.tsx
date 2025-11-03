@@ -7,10 +7,16 @@ interface LayoutProps {
 
 function Layout({ children }: LayoutProps) {
   return (
-    <div className="flex flex-col h-screen overflow-hidden max-w-full w-full">
+    <div className="flex flex-col min-h-[100dvh] bg-accent-card max-w-full w-full">
       {/* Main content area */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden w-full pb-16">
-        <div className="max-w-md mx-auto h-full w-full overflow-x-hidden px-0">
+      <main 
+        className="flex-1 overflow-y-auto overflow-x-hidden w-full"
+        style={{
+          paddingTop: 'max(env(safe-area-inset-top, 0px), 8px)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 64px)',
+        }}
+      >
+        <div className="max-w-md mx-auto w-full overflow-x-hidden px-0">
           {children}
         </div>
       </main>
