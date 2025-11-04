@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 type BannerMode = 'random-banners' | 'logo-only'
 
-const BANNERS = ['/Baner1.svg', '/Baner2.svg']
+const BANNERS = ['/Baner1.svg', '/Baner2.svg', '/Baner3.svg']
 
 interface BannerProps {
   mode?: BannerMode
@@ -43,7 +43,7 @@ export default function Banner({ mode = 'random-banners' }: BannerProps) {
           className="mx-auto block w-[88%] sm:w-[86%] md:w-[80%] h-auto"
           style={{
             objectFit: 'contain',
-            width: 'clamp(240px, 85vw, 576px)',
+            width: 'clamp(240px, 95vw, 576px)',
           }}
           role="img"
           aria-label={mode === 'logo-only' ? 'Gymzarsko Logo' : 'Gymzarsko Banner'}
