@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { format, addDays, subDays, startOfWeek, isWithinInterval } from 'date-fns'
 import type { Workout, WorkoutType } from '../types'
 import WeeklyCalendar from '../components/home/WeeklyCalendar'
-import MotivationalCard from '../components/home/MotivationalCard'
 import StatCard from '../components/home/StatCard'
 import AnimatedChart from '../components/home/AnimatedChart'
 import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
@@ -39,8 +38,6 @@ function HomePage() {
   )
   
   const workoutDays = allWorkouts.map(w => w.date)
-  const isRestDay = thisWeekWorkouts.length === 0 || 
-    !thisWeekWorkouts.some(w => format(w.date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd'))
 
   // Calculate stats
   const totalWorkouts = thisWeekWorkouts.length
@@ -96,9 +93,6 @@ function HomePage() {
       <div className="w-full max-w-full px-4 py-6 space-y-6">
         {/* Banner - Always shows rotating banners */}
         <Banner mode="random-banners" />
-
-        {/* Motivational Card */}
-        {isRestDay && <MotivationalCard />}
 
         {/* Date */}
         <p className="text-text-secondary text-base text-center">
