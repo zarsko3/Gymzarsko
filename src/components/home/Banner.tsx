@@ -17,18 +17,10 @@ export default function Banner({ mode = 'random-banners' }: BannerProps) {
       return
     }
 
-    // Choose once per day to avoid flicker; store in localStorage
-    const todayKey = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
-    const storageKey = `banner-choice:${todayKey}`
-
-    let chosen = localStorage.getItem(storageKey)
-    if (!chosen) {
-      const valid = BANNERS.filter(Boolean)
-      const pick = valid[Math.floor(Math.random() * valid.length)] ?? '/Baner1.svg'
-      localStorage.setItem(storageKey, pick)
-      chosen = pick
-    }
-    setSrc(chosen)
+    // Pick a random banner on each page load/refresh
+    const valid = BANNERS.filter(Boolean)
+    const pick = valid[Math.floor(Math.random() * valid.length)] ?? '/Baner1.svg'
+    setSrc(pick)
   }, [mode])
 
   if (!src) return null
