@@ -1,6 +1,21 @@
 // Workout Types
 export type WorkoutType = 'push' | 'pull' | 'legs'
 
+export interface Plan {
+  id?: string
+  name: string
+  type: WorkoutType | 'custom'
+  exercises: Array<{
+    name: string
+    defaultSets?: number
+    defaultReps?: number
+    muscleGroup?: string
+  }>
+  userId?: string
+  createdAt?: Date | any // Timestamp from Firestore
+  updatedAt?: Date | any // Timestamp from Firestore
+}
+
 export interface Exercise {
   id: string
   name: string
@@ -27,9 +42,9 @@ export interface Workout {
   id: string
   userId?: string // Firebase user ID for security rules
   type: WorkoutType
-  date: Date
-  startTime?: Date
-  endTime?: Date
+  date: Date | string | any // Accept Date, string, or Timestamp - normalize on read/write
+  startTime?: Date | string | any
+  endTime?: Date | string | any
   exercises: WorkoutExercise[]
   notes?: string
   completed: boolean

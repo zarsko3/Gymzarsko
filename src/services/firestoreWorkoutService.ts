@@ -32,15 +32,60 @@ function getUserId(): string {
 }
 
 /**
+ * Safely convert Date, string, or Timestamp to Timestamp
+ */
+function toTimestampSafe(input: Date | string | Timestamp | any): Timestamp {
+  if (input instanceof Timestamp) return input
+  if (typeof input === 'string') {
+    const d = new Date(input)
+    if (isNaN(d.getTime())) {
+      throw new Error(`Invalid date string: ${input}`)
+    }
+    return Timestamp.fromDate(d)
+  }
+  if (input instanceof Date) {
+    return Timestamp.fromDate(input)
+  }
+  // Fallback: try to convert
+  try {
+    const d = input?.toDate?.() || new Date(input)
+    return Timestamp.fromDate(d)
+  } catch {
+    throw new Error(`Cannot convert to Timestamp: ${input}`)
+  }
+}
+
+/**
+ * Safely convert Timestamp or string to Date
+ */
+function toDateSafe(input: Date | string | Timestamp | any): Date {
+  if (input instanceof Date) return input
+  if (input instanceof Timestamp) return input.toDate()
+  if (typeof input === 'string') {
+    const d = new Date(input)
+    if (isNaN(d.getTime())) {
+      return new Date() // Fallback to current date
+    }
+    return d
+  }
+  // Try toDate method
+  if (input?.toDate) {
+    return input.toDate()
+  }
+  // Fallback
+  return new Date()
+}
+
+/**
  * Convert Firestore document to Workout object
  */
 function firestoreToWorkout(docId: string, data: any): Workout {
   return {
     ...data,
     id: docId,
-    date: data.date?.toDate() || new Date(),
-    startTime: data.startTime?.toDate() || new Date(),
-    endTime: data.endTime?.toDate(),
+    date: toDateSafe(data.date),
+    startTime: data.startTime ? toDateSafe(data.startTime) : undefined,
+    endTime: data.endTime ? toDateSafe(data.endTime) : undefined,
   } as Workout
 }
 
@@ -51,9 +96,9 @@ function workoutToFirestore(workout: Workout) {
   const { startTime, endTime, ...rest } = workout
   return {
     ...rest,
-    date: Timestamp.fromDate(workout.date),
-    startTime: startTime ? Timestamp.fromDate(startTime) : null,
-    endTime: endTime ? Timestamp.fromDate(endTime) : null,
+    date: toTimestampSafe(workout.date),
+    startTime: startTime ? toTimestampSafe(startTime) : null,
+    endTime: endTime ? toTimestampSafe(endTime) : null,
   }
 }
 

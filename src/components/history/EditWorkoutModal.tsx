@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
+import { Timestamp } from 'firebase/firestore'
 import { Dumbbell, TrendingUp, MessageSquare, Save, X } from 'lucide-react'
 import type { Workout, WorkoutSet } from '../../types'
 import Modal from '../ui/Modal'
@@ -22,8 +23,51 @@ function EditWorkoutModal({ isOpen, onClose, workout, onSave }: EditWorkoutModal
   // Initialize edited workout when modal opens
   useEffect(() => {
     if (workout && isOpen) {
-      // Deep clone the workout for editing
-      setEditedWorkout(JSON.parse(JSON.stringify(workout)))
+      // Deep clone the workout for editing and normalize dates
+      const cloned = JSON.parse(JSON.stringify(workout))
+      
+      // Normalize date to ensure it's a Date object
+      const rawDate = workout.date
+      const normalizedDate = rawDate instanceof Timestamp
+        ? rawDate.toDate()
+        : typeof rawDate === 'string'
+          ? new Date(rawDate)
+          : rawDate instanceof Date
+            ? rawDate
+            : new Date()
+      
+      // Normalize startTime if it exists
+      let normalizedStartTime: Date | undefined
+      if (workout.startTime) {
+        const rawStartTime = workout.startTime
+        normalizedStartTime = rawStartTime instanceof Timestamp
+          ? rawStartTime.toDate()
+          : typeof rawStartTime === 'string'
+            ? new Date(rawStartTime)
+            : rawStartTime instanceof Date
+              ? rawStartTime
+              : undefined
+      }
+      
+      // Normalize endTime if it exists
+      let normalizedEndTime: Date | undefined
+      if (workout.endTime) {
+        const rawEndTime = workout.endTime
+        normalizedEndTime = rawEndTime instanceof Timestamp
+          ? rawEndTime.toDate()
+          : typeof rawEndTime === 'string'
+            ? new Date(rawEndTime)
+            : rawEndTime instanceof Date
+              ? rawEndTime
+              : undefined
+      }
+      
+      setEditedWorkout({
+        ...cloned,
+        date: normalizedDate,
+        startTime: normalizedStartTime,
+        endTime: normalizedEndTime,
+      })
       setError('')
     }
   }, [workout, isOpen])

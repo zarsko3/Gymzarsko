@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { Calendar, Plus, X, Trash2 } from 'lucide-react'
-import type { WorkoutType, WorkoutExercise, WorkoutSet } from '../../types'
+import type { WorkoutType, WorkoutExercise, WorkoutSet, Plan } from '../../types'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../hooks/useToast'
 import { createWorkoutWithDate, updateWorkout } from '../../services/workoutServiceFacade'
+import { getAllPlans } from '../../services/firestorePlanService'
 import Modal from '../ui/Modal'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
@@ -40,12 +41,21 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
   const [workoutNotes, setWorkoutNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string>('')
+  const [availablePlans, setAvailablePlans] = useState<Plan[]>([])
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
 
   // Get max date (today)
   const maxDate = format(new Date(), 'yyyy-MM-dd')
   
   // Get min date (1 year ago)
   const minDate = format(new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
+
+  // Load available plans when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      getAllPlans().then(setAvailablePlans).catch(console.error)
+    }
+  }, [isOpen])
 
   // Reset form when modal closes
   useEffect(() => {
@@ -55,6 +65,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
       setExercises([])
       setWorkoutNotes('')
       setError('')
+      setSelectedPlanId(null)
     }
   }, [isOpen])
 
@@ -63,9 +74,48 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
     setError('')
   }
 
-  const handleWorkoutTypeSelect = (type: WorkoutType) => {
+  const handleWorkoutTypeSelect = async (type: WorkoutType) => {
     setSelectedType(type)
     setShowWorkoutTypeModal(false)
+    
+    // Ensure plans are loaded
+    if (availablePlans.length === 0) {
+      const plans = await getAllPlans()
+      setAvailablePlans(plans)
+      
+      // Auto-select and apply matching plan
+      const matchingPlan = plans.find(p => p.type === type && p.id?.startsWith('default-'))
+      if (matchingPlan && matchingPlan.id) {
+        handlePlanSelect(matchingPlan.id)
+      }
+    } else {
+      // Auto-select and apply matching plan if available
+      const matchingPlan = availablePlans.find(p => p.type === type && p.id?.startsWith('default-'))
+      if (matchingPlan && matchingPlan.id) {
+        handlePlanSelect(matchingPlan.id)
+      }
+    }
+  }
+
+  const handlePlanSelect = (planId: string) => {
+    setSelectedPlanId(planId)
+    const plan = availablePlans.find(p => p.id === planId)
+    if (!plan) {
+      console.warn('Plan not found:', planId)
+      return
+    }
+
+    // Prefill exercises from plan
+    const prefilledExercises: ExerciseForm[] = plan.exercises.map(ex => ({
+      name: ex.name,
+      sets: ex.defaultSets || 3,
+      reps: ex.defaultReps || 10,
+      weight: 0,
+      notes: '',
+    }))
+    
+    setExercises(prefilledExercises)
+    showToast('success', 'Plan applied — exercises prefilled ✅')
   }
 
   const handleAddExercise = () => {
@@ -252,6 +302,42 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
             </div>
           )}
 
+          {/* Plan Selection */}
+          {selectedType && availablePlans.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-2">
+                Create from Plan (optional)
+              </label>
+              <select
+                value={selectedPlanId || ''}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    handlePlanSelect(e.target.value)
+                  } else {
+                    setSelectedPlanId(null)
+                    setExercises([])
+                  }
+                }}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                disabled={isSubmitting}
+              >
+                <option value="">Select a plan...</option>
+                {availablePlans
+                  .filter(plan => plan.type === selectedType || plan.type === 'custom')
+                  .map(plan => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name}
+                    </option>
+                  ))}
+              </select>
+              {selectedPlanId && (
+                <p className="mt-2 text-xs text-text-secondary">
+                  Plan selected. Exercises prefilled below. You can edit or remove them.
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Exercises Section */}
           {selectedType && (
             <div className="space-y-4">
@@ -266,7 +352,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
                   disabled={isSubmitting}
                 >
                   <Plus size={16} className="mr-1" />
-                  Add Exercise
+                  {exercises.length === 0 ? 'Use this plan' : 'Add Exercise'}
                 </Button>
               </div>
 
