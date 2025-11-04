@@ -183,20 +183,10 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
         onClose={onClose}
         title="Add Workout"
         size="lg"
-        footer={
-          selectedType ? (
-            <Button
-              onClick={handleSaveWorkout}
-              disabled={!isValid() || isSubmitting}
-              fullWidth
-              className="min-h-[48px]"
-            >
-              {isSubmitting ? 'Saving...' : 'Save Workout'}
-            </Button>
-          ) : undefined
-        }
       >
-        <div className="space-y-6">
+        <div className="flex flex-col min-h-full">
+          {/* Scrollable Content Area */}
+          <div className="flex-1 space-y-6 pb-[100px]">
           {/* Date Selection */}
           <div>
             <label className="block text-sm font-medium text-text-primary mb-2">
@@ -376,6 +366,21 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
                 rows={3}
                 disabled={isSubmitting}
               />
+            </div>
+          )}
+            </div>
+
+          {/* Sticky Footer with Save Button */}
+          {selectedType && (
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 z-10 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3 mt-auto">
+              <Button
+                onClick={handleSaveWorkout}
+                disabled={!isValid() || isSubmitting}
+                fullWidth
+                className="min-h-[48px]"
+              >
+                {isSubmitting ? 'Saving...' : 'Save Workout'}
+              </Button>
             </div>
           )}
         </div>
