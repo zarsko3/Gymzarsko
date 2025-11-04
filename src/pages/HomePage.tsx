@@ -1,31 +1,22 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format, addDays, subDays, startOfWeek, isWithinInterval } from 'date-fns'
-import { motion, useReducedMotion } from 'framer-motion'
 import type { Workout, WorkoutType } from '../types'
 import WeeklyCalendar from '../components/home/WeeklyCalendar'
 import MotivationalCard from '../components/home/MotivationalCard'
 import StatCard from '../components/home/StatCard'
 import AnimatedChart from '../components/home/AnimatedChart'
 import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
+import Banner from '../components/home/Banner'
 import { getWorkouts, subscribeToWorkouts } from '../services/workoutServiceFacade'
 import { calculateVolume } from '../utils/formatters'
 
 function HomePage() {
   const navigate = useNavigate()
   const today = new Date()
-  const shouldReduceMotion = useReducedMotion() ?? false
   const [showWorkoutModal, setShowWorkoutModal] = useState(false)
   const [allWorkouts, setAllWorkouts] = useState<Workout[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  
-  // Generate random banner on each mount - use lazy initialization to ensure true randomness
-  // This runs once per component mount, ensuring a fresh random selection on each page load
-  const [randomBanner] = useState(() => {
-    const banners = ['/Baner1.svg', '/Baner2.svg']
-    const randomIndex = Math.floor(Math.random() * banners.length)
-    return banners[randomIndex]
-  })
   
   // Subscribe to workout data for real-time updates
   useEffect(() => {
@@ -103,54 +94,8 @@ function HomePage() {
   return (
     <div className="w-full max-w-full overflow-x-hidden min-h-full">
       <div className="w-full max-w-full px-4 py-6 space-y-6">
-        {/* Banner Logo */}
-        {isRestDay ? (
-          <motion.div 
-            className="flex justify-center items-center my-6"
-            initial={shouldReduceMotion ? {} : { scale: 0.96, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            style={{ willChange: 'transform, opacity' }}
-          >
-            <img 
-              src="/Logo.png" 
-              alt="Gymzarsko Logo" 
-              className="max-w-full md:w-[576px] w-[448px] h-auto mx-auto block"
-              style={{ objectFit: 'contain' }}
-              role="img"
-              aria-label="Gymzarsko Logo"
-            />
-          </motion.div>
-        ) : (
-          <motion.div 
-            className="flex justify-center items-center my-6 w-full max-w-full"
-            initial={shouldReduceMotion ? {} : { scale: 0.96, opacity: 0 }}
-            animate={{ 
-              scale: 1, 
-              opacity: 1,
-              ...(shouldReduceMotion ? {} : { y: [0, 2, 0] }),
-            }}
-            transition={shouldReduceMotion ? { duration: 0 } : {
-              scale: { duration: 0.22, ease: [0.16, 1, 0.3, 1] },
-              opacity: { duration: 0.22, ease: [0.16, 1, 0.3, 1] },
-              y: { duration: 6, repeat: Infinity, ease: [0.42, 0, 0.58, 1] },
-            }}
-            style={{ willChange: 'transform, opacity' }}
-          >
-            <motion.img 
-              key={randomBanner}
-              src={randomBanner} 
-              alt="Gymzarsko Banner" 
-              className="w-[90%] sm:w-[85%] md:w-[80%] max-w-[576px] h-auto mx-auto block"
-              style={{ 
-                objectFit: 'contain',
-                width: 'clamp(240px, 85vw, 576px)',
-              }}
-              role="img"
-              aria-label="Gymzarsko Banner"
-            />
-          </motion.div>
-        )}
+        {/* Banner - Always shows rotating banners */}
+        <Banner mode="random-banners" />
 
         {/* Motivational Card */}
         {isRestDay && <MotivationalCard />}
