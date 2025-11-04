@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ToastProvider } from './contexts/ToastContext'
 import PrivateRoute from './components/auth/PrivateRoute'
 import Layout from './components/layout/Layout'
+import SplashScreen from './components/SplashScreen'
 import HomePage from './pages/HomePage'
 import HistoryPage from './pages/HistoryPage'
 import WorkoutDetailPage from './pages/WorkoutDetailPage'
@@ -20,6 +21,7 @@ function App() {
   return (
     <AuthProvider>
       <ToastProvider>
+        <SplashScreen minDurationMs={900} onePerSession={true} />
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />
