@@ -47,12 +47,12 @@ function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalP
         <div 
           className={`
             relative bg-white rounded-t-2xl sm:rounded-2xl w-full ${sizeStyles[size]}
-            max-h-[75vh] sm:max-h-[85vh] flex flex-col
+            max-h-[90vh] sm:max-h-[85vh] flex flex-col
             animate-slide-up shadow-2xl
             pointer-events-auto
             mb-0 sm:mb-0
           `}
-          style={{ maxHeight: '75vh' }}
+          style={{ maxHeight: '90vh' }}
           onClick={(e) => e.stopPropagation()}
         >
         {/* Drag Handle (Mobile Only) */}
@@ -75,7 +75,7 @@ function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalP
         )}
 
         {/* Content - Scrollable Area */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 overscroll-contain">
+        <div className="flex-1 overflow-y-auto px-6 py-4 overscroll-contain min-h-0">
           {children}
         </div>
 

@@ -195,7 +195,7 @@ function EditWorkoutModal({ isOpen, onClose, workout, onSave }: EditWorkoutModal
         )}
 
         {/* Exercises */}
-        <div className="space-y-4 max-h-[50vh] overflow-y-auto">
+        <div className="space-y-4">
           {editedWorkout.exercises.map((exercise, exerciseIndex) => (
             <Card key={exercise.id} className="bg-white p-4">
               <div className="space-y-3">
