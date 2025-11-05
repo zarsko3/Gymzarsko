@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronLeft, Clock, Plus, Trash2, Check, Timer, MessageSquare, FileText, Edit2, X } from 'lucide-react'
+import { ChevronLeft, Clock, Plus, Trash2, Check, MessageSquare, FileText, Edit2, X } from 'lucide-react'
 import type { Workout, WorkoutType, WorkoutExercise, WorkoutSet, Exercise } from '../types'
-import { startWorkout, updateWorkout, completeWorkout, getCurrentWorkout } from '../services/workoutServiceFacade'
-import { updateExerciseName } from '../services/firestoreExerciseService'
+import { startWorkout, updateWorkout, completeWorkout, getCurrentWorkout, getWorkoutById } from '../services/workoutServiceFacade'
+import { updateExerciseName, addExerciseToWorkout } from '../services/firestoreExerciseService'
 import { useToast } from '../hooks/useToast'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
-import RestTimer from '../components/workout/RestTimer'
 
 function ActiveWorkoutPage() {
   const navigate = useNavigate()
@@ -21,7 +20,6 @@ function ActiveWorkoutPage() {
   const [isLoadingWorkout, setIsLoadingWorkout] = useState(true)
   
   const [elapsedTime, setElapsedTime] = useState(0)
-  const [showRestTimer, setShowRestTimer] = useState(false)
   const [expandedNotes, setExpandedNotes] = useState<Set<number>>(new Set())
   const [showWorkoutNotes, setShowWorkoutNotes] = useState(false)
   const [editingExerciseIndex, setEditingExerciseIndex] = useState<number | null>(null)
@@ -124,16 +122,10 @@ function ActiveWorkoutPage() {
 
     const newWorkout = { ...workout }
     const set = newWorkout.exercises[exerciseIndex].sets[setIndex]
-    const wasCompleted = set.completed
     set.completed = !set.completed
     
     setWorkout(newWorkout)
     updateWorkout(newWorkout)
-
-    // Show rest timer when completing a set
-    if (!wasCompleted && set.completed) {
-      setShowRestTimer(true)
-    }
   }
 
   const handleAddSet = (exerciseIndex: number) => {
@@ -294,37 +286,59 @@ function ActiveWorkoutPage() {
     setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
   }
 
-  const handleAddCustomExercise = () => {
-    if (!workout) return
+  const handleAddCustomExercise = async () => {
+    if (!workout || !workout.id) return
 
-    const newExercise: Exercise = {
-      id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      name: exerciseForm.name,
-      muscleGroup: exerciseForm.muscleGroup,
-      category: workout.type,
+    try {
+      // Calculate average weight and reps for the sets
+      const avgWeight = exerciseForm.targetWeight || 0
+      const avgReps = exerciseForm.targetReps || 10
+      const numSets = Math.max(1, Math.floor(exerciseForm.sets))
+
+      // Save exercise to Firestore subcollection and get the exercise ID
+      const exerciseId = await addExerciseToWorkout(workout.id, {
+        name: exerciseForm.name.trim(),
+        sets: numSets,
+        reps: avgReps,
+        weight: avgWeight,
+        notes: '',
+      })
+
+      // Also update the workout document with the new exercise
+      const newExercise: Exercise = {
+        id: exerciseId,
+        name: exerciseForm.name.trim(),
+        muscleGroup: exerciseForm.muscleGroup.trim(),
+        category: workout.type,
+      }
+
+      const newWorkoutExercise: WorkoutExercise = {
+        id: exerciseId,
+        exerciseId: exerciseId,
+        exercise: newExercise,
+        sets: Array.from({ length: numSets }, (_, i) => ({
+          id: `set-${Date.now()}-${i}`,
+          weight: avgWeight,
+          reps: avgReps,
+          completed: false,
+        })),
+      }
+
+      const newWorkout = {
+        ...workout,
+        exercises: [...workout.exercises, newWorkoutExercise],
+      }
+
+      setWorkout(newWorkout)
+      await updateWorkout(newWorkout)
+      showToast('success', 'Exercise added successfully 💪')
+
+      setShowAddExercise(false)
+      setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
+    } catch (error) {
+      console.error('Error adding exercise:', error)
+      showToast('error', 'Failed to add exercise. Please try again.')
     }
-
-    const newWorkoutExercise: WorkoutExercise = {
-      id: `we-${newExercise.id}-${Date.now()}`,
-      exerciseId: newExercise.id,
-      exercise: newExercise,
-      sets: Array.from({ length: Math.max(1, Math.floor(exerciseForm.sets)) }, (_, i) => ({
-        id: `set-${Date.now()}-${i}`,
-        weight: exerciseForm.targetWeight || 0,
-        reps: exerciseForm.targetReps || 10,
-        completed: false,
-      })),
-    }
-
-    const newWorkout = {
-      ...workout,
-      exercises: [...workout.exercises, newWorkoutExercise],
-    }
-
-    setWorkout(newWorkout)
-    updateWorkout(newWorkout)
-    setShowAddExercise(false)
-    setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
   }
 
   const handleRemoveExercise = (exerciseIndex: number) => {
@@ -388,7 +402,7 @@ function ActiveWorkoutPage() {
       },
     }
     setWorkout(newWorkout)
-    updateWorkout(newWorkout)
+    await updateWorkout(newWorkout)
     setEditingExerciseNameIndex(null)
     setEditingExerciseNameValue('')
 
@@ -396,6 +410,7 @@ function ActiveWorkoutPage() {
     try {
       if (workout.id && exercise.id) {
         await updateExerciseName(workout.id, exercise.id, trimmedValue)
+        showToast('success', 'Exercise name updated ✅')
       }
     } catch (error) {
       console.error('Error updating exercise name:', error)
@@ -409,9 +424,8 @@ function ActiveWorkoutPage() {
         },
       }
       setWorkout(revertedWorkout)
-      updateWorkout(revertedWorkout)
-      // Show error toast (you can add a toast library here)
-      alert('Failed to save exercise name. Please try again.')
+      await updateWorkout(revertedWorkout)
+      showToast('error', 'Failed to save exercise name. Please try again.')
     }
   }
 
@@ -472,14 +486,6 @@ function ActiveWorkoutPage() {
       <div className="px-4 py-6 space-y-4">
         {/* Action Buttons */}
         <div className="flex gap-2">
-        <Button
-          fullWidth
-          variant="secondary"
-          onClick={() => setShowRestTimer(true)}
-        >
-          <Timer size={20} />
-          Start Rest Timer
-        </Button>
           <Button
             fullWidth
             variant="secondary"
@@ -703,13 +709,6 @@ function ActiveWorkoutPage() {
           Complete Workout
         </Button>
       </div>
-
-      {/* Rest Timer Modal */}
-      <RestTimer
-        isOpen={showRestTimer}
-        onClose={() => setShowRestTimer(false)}
-        defaultDuration={90}
-      />
 
       {/* Edit Exercise Modal */}
       <Modal
