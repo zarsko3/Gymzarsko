@@ -128,7 +128,7 @@ function HistoryPage() {
   if (isLoading) {
     return (
       <div className="min-h-full flex items-center justify-center py-8">
-        <div className="text-text-secondary">Loading...</div>
+        <div className="text-[var(--text-secondary)]">Loading...</div>
       </div>
     )
   }
@@ -137,7 +137,7 @@ function HistoryPage() {
     return (
       <div className="min-h-full">
         {/* Header */}
-        <div className="sticky top-0 bg-[var(--bg-primary)] border-b border-border-primary z-10">
+        <div className="sticky top-0 bg-[var(--bg-primary)] border-b border-[var(--border-primary)] z-10">
           <div className="flex items-center justify-between px-4 py-4">
             <button 
               onClick={() => navigate('/')}
@@ -147,7 +147,7 @@ function HistoryPage() {
               <span>Back</span>
             </button>
             <h1 className="text-lg font-semibold text-primary-600">History</h1>
-            <button className="text-text-secondary hover:text-text-primary min-h-[44px] min-w-[44px] flex items-center justify-center">
+            <button className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] min-h-[44px] min-w-[44px] flex items-center justify-center">
               <MoreVertical size={24} />
             </button>
           </div>
@@ -161,10 +161,10 @@ function HistoryPage() {
             </div>
 
             {/* Text Content */}
-            <h3 className="text-2xl font-bold text-text-primary mb-3">
+            <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-3">
               No Workout History Yet
             </h3>
-            <p className="text-text-secondary mb-8 text-base leading-relaxed">
+            <p className="text-[var(--text-secondary)] mb-8 text-base leading-relaxed">
               Start logging workouts to track your progress and build your fitness journey
             </p>
 
@@ -210,36 +210,36 @@ function HistoryPage() {
         <div className="grid grid-cols-3 gap-3">
           <Card className="bg-card text-center p-4">
             <div className="text-2xl font-bold text-primary-500">{workouts.length}</div>
-            <div className="text-text-secondary text-xs mt-1">Total</div>
+            <div className="text-[var(--text-secondary)] text-xs mt-1">Total</div>
           </Card>
           <Card className="bg-card text-center p-4">
             <div className="text-2xl font-bold text-primary-500">
               {workouts.filter(w => w.type === 'push').length}
             </div>
-            <div className="text-text-secondary text-xs mt-1">Push</div>
+            <div className="text-[var(--text-secondary)] text-xs mt-1">Push</div>
           </Card>
           <Card className="bg-card text-center p-4">
             <div className="text-2xl font-bold text-primary-500">
               {workouts.filter(w => w.type === 'pull').length}
             </div>
-            <div className="text-text-secondary text-xs mt-1">Pull</div>
+            <div className="text-[var(--text-secondary)] text-xs mt-1">Pull</div>
           </Card>
         </div>
 
         {/* Search Bar */}
         <div className="relative">
-          <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary" />
+          <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
           <input
             type="text"
             placeholder="Search by date, exercise, or type..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-lg text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="w-full pl-12 pr-12 py-3 border border-[var(--border-primary)] rounded-lg bg-card text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             >
               <X size={20} />
             </button>
@@ -252,8 +252,8 @@ function HistoryPage() {
             onClick={() => setFilter('all')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
               filter === 'all'
-                ? 'bg-[var(--bg-primary)]-500 text-white'
-                : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
+                ? 'bg-primary-500 text-white'
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
             }`}
           >
             All Workouts
@@ -262,8 +262,8 @@ function HistoryPage() {
             onClick={() => setFilter('push')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${
               filter === 'push'
-                ? 'bg-[var(--bg-primary)]-500 text-white'
-                : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
+                ? 'bg-primary-500 text-white'
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
             }`}
           >
             <Dumbbell size={16} strokeWidth={2} />
@@ -273,8 +273,8 @@ function HistoryPage() {
             onClick={() => setFilter('pull')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${
               filter === 'pull'
-                ? 'bg-[var(--bg-primary)]-500 text-white'
-                : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
+                ? 'bg-primary-500 text-white'
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
             }`}
           >
             <Flame size={16} strokeWidth={2} />
@@ -284,8 +284,8 @@ function HistoryPage() {
             onClick={() => setFilter('legs')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${
               filter === 'legs'
-                ? 'bg-[var(--bg-primary)]-500 text-white'
-                : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
+                ? 'bg-primary-500 text-white'
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
             }`}
           >
             <Activity size={16} strokeWidth={2} />
@@ -296,7 +296,7 @@ function HistoryPage() {
         {/* Results Count */}
         {filteredWorkouts.length > 0 && (
           <div className="flex items-center justify-between">
-            <p className="text-sm text-text-secondary">
+            <p className="text-sm text-[var(--text-secondary)]">
               Showing {filteredWorkouts.length} {filteredWorkouts.length === 1 ? 'workout' : 'workouts'}
               {(searchQuery || filter !== 'all') && (
                 <button
@@ -318,10 +318,10 @@ function HistoryPage() {
           {filteredWorkouts.length === 0 && (
             <Card className="text-center py-12 bg-accent-mint">
               <Search size={48} className="mx-auto text-primary-500 mb-3" strokeWidth={1.5} />
-              <h3 className="text-lg font-semibold text-text-primary mb-2">
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
                 No Workouts Found
               </h3>
-              <p className="text-text-secondary text-sm">
+              <p className="text-[var(--text-secondary)] text-sm">
                 {searchQuery ? `No workouts match "${searchQuery}"` : 'Try adjusting your filters'}
               </p>
               {(searchQuery || filter !== 'all') && (
@@ -366,7 +366,7 @@ function HistoryPage() {
                           e.stopPropagation()
                           handleEditWorkout(workout)
                         }}
-                        className="text-text-secondary hover:text-primary-500 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                        className="text-[var(--text-secondary)] hover:text-primary-500 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
                         aria-label="Edit workout"
                       >
                         <Edit2 size={18} />
@@ -376,7 +376,7 @@ function HistoryPage() {
                           e.stopPropagation()
                           handleDeleteWorkout(workout.id)
                         }}
-                        className="text-text-secondary hover:text-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                        className="text-[var(--text-secondary)] hover:text-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
                         aria-label="Delete workout"
                       >
                         <MoreVertical size={20} />
@@ -385,35 +385,35 @@ function HistoryPage() {
                   </div>
 
                   {/* Date */}
-                  <div className="flex items-center gap-2 text-text-secondary text-sm">
+                  <div className="flex items-center gap-2 text-[var(--text-secondary)] text-sm">
                     <Calendar size={16} />
                     <span>{format(workout.date, 'EEEE, MMM d, yyyy')}</span>
                   </div>
 
                   {/* Stats */}
-                  <div className="grid grid-cols-3 gap-4 pt-2 border-t border-border-primary">
+                  <div className="grid grid-cols-3 gap-4 pt-2 border-t border-[var(--border-primary)]">
                     <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 text-text-secondary text-xs mb-1">
+                      <div className="flex items-center justify-center gap-1 text-[var(--text-secondary)] text-xs mb-1">
                         <Clock size={14} />
                         <span>Duration</span>
                       </div>
-                      <div className="font-semibold text-text-primary">{duration}</div>
+                      <div className="font-semibold text-[var(--text-primary)]">{duration}</div>
                     </div>
                     <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 text-text-secondary text-xs mb-1">
+                      <div className="flex items-center justify-center gap-1 text-[var(--text-secondary)] text-xs mb-1">
                         <Dumbbell size={14} />
                         <span>Sets</span>
                       </div>
-                      <div className="font-semibold text-text-primary">
+                      <div className="font-semibold text-[var(--text-primary)]">
                         {stats.completedSets}/{stats.totalSets}
                       </div>
                     </div>
                     <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 text-text-secondary text-xs mb-1">
+                      <div className="flex items-center justify-center gap-1 text-[var(--text-secondary)] text-xs mb-1">
                         <TrendingUp size={14} />
                         <span>Volume</span>
                       </div>
-                      <div className="font-semibold text-text-primary">
+                      <div className="font-semibold text-[var(--text-primary)]">
                         {Math.round(stats.totalVolume)} kg
                       </div>
                     </div>
