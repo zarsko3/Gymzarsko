@@ -36,7 +36,8 @@ function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalP
     <>
       {/* Full Screen Backdrop - Fixed to cover entire screen */}
       <div 
-        className="fixed inset-0 bg-black/40 z-50 transition-opacity"
+        className="fixed inset-0 z-50 transition-opacity"
+        style={{ backgroundColor: 'var(--overlay)' }}
         onClick={onClose}
         aria-hidden="true"
       />
@@ -46,7 +47,7 @@ function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalP
         {/* Modal - Bottom Sheet on Mobile, Centered on Desktop */}
         <div 
           className={`
-            relative bg-white rounded-t-2xl sm:rounded-2xl w-full ${sizeStyles[size]}
+            relative bg-card rounded-t-2xl sm:rounded-2xl w-full ${sizeStyles[size]}
             max-h-[90vh] sm:max-h-[85vh] flex flex-col
             animate-slide-up shadow-2xl
             pointer-events-auto
@@ -57,16 +58,17 @@ function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalP
         >
         {/* Drag Handle (Mobile Only) */}
         <div className="sm:hidden flex justify-center pt-3 pb-2 flex-shrink-0">
-          <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+          <div className="w-12 h-1.5 rounded-full" style={{ backgroundColor: 'var(--border-secondary)' }} />
         </div>
 
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0" style={{ borderColor: 'var(--border-primary)' }}>
             <h2 className="text-xl font-semibold text-text-primary">{title}</h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center text-text-secondary"
+              className="p-2 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center text-text-secondary hover:opacity-70"
+              style={{ backgroundColor: 'transparent' }}
               aria-label="Close modal"
             >
               <X size={24} />
@@ -81,7 +83,7 @@ function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalP
 
         {/* Footer */}
         {footer && (
-          <div className="px-6 py-4 border-t border-gray-100 flex-shrink-0">
+          <div className="px-6 py-4 border-t flex-shrink-0" style={{ borderColor: 'var(--border-primary)' }}>
             {footer}
           </div>
         )}

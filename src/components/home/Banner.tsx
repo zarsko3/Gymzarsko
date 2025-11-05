@@ -27,7 +27,7 @@ export default function Banner({ mode = 'random-banners' }: BannerProps) {
 
   return (
     <div className="px-4">
-      <div className="mx-auto my-4 rounded-2xl bg-accent-card p-0 sm:p-0 flex justify-center items-center overflow-hidden">
+      <div className="mx-auto my-4 rounded-2xl bg-primary p-0 sm:p-0 flex justify-center items-center overflow-hidden">
         {/* Use <img> to preserve SVG internal text layout */}
         <img
           src={src}

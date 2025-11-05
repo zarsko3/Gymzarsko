@@ -7,7 +7,7 @@ interface CardProps {
 }
 
 function Card({ children, className = '', onClick }: CardProps) {
-  const baseStyles = 'bg-white rounded-xl shadow-sm p-4'
+  const baseStyles = 'bg-card rounded-xl shadow-sm p-4'
   const clickableStyles = onClick ? 'cursor-pointer hover:shadow-md transition-shadow active:shadow-sm' : ''
 
   return (

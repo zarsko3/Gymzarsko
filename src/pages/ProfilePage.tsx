@@ -34,7 +34,7 @@ function ProfilePage() {
   return (
     <div className="min-h-full">
       {/* Header */}
-      <div className="sticky top-0 bg-accent-card border-b border-gray-100 z-10">
+      <div className="sticky top-0 bg-primary border-b border-border-primary z-10">
         <div className="flex items-center justify-between px-4 py-4">
           <button 
             onClick={() => navigate('/')}
@@ -65,7 +65,7 @@ function ProfilePage() {
                 {currentUser?.email || 'No email'}
               </p>
               <div className="flex gap-2 mt-2">
-                <span className="text-xs bg-white px-2 py-1 rounded-full text-primary-600 font-medium">
+                <span className="text-xs bg-card px-2 py-1 rounded-full text-primary-600 font-medium">
                   Free Plan
                 </span>
               </div>
@@ -75,15 +75,15 @@ function ProfilePage() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white rounded-xl p-4 shadow-sm text-center">
+          <div className="bg-card rounded-xl p-4 shadow-sm text-center">
             <div className="text-2xl font-bold text-primary-500">42</div>
             <div className="text-text-secondary text-xs mt-1">Workouts</div>
           </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm text-center">
+          <div className="bg-card rounded-xl p-4 shadow-sm text-center">
             <div className="text-2xl font-bold text-primary-500">6</div>
             <div className="text-text-secondary text-xs mt-1">Weeks</div>
           </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm text-center">
+          <div className="bg-card rounded-xl p-4 shadow-sm text-center">
             <div className="text-2xl font-bold text-primary-500">12k</div>
             <div className="text-text-secondary text-xs mt-1">Volume</div>
           </div>
@@ -96,7 +96,7 @@ function ProfilePage() {
             {settingsItems.map((item) => (
               <Card
                 key={item.label}
-                className="hover:shadow-md transition-shadow cursor-pointer bg-white"
+                className="hover:shadow-md transition-shadow cursor-pointer bg-card"
               >
                 <div className="flex items-center justify-between p-2">
                   <div className="flex items-center gap-3">

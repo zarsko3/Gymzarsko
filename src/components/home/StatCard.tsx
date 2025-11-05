@@ -13,7 +13,7 @@ function StatCard({ title, value, chart, trend }: StatCardProps) {
   
   return (
     <motion.div 
-      className="bg-white rounded-xl p-4 shadow-sm"
+      className="bg-card rounded-xl p-4 shadow-sm"
       initial={shouldReduceMotion ? {} : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.16, 1, 0.3, 1] }}

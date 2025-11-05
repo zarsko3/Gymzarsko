@@ -180,7 +180,7 @@ function EditWorkoutModal({ isOpen, onClose, workout, onSave }: EditWorkoutModal
               value={editedWorkout.notes || ''}
               onChange={(e) => handleWorkoutNotesChange(e.target.value)}
               placeholder="Add notes about this workout..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+              className="w-full px-4 py-3 border border-border-primary rounded-lg text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
               rows={3}
               disabled={isSubmitting}
             />
@@ -197,7 +197,7 @@ function EditWorkoutModal({ isOpen, onClose, workout, onSave }: EditWorkoutModal
         {/* Exercises */}
         <div className="space-y-4">
           {editedWorkout.exercises.map((exercise, exerciseIndex) => (
-            <Card key={exercise.id} className="bg-white p-4">
+            <Card key={exercise.id} className="bg-card p-4">
               <div className="space-y-3">
                 {/* Exercise Header */}
                 <div className="flex items-center justify-between">
@@ -260,7 +260,7 @@ function EditWorkoutModal({ isOpen, onClose, workout, onSave }: EditWorkoutModal
                     value={exercise.notes || ''}
                     onChange={(e) => handleExerciseNotesChange(exerciseIndex, e.target.value)}
                     placeholder="Add notes about this exercise..."
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                    className="w-full px-3 py-2 text-sm border border-border-primary rounded-lg text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                     rows={2}
                     disabled={isSubmitting}
                   />

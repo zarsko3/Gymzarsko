@@ -5,6 +5,14 @@ import { registerSW } from 'virtual:pwa-register'
 import App from './App'
 import './index.css'
 
+// Initialize theme immediately to prevent flash
+const theme = localStorage.getItem('gymzarsko-theme') || 'light'
+if (theme === 'dark') {
+  document.documentElement.classList.add('dark')
+} else {
+  document.documentElement.classList.remove('dark')
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>

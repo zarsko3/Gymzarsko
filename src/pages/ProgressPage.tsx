@@ -18,7 +18,7 @@ function ProgressPage() {
     return (
       <div className="min-h-full">
         {/* Header */}
-        <div className="sticky top-0 bg-accent-card border-b border-gray-100 z-10">
+        <div className="sticky top-0 bg-primary border-b border-border-primary z-10">
           <div className="flex items-center justify-between px-4 py-4">
             <button 
               onClick={() => navigate('/')}
@@ -57,7 +57,7 @@ function ProgressPage() {
   return (
     <div className="min-h-full">
       {/* Header */}
-      <div className="sticky top-0 bg-accent-card border-b border-gray-100 z-10">
+      <div className="sticky top-0 bg-primary border-b border-border-primary z-10">
         <div className="flex items-center justify-between px-4 py-4">
           <button 
             onClick={() => navigate('/')}
@@ -76,15 +76,15 @@ function ProgressPage() {
       <div className="px-4 py-6 space-y-6">
         {/* Stats Overview */}
         <div className="grid grid-cols-3 gap-3">
-          <Card className="bg-white text-center p-4">
+          <Card className="bg-card text-center p-4">
             <div className="text-2xl font-bold text-primary-500">{workouts.length}</div>
             <div className="text-text-secondary text-xs mt-1">Workouts</div>
           </Card>
-          <Card className="bg-white text-center p-4">
+          <Card className="bg-card text-center p-4">
             <div className="text-2xl font-bold text-primary-500">{performedExercises.length}</div>
             <div className="text-text-secondary text-xs mt-1">Exercises</div>
           </Card>
-          <Card className="bg-white text-center p-4">
+          <Card className="bg-card text-center p-4">
             <div className="text-2xl font-bold text-primary-500">{prs.size}</div>
             <div className="text-text-secondary text-xs mt-1">PRs</div>
           </Card>
@@ -121,8 +121,8 @@ function ProgressPage() {
           <div className="space-y-3">
             <h3 className="font-semibold text-text-primary">Your Personal Records</h3>
             {prs.size === 0 ? (
-              <Card className="bg-white text-center py-8">
-                <Trophy size={48} className="mx-auto text-gray-400 mb-3" />
+              <Card className="bg-card text-center py-8">
+                <Trophy size={48} className="mx-auto text-text-inactive mb-3" />
                 <p className="text-text-secondary">No PRs yet - complete more workouts!</p>
               </Card>
             ) : (
@@ -134,7 +134,7 @@ function ProgressPage() {
                   return (
                     <Card 
                       key={exerciseId}
-                      className="bg-white hover:shadow-md transition-shadow cursor-pointer"
+                      className="bg-card hover:shadow-md transition-shadow cursor-pointer"
                       onClick={() => navigate(`/progress/exercise/${exerciseId}`)}
                     >
                       <div className="flex items-center justify-between">
@@ -168,8 +168,8 @@ function ProgressPage() {
           <div className="space-y-3">
             <h3 className="font-semibold text-text-primary">Exercise History</h3>
             {performedExercises.length === 0 ? (
-              <Card className="bg-white text-center py-8">
-                <TrendingUp size={48} className="mx-auto text-gray-400 mb-3" />
+              <Card className="bg-card text-center py-8">
+                <TrendingUp size={48} className="mx-auto text-text-inactive mb-3" />
                 <p className="text-text-secondary">No exercises logged yet</p>
               </Card>
             ) : (
@@ -180,7 +180,7 @@ function ProgressPage() {
                   return (
                     <Card
                       key={exercise.id}
-                      className="bg-white hover:shadow-md transition-shadow cursor-pointer"
+                      className="bg-card hover:shadow-md transition-shadow cursor-pointer"
                       onClick={() => navigate(`/progress/exercise/${exercise.id}`)}
                     >
                       <div className="flex items-center justify-between">

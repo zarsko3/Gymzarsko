@@ -53,7 +53,7 @@ function AnimatedChart({
         initial={{ opacity: 0, y: -4 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.15 }}
-        className="bg-white rounded-lg shadow-lg px-3 py-2 border border-gray-200"
+        className="bg-card rounded-lg shadow-lg px-3 py-2 border border-border-primary"
       >
         <p className="text-sm font-semibold text-text-primary">
           {payload[0].value}

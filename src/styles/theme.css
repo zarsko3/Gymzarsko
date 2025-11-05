@@ -1,0 +1,100 @@
+/* Theme CSS Variables */
+/* Light Theme (Default) */
+:root {
+  /* Background Colors */
+  --bg-primary: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --bg-secondary: #F1F5F9;
+  
+  /* Text Colors */
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --text-inactive: #94A3B8;
+  
+  /* Primary Brand Colors */
+  --primary-50: #f0fdf4;
+  --primary-100: #dcfce7;
+  --primary-200: #bbf7d0;
+  --primary-300: #86efac;
+  --primary-400: #4ade80;
+  --primary-500: #10B981;
+  --primary-600: #059669;
+  --primary-700: #047857;
+  --primary-800: #065f46;
+  --primary-900: #064e3b;
+  
+  /* Accent Colors */
+  --accent-mint: #D1E7DD;
+  
+  /* Border Colors */
+  --border-primary: #E2E8F0;
+  --border-secondary: #CBD5E1;
+  
+  /* Shadow Colors */
+  --shadow-sm: rgba(0, 0, 0, 0.05);
+  --shadow-md: rgba(0, 0, 0, 0.1);
+  --shadow-lg: rgba(0, 0, 0, 0.15);
+  
+  /* Overlay Colors */
+  --overlay: rgba(0, 0, 0, 0.4);
+}
+
+/* Dark Theme */
+.dark {
+  /* Background Colors */
+  --bg-primary: #0F172A;
+  --bg-card: #1E293B;
+  --bg-secondary: #334155;
+  
+  /* Text Colors */
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-inactive: #94A3B8;
+  
+  /* Primary Brand Colors (slightly adjusted for dark mode) */
+  --primary-50: #064e3b;
+  --primary-100: #065f46;
+  --primary-200: #047857;
+  --primary-300: #059669;
+  --primary-400: #10B981;
+  --primary-500: #34D399;
+  --primary-600: #4ADE80;
+  --primary-700: #86EFAC;
+  --primary-800: #BBF7D0;
+  --primary-900: #DCFCE7;
+  
+  /* Accent Colors */
+  --accent-mint: #1E3A2F;
+  
+  /* Border Colors */
+  --border-primary: #334155;
+  --border-secondary: #475569;
+  
+  /* Shadow Colors (lighter shadows in dark mode) */
+  --shadow-sm: rgba(0, 0, 0, 0.3);
+  --shadow-md: rgba(0, 0, 0, 0.4);
+  --shadow-lg: rgba(0, 0, 0, 0.5);
+  
+  /* Overlay Colors */
+  --overlay: rgba(0, 0, 0, 0.6);
+}
+
+/* Smooth transitions for theme switching */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Exclude certain elements from transitions */
+button,
+input,
+select,
+textarea,
+svg,
+img,
+video,
+iframe {
+  transition-property: background-color, border-color, color, opacity, transform;
+}
+

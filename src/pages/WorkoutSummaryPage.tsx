@@ -51,7 +51,7 @@ function WorkoutSummaryPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-full bg-accent-card flex items-center justify-center">
+      <div className="min-h-full bg-primary flex items-center justify-center">
         <p className="text-text-secondary">Loading...</p>
       </div>
     )
@@ -146,7 +146,7 @@ function WorkoutSummaryPage() {
   }
 
   return (
-    <div className="min-h-full bg-accent-card">
+    <div className="min-h-full bg-primary">
       <div className="px-4 py-8 space-y-6">
         {/* Success Icon */}
         <div className="text-center">
@@ -171,7 +171,7 @@ function WorkoutSummaryPage() {
         <div className="space-y-3">
           <h3 className="font-semibold text-text-primary">Workout Summary</h3>
           
-          <Card className="bg-white">
+          <Card className="bg-card">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-text-secondary">Workout Type</span>
@@ -196,15 +196,15 @@ function WorkoutSummaryPage() {
           </Card>
 
           <div className="grid grid-cols-3 gap-3">
-            <Card className="bg-white text-center p-4">
+            <Card className="bg-card text-center p-4">
               <div className="text-2xl font-bold text-primary-500">{workout.exercises.length}</div>
               <div className="text-text-secondary text-xs mt-1">Exercises</div>
             </Card>
-            <Card className="bg-white text-center p-4">
+            <Card className="bg-card text-center p-4">
               <div className="text-2xl font-bold text-primary-500">{completedSets}/{totalSets}</div>
               <div className="text-text-secondary text-xs mt-1">Sets</div>
             </Card>
-            <Card className="bg-white text-center p-4">
+            <Card className="bg-card text-center p-4">
               <div className="text-2xl font-bold text-primary-500">{Math.round(totalVolume)}</div>
               <div className="text-text-secondary text-xs mt-1">Volume (kg)</div>
             </Card>
@@ -232,7 +232,7 @@ function WorkoutSummaryPage() {
             )
 
             return (
-              <Card key={exercise.id} className="bg-white">
+              <Card key={exercise.id} className="bg-card">
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="font-medium text-text-primary">{exercise.exercise.name}</h4>

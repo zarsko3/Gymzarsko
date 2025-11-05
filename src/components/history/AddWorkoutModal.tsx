@@ -249,7 +249,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
                 onChange={handleDateChange}
                 min={minDate}
                 max={maxDate}
-                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-3 pr-12 border border-border-primary rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 disabled={isSubmitting}
               />
               <Calendar 
@@ -270,7 +270,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
               Workout Type <span className="text-red-500">*</span>
             </label>
             {selectedType ? (
-              <div className="flex items-center justify-between p-3 border border-gray-300 rounded-lg bg-white">
+              <div className="flex items-center justify-between p-3 border border-border-primary rounded-lg bg-card">
                 <span className={`px-3 py-1 rounded-full border text-sm font-medium ${workoutTypeColors[selectedType]}`}>
                   {selectedType.charAt(0).toUpperCase() + selectedType.slice(1)} Day
                 </span>
@@ -318,7 +318,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
                     setExercises([])
                   }
                 }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                className="w-full px-4 py-3 border border-border-primary rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-card"
                 disabled={isSubmitting}
               >
                 <option value="">Select a plan...</option>
@@ -365,7 +365,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
               ) : (
                 <div className="space-y-3 max-h-[400px] overflow-y-auto">
                   {exercises.map((exercise, index) => (
-                    <Card key={index} className="bg-white p-4">
+                    <Card key={index} className="bg-card p-4">
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-text-primary">
@@ -425,7 +425,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
                             value={exercise.notes}
                             onChange={(e) => handleExerciseChange(index, 'notes', e.target.value)}
                             placeholder="Add notes about this exercise..."
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                            className="w-full px-3 py-2 text-sm border border-border-primary rounded-lg text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                             rows={2}
                             disabled={isSubmitting}
                           />
@@ -448,7 +448,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
                 value={workoutNotes}
                 onChange={(e) => setWorkoutNotes(e.target.value)}
                 placeholder="Add notes about this workout..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                className="w-full px-4 py-3 border border-border-primary rounded-lg text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                 rows={3}
                 disabled={isSubmitting}
               />
@@ -458,7 +458,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
 
           {/* Sticky Footer with Save Button */}
           {selectedType && (
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 z-10 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3 mt-auto">
+            <div className="sticky bottom-0 bg-card border-t border-border-primary z-10 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3 mt-auto">
               <Button
                 onClick={handleSaveWorkout}
                 disabled={!isValid() || isSubmitting}

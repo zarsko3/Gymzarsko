@@ -238,9 +238,9 @@ function WorkoutDetailPage() {
     : 'N/A'
 
   return (
-    <div className="min-h-full bg-accent-card">
+    <div className="min-h-full bg-primary">
       {/* Header */}
-      <div className="sticky top-0 bg-white border-b border-gray-200 z-10 shadow-sm">
+      <div className="sticky top-0 bg-card border-b border-border-primary z-10 shadow-sm">
         <div className="flex items-center justify-between px-4 py-4">
           <button 
             onClick={() => navigate('/history')}
@@ -283,7 +283,7 @@ function WorkoutDetailPage() {
         </div>
 
         {/* Date & Time Info */}
-        <Card className="bg-white">
+        <Card className="bg-card">
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <Calendar size={20} className="text-primary-500" />
@@ -306,15 +306,15 @@ function WorkoutDetailPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-3 gap-3">
-          <Card className="bg-white text-center p-4">
+          <Card className="bg-card text-center p-4">
             <div className="text-2xl font-bold text-primary-500">{displayWorkout.exercises.length}</div>
             <div className="text-text-secondary text-xs mt-1">Exercises</div>
           </Card>
-          <Card className="bg-white text-center p-4">
+          <Card className="bg-card text-center p-4">
             <div className="text-2xl font-bold text-primary-500">{completedSets}/{totalSets}</div>
             <div className="text-text-secondary text-xs mt-1">Sets</div>
           </Card>
-          <Card className="bg-white text-center p-4">
+          <Card className="bg-card text-center p-4">
             <div className="text-2xl font-bold text-primary-500">{Math.round(totalVolume)}</div>
             <div className="text-text-secondary text-xs mt-1">Volume (kg)</div>
           </Card>
@@ -331,7 +331,7 @@ function WorkoutDetailPage() {
             const completedCount = exercise.sets.filter(s => s.completed).length
 
             return (
-              <Card key={exercise.id} className="bg-white">
+              <Card key={exercise.id} className="bg-card">
                 <div className="space-y-3">
                   {/* Exercise Header */}
                   <div className="flex items-start justify-between">

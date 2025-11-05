@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import { ToastProvider } from './contexts/ToastContext'
 import PrivateRoute from './components/auth/PrivateRoute'
 import Layout from './components/layout/Layout'
@@ -20,8 +21,9 @@ import SignupPage from './pages/SignupPage'
 function App() {
   return (
     <AuthProvider>
-      <ToastProvider>
-        <SplashScreen minDurationMs={900} onePerSession={true} />
+      <ThemeProvider>
+        <ToastProvider>
+          <SplashScreen minDurationMs={900} onePerSession={true} />
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />
@@ -47,7 +49,8 @@ function App() {
             </PrivateRoute>
           } />
         </Routes>
-      </ToastProvider>
+        </ToastProvider>
+      </ThemeProvider>
     </AuthProvider>
   )
 }

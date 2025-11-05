@@ -12,12 +12,13 @@ const navItems = [
 function BottomNav() {
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50"
+      className="fixed bottom-0 left-0 right-0 bg-card border-t shadow-lg z-50"
       style={{
         paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
         margin: 0,
         bottom: 0,
         transform: 'translateZ(0)', // Force hardware acceleration and ensure positioning
+        borderColor: 'var(--border-primary)',
       }}
     >
       <div className="max-w-md mx-auto flex justify-around items-center h-16">

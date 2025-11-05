@@ -125,11 +125,11 @@ function HomePage() {
 
         {/* Additional Stats */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl p-4 shadow-sm text-center">
+          <div className="bg-card rounded-xl p-4 shadow-sm text-center">
             <div className="text-3xl font-bold text-primary-500">{allWorkouts.length}</div>
             <div className="text-text-secondary text-sm mt-1">Total Workouts</div>
           </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm text-center">
+          <div className="bg-card rounded-xl p-4 shadow-sm text-center">
             <div className="text-3xl font-bold text-primary-500">
               {totalWorkouts > 0 ? Math.round((totalWorkouts / 7) * 100) : 0}%
             </div>

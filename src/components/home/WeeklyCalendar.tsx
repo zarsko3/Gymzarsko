@@ -43,16 +43,16 @@ function WeeklyCalendar({ workoutDays = [], currentDate = new Date(), onTodayCli
     
     // Current day (today) - pulsing animation
     if (today) {
-      return `${baseClasses} ${clickableClass} bg-gray-200 text-gray-700 ring-2 ring-primary-500 animate-pulse`
+      return `${baseClasses} ${clickableClass} bg-secondary text-text-primary ring-2 ring-primary-500 animate-pulse`
     }
     
     // Workout day (completed workout) - green ring
     if (hasWorkout) {
-      return `${baseClasses} bg-primary-50 text-primary-700 ring-2 ring-primary-500`
+      return `${baseClasses} bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 ring-2 ring-primary-500`
     }
     
     // Rest day (no workout) - gray
-    return `${baseClasses} bg-gray-200 text-gray-400`
+    return `${baseClasses} bg-secondary text-text-inactive`
   }
 
   const handleDayClick = (day: Date) => {

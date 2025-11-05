@@ -137,7 +137,7 @@ function HistoryPage() {
     return (
       <div className="min-h-full">
         {/* Header */}
-        <div className="sticky top-0 bg-accent-card border-b border-gray-100 z-10">
+        <div className="sticky top-0 bg-primary border-b border-border-primary z-10">
           <div className="flex items-center justify-between px-4 py-4">
             <button 
               onClick={() => navigate('/')}
@@ -185,7 +185,7 @@ function HistoryPage() {
   return (
     <div className="min-h-full">
       {/* Header */}
-      <div className="sticky top-0 bg-accent-card border-b border-gray-100 z-10">
+      <div className="sticky top-0 bg-primary border-b border-border-primary z-10">
         <div className="flex items-center justify-between px-4 py-4">
           <button 
             onClick={() => navigate('/')}
@@ -208,17 +208,17 @@ function HistoryPage() {
       <div className="px-4 py-6 space-y-6">
         {/* Stats Summary */}
         <div className="grid grid-cols-3 gap-3">
-          <Card className="bg-white text-center p-4">
+          <Card className="bg-card text-center p-4">
             <div className="text-2xl font-bold text-primary-500">{workouts.length}</div>
             <div className="text-text-secondary text-xs mt-1">Total</div>
           </Card>
-          <Card className="bg-white text-center p-4">
+          <Card className="bg-card text-center p-4">
             <div className="text-2xl font-bold text-primary-500">
               {workouts.filter(w => w.type === 'push').length}
             </div>
             <div className="text-text-secondary text-xs mt-1">Push</div>
           </Card>
-          <Card className="bg-white text-center p-4">
+          <Card className="bg-card text-center p-4">
             <div className="text-2xl font-bold text-primary-500">
               {workouts.filter(w => w.type === 'pull').length}
             </div>
@@ -349,7 +349,7 @@ function HistoryPage() {
               <Card
                 key={workout.id}
                 onClick={() => navigate(`/workout/detail/${workout.id}`)}
-                className="bg-white hover:shadow-md transition-shadow cursor-pointer"
+                className="bg-card hover:shadow-md transition-shadow cursor-pointer"
               >
                 <div className="space-y-3">
                   {/* Header */}
@@ -391,7 +391,7 @@ function HistoryPage() {
                   </div>
 
                   {/* Stats */}
-                  <div className="grid grid-cols-3 gap-4 pt-2 border-t border-gray-100">
+                  <div className="grid grid-cols-3 gap-4 pt-2 border-t border-border-primary">
                     <div className="text-center">
                       <div className="flex items-center justify-center gap-1 text-text-secondary text-xs mb-1">
                         <Clock size={14} />

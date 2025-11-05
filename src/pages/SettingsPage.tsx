@@ -15,6 +15,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
@@ -30,6 +31,7 @@ import type { UserProfile } from '../types'
 function SettingsPage() {
   const navigate = useNavigate()
   const { currentUser, logout } = useAuth()
+  const { theme, setTheme } = useTheme()
 
   // State
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -40,7 +42,6 @@ function SettingsPage() {
   // Form states
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [notifications, setNotifications] = useState({
     workoutReminders: true,
     progressUpdates: true,
@@ -73,7 +74,7 @@ function SettingsPage() {
           setProfile(userProfile)
           setDisplayName(userProfile.displayName)
           setEmail(userProfile.email)
-          setTheme(userProfile.theme)
+          // Theme is managed by ThemeContext, no need to set it here
           setNotifications(userProfile.notifications)
           setLanguage(userProfile.language)
         }
@@ -113,15 +114,9 @@ function SettingsPage() {
   }
 
   // Handle theme change
-  async function handleThemeChange(newTheme: 'light' | 'dark') {
-    try {
-      setTheme(newTheme)
-      await updateUserProfile({ theme: newTheme })
-      showMessage('success', 'Theme preference saved')
-    } catch (error) {
-      console.error('Error updating theme:', error)
-      showMessage('error', 'Failed to save theme')
-    }
+  function handleThemeChange(newTheme: 'light' | 'dark') {
+    setTheme(newTheme)
+    // ThemeContext handles persistence to Firestore automatically
   }
 
   // Handle notification preferences
@@ -225,9 +220,9 @@ function SettingsPage() {
   }
 
   return (
-    <div className="min-h-full bg-accent-card">
+    <div className="min-h-full bg-primary">
       {/* Header */}
-      <div className="sticky top-0 bg-white border-b border-gray-100 z-10 shadow-sm">
+      <div className="sticky top-0 bg-card border-b border-border-primary z-10 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <button
             onClick={() => navigate('/')}
@@ -288,7 +283,7 @@ function SettingsPage() {
           </Card>
 
           {/* Display Name */}
-          <Card className="bg-white mb-3">
+          <Card className="bg-card mb-3">
             <div className="p-4">
               <label className="block text-sm font-medium text-text-primary mb-2">
                 Display Name
@@ -298,7 +293,7 @@ function SettingsPage() {
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="flex-1 px-4 py-2.5 border border-border-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Your name"
                   disabled={saving}
                 />
@@ -313,7 +308,7 @@ function SettingsPage() {
           </Card>
 
           {/* Email (Read-only for now) */}
-          <Card className="bg-white">
+          <Card className="bg-card">
             <div className="p-4">
               <label className="block text-sm font-medium text-text-primary mb-2 flex items-center gap-2">
                 <Mail className="w-4 h-4" />
@@ -323,7 +318,7 @@ function SettingsPage() {
                 type="email"
                 value={email}
                 disabled
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-text-secondary"
+                className="w-full px-4 py-2.5 border border-border-primary rounded-lg bg-secondary text-text-secondary"
               />
               <p className="text-xs text-text-secondary mt-2">
                 Contact support to change your email address
@@ -337,7 +332,7 @@ function SettingsPage() {
           <h2 className="text-lg font-semibold text-text-primary mb-3">App Preferences</h2>
 
           {/* Theme Toggle */}
-          <Card className="bg-white mb-3">
+          <Card className="bg-card mb-3">
             <div className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
@@ -354,7 +349,7 @@ function SettingsPage() {
                   className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
                     theme === 'light'
                       ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-gray-200 text-text-secondary hover:border-gray-300'
+                      : 'border-border-primary text-text-secondary hover:border-border-primary'
                   }`}
                 >
                   Light
@@ -364,20 +359,17 @@ function SettingsPage() {
                   className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
                     theme === 'dark'
                       ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-gray-200 text-text-secondary hover:border-gray-300'
+                      : 'border-border-primary text-text-secondary hover:border-border-primary'
                   }`}
                 >
                   Dark
                 </button>
               </div>
-              <p className="text-xs text-text-secondary mt-2">
-                Note: Dark mode UI coming soon
-              </p>
             </div>
           </Card>
 
           {/* Notifications */}
-          <Card className="bg-white mb-3">
+          <Card className="bg-card mb-3">
             <div className="p-4 space-y-4">
               <div className="flex items-center gap-3">
                 <Bell className="w-5 h-5 text-primary-500" />
@@ -399,7 +391,7 @@ function SettingsPage() {
                     }
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+                  <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border-border-primary after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                 </label>
               </div>
 
@@ -418,7 +410,7 @@ function SettingsPage() {
                     }
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+                  <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border-border-primary after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                 </label>
               </div>
 
@@ -437,14 +429,14 @@ function SettingsPage() {
                     }
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+                  <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border-border-primary after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                 </label>
               </div>
             </div>
           </Card>
 
           {/* Language */}
-          <Card className="bg-white">
+          <Card className="bg-card">
             <div className="p-4">
               <div className="flex items-center gap-3 mb-3">
                 <Globe className="w-5 h-5 text-primary-500" />
@@ -459,7 +451,7 @@ function SettingsPage() {
                   className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
                     language === 'en'
                       ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-gray-200 text-text-secondary hover:border-gray-300'
+                      : 'border-border-primary text-text-secondary hover:border-border-primary'
                   }`}
                 >
                   English
@@ -469,7 +461,7 @@ function SettingsPage() {
                   className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
                     language === 'es'
                       ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-gray-200 text-text-secondary hover:border-gray-300'
+                      : 'border-border-primary text-text-secondary hover:border-border-primary'
                   }`}
                 >
                   Español
@@ -479,7 +471,7 @@ function SettingsPage() {
                   className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
                     language === 'he'
                       ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-gray-200 text-text-secondary hover:border-gray-300'
+                      : 'border-border-primary text-text-secondary hover:border-border-primary'
                   }`}
                 >
                   עברית
@@ -499,7 +491,7 @@ function SettingsPage() {
           {/* Change Password */}
           <Card
             onClick={() => setShowPasswordModal(true)}
-            className="bg-white mb-3 cursor-pointer hover:shadow-md transition-shadow"
+            className="bg-card mb-3 cursor-pointer hover:shadow-md transition-shadow"
           >
             <div className="p-4 flex items-center gap-3">
               <Lock className="w-5 h-5 text-primary-500" />
@@ -513,7 +505,7 @@ function SettingsPage() {
           {/* Logout */}
           <Card
             onClick={() => setShowLogoutModal(true)}
-            className="bg-white mb-3 cursor-pointer hover:shadow-md transition-shadow"
+            className="bg-card mb-3 cursor-pointer hover:shadow-md transition-shadow"
           >
             <div className="p-4 flex items-center gap-3">
               <LogOut className="w-5 h-5 text-yellow-600" />
@@ -574,7 +566,7 @@ function SettingsPage() {
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 border border-border-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               placeholder="Enter current password"
               disabled={saving}
             />
@@ -588,7 +580,7 @@ function SettingsPage() {
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 border border-border-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               placeholder="Enter new password"
               disabled={saving}
               minLength={6}
@@ -603,7 +595,7 @@ function SettingsPage() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 border border-border-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               placeholder="Confirm new password"
               disabled={saving}
             />
@@ -683,7 +675,7 @@ function SettingsPage() {
               type="password"
               value={deletePassword}
               onChange={(e) => setDeletePassword(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full px-4 py-2.5 border border-border-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
               placeholder="Enter your password"
               disabled={saving}
             />

@@ -18,9 +18,9 @@ function Button({
   const baseStyles = 'font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap'
   
   const variantStyles = {
-    primary: 'bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800',
-    secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 active:bg-gray-400',
-    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 active:bg-gray-200',
+    primary: 'bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800 dark:bg-primary-500 dark:hover:bg-primary-400',
+    secondary: 'bg-secondary text-text-primary hover:opacity-80 active:opacity-70 dark:bg-secondary',
+    ghost: 'bg-transparent text-text-primary hover:bg-secondary active:opacity-70',
   }
 
   const sizeStyles = {

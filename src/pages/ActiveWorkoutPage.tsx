@@ -441,7 +441,7 @@ function ActiveWorkoutPage() {
 
   if (isLoadingWorkout || !workout) {
     return (
-      <div className="min-h-full bg-accent-card flex items-center justify-center">
+      <div className="min-h-full bg-primary flex items-center justify-center">
         <div className="text-center">
           <div className="text-text-secondary">Loading workout...</div>
         </div>
@@ -456,9 +456,9 @@ function ActiveWorkoutPage() {
   }
 
   return (
-    <div className="min-h-full bg-accent-card">
+    <div className="min-h-full bg-primary">
       {/* Header */}
-      <div className="sticky top-0 bg-white border-b border-gray-200 z-10 shadow-sm">
+      <div className="sticky top-0 bg-card border-b border-border-primary z-10 shadow-sm">
         <div className="flex items-center justify-between px-4 py-4">
           <button 
             onClick={handleBack}
@@ -501,7 +501,7 @@ function ActiveWorkoutPage() {
 
         {/* Exercises */}
         {workout.exercises.map((exercise: WorkoutExercise, exerciseIndex: number) => (
-          <Card key={exercise.id} className="bg-white group">
+          <Card key={exercise.id} className="bg-card group">
             <div className="space-y-4">
               {/* Exercise Header */}
               <div className="flex items-start justify-between">
@@ -676,7 +676,7 @@ function ActiveWorkoutPage() {
         ))}
 
         {/* Workout Notes */}
-        <Card className="bg-white">
+        <Card className="bg-card">
           <div className="space-y-3">
             <button
               onClick={() => setShowWorkoutNotes(!showWorkoutNotes)}
