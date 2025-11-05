@@ -32,10 +32,10 @@ export default function Banner({ mode = 'random-banners' }: BannerProps) {
         <img
           src={src}
           alt={mode === 'logo-only' ? 'Gymzarsko Logo' : 'Motivational banner'}
-          className="mx-auto block w-[88%] sm:w-[86%] md:w-[80%] h-auto"
+          className="mx-auto block w-[95%] sm:w-[96%] md:w-[98%] h-auto"
           style={{
             objectFit: 'contain',
-            width: 'clamp(240px, 95vw, 576px)',
+            width: 'clamp(280px, 98vw, 700px)',
           }}
           role="img"
           aria-label={mode === 'logo-only' ? 'Gymzarsko Logo' : 'Gymzarsko Banner'}
