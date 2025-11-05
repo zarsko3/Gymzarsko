@@ -10,15 +10,12 @@ import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
 import AddWorkoutModal from '../components/history/AddWorkoutModal'
-import EditWorkoutModal from '../components/history/EditWorkoutModal'
 
 function HistoryPage() {
   const navigate = useNavigate()
   const { showToast } = useToast()
   const [showWorkoutModal, setShowWorkoutModal] = useState(false)
   const [showAddWorkoutModal, setShowAddWorkoutModal] = useState(false)
-  const [showEditWorkoutModal, setShowEditWorkoutModal] = useState(false)
-  const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null)
   const [workouts, setWorkouts] = useState<Workout[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -112,28 +109,7 @@ function HistoryPage() {
   }
 
   const handleEditWorkout = (workout: Workout) => {
-    setEditingWorkout(workout)
-    setShowEditWorkoutModal(true)
-  }
-
-  const handleSaveWorkout = async (workout: Workout) => {
-    try {
-      // Optimistic update
-      const previousWorkouts = [...workouts]
-      setWorkouts(workouts.map(w => w.id === workout.id ? workout : w))
-
-      // Save to Firestore
-      await updateWorkout(workout)
-      
-      showToast('success', 'Workout updated ✅')
-    } catch (error) {
-      console.error('Error updating workout:', error)
-      // Revert optimistic update
-      const fetchedWorkouts = await getWorkouts()
-      setWorkouts(fetchedWorkouts)
-      showToast('error', 'Failed to update workout. Please try again.')
-      throw error
-    }
+    navigate(`/workout/detail/${workout.id}`)
   }
 
   const getWorkoutStats = (workout: typeof workouts[0]) => {
@@ -465,16 +441,6 @@ function HistoryPage() {
         onSave={handleAddWorkout}
       />
 
-      {/* Edit Workout Modal */}
-      <EditWorkoutModal
-        isOpen={showEditWorkoutModal}
-        onClose={() => {
-          setShowEditWorkoutModal(false)
-          setEditingWorkout(null)
-        }}
-        workout={editingWorkout}
-        onSave={handleSaveWorkout}
-      />
     </div>
   )
 }
