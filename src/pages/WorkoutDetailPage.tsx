@@ -355,66 +355,66 @@ function WorkoutDetailPage() {
                   </div>
 
                   {/* Sets Table */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs font-medium text-text-secondary pb-1 border-b">
-                      <div className="w-8 text-center">SET</div>
-                      <div className="flex-1 text-center">WEIGHT</div>
-                      <div className="flex-1 text-center">REPS</div>
-                      <div className="w-12 text-center">VOLUME</div>
+                  <div className="space-y-1.5 overflow-x-hidden">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-text-secondary pb-1 border-b">
+                      <div className="w-8 flex-shrink-0 text-center">SET</div>
+                      <div className="flex-1 min-w-0 text-center">WEIGHT</div>
+                      <div className="flex-1 min-w-0 text-center">REPS</div>
+                      <div className="w-14 flex-shrink-0 text-center">VOL</div>
                     </div>
 
                     {exercise.sets.map((set, setIndex) => (
                       <div 
                         key={set.id}
-                        className={`flex items-center gap-2 py-2 ${
+                        className={`flex items-center gap-1.5 py-2 ${
                           set.completed ? 'bg-primary-50 rounded-lg px-2' : ''
                         }`}
                       >
-                        <div className="w-8 text-center text-sm font-medium text-text-primary">
+                        <div className="w-8 flex-shrink-0 text-center text-sm font-medium text-text-primary">
                           {setIndex + 1}
                         </div>
-                        <div className="flex-1 flex items-center gap-1">
+                        <div className="flex-1 min-w-0 flex items-center gap-1">
                           <input
                             type="number"
                             value={set.weight || ''}
                             onChange={(e) =>
                               handleSetChange(index, setIndex, 'weight', parseFloat(e.target.value) || 0)
                             }
-                            className="flex-1 px-2 py-1.5 border border-gray-300 rounded-lg text-center text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            className="flex-1 min-w-0 px-1.5 py-1.5 border border-gray-300 rounded-lg text-center text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             disabled={isSubmitting}
                             step="0.5"
                             min="0"
                             placeholder="0"
                           />
-                          <span className="text-xs text-text-secondary">kg</span>
+                          <span className="text-xs text-text-secondary flex-shrink-0">kg</span>
                         </div>
-                        <div className="flex-1 flex items-center gap-1">
+                        <div className="flex-1 min-w-0 flex items-center gap-1">
                           <input
                             type="number"
                             value={set.reps || ''}
                             onChange={(e) =>
                               handleSetChange(index, setIndex, 'reps', parseInt(e.target.value) || 0)
                             }
-                            className="flex-1 px-2 py-1.5 border border-gray-300 rounded-lg text-center text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            className="flex-1 min-w-0 px-1.5 py-1.5 border border-gray-300 rounded-lg text-center text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             disabled={isSubmitting}
                             min="0"
                             placeholder="0"
                           />
-                          <span className="text-xs text-text-secondary">reps</span>
+                          <span className="text-xs text-text-secondary flex-shrink-0">reps</span>
                         </div>
-                        <div className="w-16 text-center text-sm text-text-secondary">
-                          {calculateVolume(set.weight, set.reps)} kg
+                        <div className="w-14 flex-shrink-0 text-center text-xs text-text-secondary">
+                          {calculateVolume(set.weight, set.reps)}
                         </div>
                       </div>
                     ))}
 
                     {/* Exercise Total */}
-                    <div className="flex items-center gap-2 pt-2 border-t">
-                      <div className="w-8"></div>
-                      <div className="flex-1 text-sm font-medium text-text-secondary">
+                    <div className="flex items-center gap-1.5 pt-2 border-t">
+                      <div className="w-8 flex-shrink-0"></div>
+                      <div className="flex-1 min-w-0 text-sm font-medium text-text-secondary">
                         Total:
                       </div>
-                      <div className="w-12 text-center font-bold text-primary-500">
+                      <div className="w-14 flex-shrink-0 text-center font-bold text-primary-500 text-sm">
                         {Math.round(exerciseVolume)}
                       </div>
                     </div>
