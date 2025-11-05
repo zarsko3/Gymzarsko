@@ -51,7 +51,7 @@ function WorkoutSummaryPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-full bg-primary flex items-center justify-center">
+      <div className="min-h-full bg-[var(--bg-primary)] flex items-center justify-center">
         <p className="text-text-secondary">Loading...</p>
       </div>
     )
@@ -146,11 +146,11 @@ function WorkoutSummaryPage() {
   }
 
   return (
-    <div className="min-h-full bg-primary">
+    <div className="min-h-full bg-[var(--bg-primary)]">
       <div className="px-4 py-8 space-y-6">
         {/* Success Icon */}
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-primary-500 rounded-full mb-4">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--bg-primary)]-500 rounded-full mb-4">
             <CheckCircle size={48} className="text-white" strokeWidth={2} />
           </div>
           <h1 className="text-3xl font-bold text-text-primary">Workout Complete!</h1>
@@ -159,7 +159,7 @@ function WorkoutSummaryPage() {
 
         {/* Motivational Card */}
         <Card className="bg-accent-mint text-center p-6 border-2 border-transparent">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-3">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--bg-primary)]-100 rounded-full mb-3">
             <Dumbbell size={32} className="text-primary-600" strokeWidth={2} />
           </div>
           <p className="text-text-primary font-medium text-lg">

@@ -19,8 +19,8 @@ function Button({
   
   const variantStyles = {
     primary: 'bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800 dark:bg-primary-500 dark:hover:bg-primary-400',
-    secondary: 'bg-secondary text-text-primary hover:opacity-80 active:opacity-70 dark:bg-secondary',
-    ghost: 'bg-transparent text-text-primary hover:bg-secondary active:opacity-70',
+    secondary: 'bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:opacity-80 active:opacity-70',
+    ghost: 'bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] active:opacity-70',
   }
 
   const sizeStyles = {

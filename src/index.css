@@ -1,9 +1,9 @@
+/* Import theme CSS variables - must be before Tailwind directives */
+@import './styles/theme.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Import theme CSS variables */
-@import './styles/theme.css';
 
 /* Custom base styles */
 @layer base {
@@ -27,7 +27,7 @@
     height: 100%;
     height: -webkit-fill-available; /* iOS Safari fix */
     min-height: 100dvh; /* Dynamic viewport height */
-    @apply bg-primary text-primary font-sans;
+    @apply font-sans;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
@@ -81,7 +81,7 @@
   }
 
   .btn-secondary {
-    @apply bg-secondary text-text-primary px-6 py-3 rounded-lg font-medium
+    @apply px-6 py-3 rounded-lg font-medium
            hover:opacity-80 active:opacity-70 transition-colors
            disabled:opacity-50 disabled:cursor-not-allowed;
     background-color: var(--bg-secondary);

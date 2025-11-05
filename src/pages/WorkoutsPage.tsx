@@ -33,7 +33,7 @@ function WorkoutsPage() {
   return (
     <div className="min-h-full">
       {/* Header */}
-      <div className="sticky top-0 bg-primary border-b border-border-primary z-10">
+      <div className="sticky top-0 bg-[var(--bg-primary)] border-b border-border-primary z-10">
         <div className="flex items-center justify-between px-4 py-4">
           <button 
             onClick={() => navigate('/')}
@@ -66,7 +66,7 @@ function WorkoutsPage() {
             >
               <div className="flex items-center justify-between p-2">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600">
+                  <div className="w-12 h-12 rounded-full bg-[var(--bg-primary)]-100 flex items-center justify-center text-primary-600">
                     <workout.Icon size={24} strokeWidth={2} />
                   </div>
                   <div>

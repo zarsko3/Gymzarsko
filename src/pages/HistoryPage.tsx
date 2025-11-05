@@ -137,7 +137,7 @@ function HistoryPage() {
     return (
       <div className="min-h-full">
         {/* Header */}
-        <div className="sticky top-0 bg-primary border-b border-border-primary z-10">
+        <div className="sticky top-0 bg-[var(--bg-primary)] border-b border-border-primary z-10">
           <div className="flex items-center justify-between px-4 py-4">
             <button 
               onClick={() => navigate('/')}
@@ -185,7 +185,7 @@ function HistoryPage() {
   return (
     <div className="min-h-full">
       {/* Header */}
-      <div className="sticky top-0 bg-primary border-b border-border-primary z-10">
+      <div className="sticky top-0 bg-[var(--bg-primary)] border-b border-border-primary z-10">
         <div className="flex items-center justify-between px-4 py-4">
           <button 
             onClick={() => navigate('/')}
@@ -252,7 +252,7 @@ function HistoryPage() {
             onClick={() => setFilter('all')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
               filter === 'all'
-                ? 'bg-primary-500 text-white'
+                ? 'bg-[var(--bg-primary)]-500 text-white'
                 : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
             }`}
           >
@@ -262,7 +262,7 @@ function HistoryPage() {
             onClick={() => setFilter('push')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${
               filter === 'push'
-                ? 'bg-primary-500 text-white'
+                ? 'bg-[var(--bg-primary)]-500 text-white'
                 : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
             }`}
           >
@@ -273,7 +273,7 @@ function HistoryPage() {
             onClick={() => setFilter('pull')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${
               filter === 'pull'
-                ? 'bg-primary-500 text-white'
+                ? 'bg-[var(--bg-primary)]-500 text-white'
                 : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
             }`}
           >
@@ -284,7 +284,7 @@ function HistoryPage() {
             onClick={() => setFilter('legs')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${
               filter === 'legs'
-                ? 'bg-primary-500 text-white'
+                ? 'bg-[var(--bg-primary)]-500 text-white'
                 : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
             }`}
           >

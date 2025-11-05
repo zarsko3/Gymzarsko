@@ -22,22 +22,12 @@ export default {
         },
         accent: {
           mint: 'var(--accent-mint)',
-          card: 'var(--bg-card)',
         },
-        'accent-card': 'var(--bg-primary)',
-        text: {
-          primary: 'var(--text-primary)',
-          secondary: 'var(--text-secondary)',
-          inactive: 'var(--text-inactive)',
-        },
-        bg: {
+        // Semantic theme colors - defined at root for utility classes
+        card: 'var(--bg-card)',
+        surface: {
           primary: 'var(--bg-primary)',
-          card: 'var(--bg-card)',
           secondary: 'var(--bg-secondary)',
-        },
-        border: {
-          primary: 'var(--border-primary)',
-          secondary: 'var(--border-secondary)',
         },
       },
       fontFamily: {

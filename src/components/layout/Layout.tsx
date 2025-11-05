@@ -45,7 +45,7 @@ function Layout({ children }: LayoutProps) {
   }
 
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-primary max-w-full w-full">
+    <div className="flex flex-col min-h-[100dvh] max-w-full w-full" style={{ backgroundColor: 'var(--bg-primary)' }}>
       {/* Main content area */}
       <main 
         className="flex-1 overflow-y-auto overflow-x-hidden w-full"

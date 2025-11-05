@@ -220,7 +220,7 @@ function SettingsPage() {
   }
 
   return (
-    <div className="min-h-full bg-primary">
+    <div className="min-h-full bg-[var(--bg-primary)]">
       {/* Header */}
       <div className="sticky top-0 bg-card border-b border-border-primary z-10 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -268,7 +268,7 @@ function SettingsPage() {
           {/* User Info Card */}
           <Card className="bg-gradient-to-br from-primary-50 to-primary-100 border-2 border-primary-200 mb-3">
             <div className="p-6 flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center flex-shrink-0">
+              <div className="w-20 h-20 rounded-full bg-[var(--bg-primary)]-500 flex items-center justify-center flex-shrink-0">
                 <User className="w-10 h-10 text-white" strokeWidth={2} />
               </div>
               <div className="flex-1 min-w-0">
@@ -348,7 +348,7 @@ function SettingsPage() {
                   onClick={() => handleThemeChange('light')}
                   className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
                     theme === 'light'
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
+                      ? 'border-primary-500 bg-[var(--bg-primary)]-50 text-primary-700'
                       : 'border-border-primary text-text-secondary hover:border-border-primary'
                   }`}
                 >
@@ -358,7 +358,7 @@ function SettingsPage() {
                   onClick={() => handleThemeChange('dark')}
                   className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
                     theme === 'dark'
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
+                      ? 'border-primary-500 bg-[var(--bg-primary)]-50 text-primary-700'
                       : 'border-border-primary text-text-secondary hover:border-border-primary'
                   }`}
                 >
@@ -391,7 +391,7 @@ function SettingsPage() {
                     }
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border-border-primary after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+                  <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border-border-primary after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--bg-primary)]-500"></div>
                 </label>
               </div>
 
@@ -410,7 +410,7 @@ function SettingsPage() {
                     }
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border-border-primary after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+                  <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border-border-primary after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--bg-primary)]-500"></div>
                 </label>
               </div>
 
@@ -429,7 +429,7 @@ function SettingsPage() {
                     }
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border-border-primary after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+                  <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border-border-primary after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--bg-primary)]-500"></div>
                 </label>
               </div>
             </div>
@@ -450,7 +450,7 @@ function SettingsPage() {
                   onClick={() => handleLanguageChange('en')}
                   className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
                     language === 'en'
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
+                      ? 'border-primary-500 bg-[var(--bg-primary)]-50 text-primary-700'
                       : 'border-border-primary text-text-secondary hover:border-border-primary'
                   }`}
                 >
@@ -460,7 +460,7 @@ function SettingsPage() {
                   onClick={() => handleLanguageChange('es')}
                   className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
                     language === 'es'
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
+                      ? 'border-primary-500 bg-[var(--bg-primary)]-50 text-primary-700'
                       : 'border-border-primary text-text-secondary hover:border-border-primary'
                   }`}
                 >
@@ -470,7 +470,7 @@ function SettingsPage() {
                   onClick={() => handleLanguageChange('he')}
                   className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
                     language === 'he'
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
+                      ? 'border-primary-500 bg-[var(--bg-primary)]-50 text-primary-700'
                       : 'border-border-primary text-text-secondary hover:border-border-primary'
                   }`}
                 >

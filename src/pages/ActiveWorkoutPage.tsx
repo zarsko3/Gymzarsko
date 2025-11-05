@@ -441,7 +441,7 @@ function ActiveWorkoutPage() {
 
   if (isLoadingWorkout || !workout) {
     return (
-      <div className="min-h-full bg-primary flex items-center justify-center">
+      <div className="min-h-full bg-[var(--bg-primary)] flex items-center justify-center">
         <div className="text-center">
           <div className="text-text-secondary">Loading workout...</div>
         </div>
@@ -456,7 +456,7 @@ function ActiveWorkoutPage() {
   }
 
   return (
-    <div className="min-h-full bg-primary">
+    <div className="min-h-full bg-[var(--bg-primary)]">
       {/* Header */}
       <div className="sticky top-0 bg-card border-b border-border-primary z-10 shadow-sm">
         <div className="flex items-center justify-between px-4 py-4">
@@ -621,7 +621,7 @@ function ActiveWorkoutPage() {
                         onClick={() => handleToggleSet(exerciseIndex, setIndex)}
                         className={`flex-1 min-w-[36px] h-9 flex items-center justify-center rounded-lg transition-colors ${
                           set.completed
-                            ? 'bg-primary-500 text-white'
+                            ? 'bg-[var(--bg-primary)]-500 text-white'
                             : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
                         }`}
                       >

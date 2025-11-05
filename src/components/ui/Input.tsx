@@ -12,7 +12,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-text-primary mb-2">
+          <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
             {label}
           </label>
         )}
@@ -20,8 +20,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           className={`
             w-full px-4 py-3 border rounded-lg min-h-[48px]
-            bg-card text-text-primary
-            border-border-primary
+            bg-card text-[var(--text-primary)]
+            border-[var(--border-primary)]
             focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
             disabled:opacity-50 disabled:cursor-not-allowed
             ${error ? 'border-red-500' : ''}
@@ -33,7 +33,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p>
         )}
         {helperText && !error && (
-          <p className="mt-1 text-sm text-text-secondary">{helperText}</p>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">{helperText}</p>
         )}
       </div>
     )

@@ -238,7 +238,7 @@ function WorkoutDetailPage() {
     : 'N/A'
 
   return (
-    <div className="min-h-full bg-primary">
+    <div className="min-h-full bg-[var(--bg-primary)]">
       {/* Header */}
       <div className="sticky top-0 bg-card border-b border-border-primary z-10 shadow-sm">
         <div className="flex items-center justify-between px-4 py-4">
@@ -367,7 +367,7 @@ function WorkoutDetailPage() {
                       <div 
                         key={set.id}
                         className={`flex items-center gap-1.5 py-2 ${
-                          set.completed ? 'bg-primary-50 rounded-lg px-2' : ''
+                          set.completed ? 'bg-[var(--bg-primary)]-50 rounded-lg px-2' : ''
                         }`}
                       >
                         <div className="w-8 flex-shrink-0 text-center text-sm font-medium text-text-primary">

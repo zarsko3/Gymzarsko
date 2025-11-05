@@ -18,7 +18,7 @@ function ProgressPage() {
     return (
       <div className="min-h-full">
         {/* Header */}
-        <div className="sticky top-0 bg-primary border-b border-border-primary z-10">
+        <div className="sticky top-0 bg-[var(--bg-primary)] border-b border-border-primary z-10">
           <div className="flex items-center justify-between px-4 py-4">
             <button 
               onClick={() => navigate('/')}
@@ -57,7 +57,7 @@ function ProgressPage() {
   return (
     <div className="min-h-full">
       {/* Header */}
-      <div className="sticky top-0 bg-primary border-b border-border-primary z-10">
+      <div className="sticky top-0 bg-[var(--bg-primary)] border-b border-border-primary z-10">
         <div className="flex items-center justify-between px-4 py-4">
           <button 
             onClick={() => navigate('/')}
@@ -96,7 +96,7 @@ function ProgressPage() {
             onClick={() => setSelectedView('prs')}
             className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors ${
               selectedView === 'prs'
-                ? 'bg-primary-500 text-white'
+                ? 'bg-[var(--bg-primary)]-500 text-white'
                 : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
             }`}
           >
@@ -107,7 +107,7 @@ function ProgressPage() {
             onClick={() => setSelectedView('exercises')}
             className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors ${
               selectedView === 'exercises'
-                ? 'bg-primary-500 text-white'
+                ? 'bg-[var(--bg-primary)]-500 text-white'
                 : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
             }`}
           >
