@@ -4,6 +4,7 @@ import { format, addDays, subDays, startOfWeek, isWithinInterval } from 'date-fn
 import type { Workout, WorkoutType } from '../types'
 import WeeklyCalendar from '../components/home/WeeklyCalendar'
 import StatCard from '../components/home/StatCard'
+import CountUpStatCard from '../components/home/CountUpStatCard'
 import AnimatedChart from '../components/home/AnimatedChart'
 import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
 import Banner from '../components/home/Banner'
@@ -75,7 +76,7 @@ function HomePage() {
   if (isLoading) {
     return (
       <div className="min-h-full flex items-center justify-center">
-        <div className="text-text-secondary">Loading...</div>
+        <div className="text-[var(--text-secondary)]">Loading...</div>
       </div>
     )
   }
@@ -95,7 +96,7 @@ function HomePage() {
         <Banner mode="random-banners" />
 
         {/* Date */}
-        <p className="text-text-secondary text-base text-center">
+        <p className="text-[var(--text-secondary)] text-base text-center">
           {format(today, 'EEEE, MMMM do')}
         </p>
 
@@ -108,9 +109,9 @@ function HomePage() {
 
         {/* Stats Snapshot */}
         <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-text-primary">Stats Snapshot</h3>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">Stats Snapshot</h3>
           <div className="grid grid-cols-2 gap-4">
-            <StatCard
+            <CountUpStatCard
               title="Workouts Logged"
               value={totalWorkouts}
               chart={<AnimatedChart data={workoutChartData} type="area" color="#10B981" />}
@@ -127,13 +128,13 @@ function HomePage() {
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-card rounded-xl p-4 shadow-sm text-center">
             <div className="text-3xl font-bold text-primary-500">{allWorkouts.length}</div>
-            <div className="text-text-secondary text-sm mt-1">Total Workouts</div>
+            <div className="text-[var(--text-secondary)] text-sm mt-1">Total Workouts</div>
           </div>
           <div className="bg-card rounded-xl p-4 shadow-sm text-center">
             <div className="text-3xl font-bold text-primary-500">
               {totalWorkouts > 0 ? Math.round((totalWorkouts / 7) * 100) : 0}%
             </div>
-            <div className="text-text-secondary text-sm mt-1">This Week</div>
+            <div className="text-[var(--text-secondary)] text-sm mt-1">This Week</div>
           </div>
         </div>
       </div>

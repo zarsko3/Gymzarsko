@@ -53,9 +53,9 @@ function AnimatedChart({
         initial={{ opacity: 0, y: -4 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.15 }}
-        className="bg-card rounded-lg shadow-lg px-3 py-2 border border-border-primary"
+        className="bg-card rounded-lg shadow-lg px-3 py-2 border border-[var(--border-primary)]"
       >
-        <p className="text-sm font-semibold text-text-primary">
+        <p className="text-sm font-semibold text-[var(--text-primary)]">
           {payload[0].value}
         </p>
       </motion.div>
@@ -90,7 +90,7 @@ function AnimatedChart({
         className="w-full h-full flex items-center justify-center"
         style={{ height: `${height}px` }}
       >
-        <div className="text-text-inactive text-xs">No data</div>
+        <div className="text-[var(--text-inactive)] text-xs">No data</div>
       </motion.div>
     )
   }
