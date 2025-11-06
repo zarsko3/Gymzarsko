@@ -48,12 +48,15 @@ function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalP
         <div 
           className={`
             relative bg-card rounded-t-2xl sm:rounded-2xl w-full ${sizeStyles[size]}
-            max-h-[90vh] sm:max-h-[85vh] flex flex-col
+            h-[95vh] sm:h-auto sm:max-h-[85vh] flex flex-col
             animate-slide-up shadow-2xl
             pointer-events-auto
             mb-0 sm:mb-0
           `}
-          style={{ maxHeight: '90vh' }}
+          style={{ 
+            maxHeight: '95vh',
+            height: '95vh',
+          }}
           onClick={(e) => e.stopPropagation()}
         >
         {/* Drag Handle (Mobile Only) */}
@@ -64,10 +67,10 @@ function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalP
         {/* Header */}
         {title && (
           <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0" style={{ borderColor: 'var(--border-primary)' }}>
-            <h2 className="text-xl font-semibold text-text-primary">{title}</h2>
+            <h2 className="text-xl font-semibold text-[var(--text-primary)]">{title}</h2>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center text-text-secondary hover:opacity-70"
+              className="p-2 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center text-[var(--text-secondary)] hover:opacity-70"
               style={{ backgroundColor: 'transparent' }}
               aria-label="Close modal"
             >

@@ -234,12 +234,12 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
         title="Add Workout"
         size="lg"
       >
-        <div className="flex flex-col min-h-full">
+        <div className="flex flex-col h-full">
           {/* Scrollable Content Area */}
-          <div className="flex-1 space-y-6 pb-[100px]">
+          <div className="flex-1 overflow-y-auto space-y-6 pb-4">
           {/* Date Selection */}
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
               Date <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -249,16 +249,16 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
                 onChange={handleDateChange}
                 min={minDate}
                 max={maxDate}
-                className="w-full px-4 py-3 pr-12 border border-border-primary rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-3 pr-12 border border-[var(--border-primary)] rounded-lg bg-card text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 disabled={isSubmitting}
               />
               <Calendar 
                 size={20} 
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" 
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none" 
               />
             </div>
             {selectedDate && (
-              <p className="mt-2 text-sm text-text-secondary">
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">
                 Selected: {format(new Date(selectedDate), 'EEEE, MMMM d, yyyy')}
               </p>
             )}
@@ -266,11 +266,11 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
 
           {/* Workout Type Selection */}
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
               Workout Type <span className="text-red-500">*</span>
             </label>
             {selectedType ? (
-              <div className="flex items-center justify-between p-3 border border-border-primary rounded-lg bg-card">
+              <div className="flex items-center justify-between p-3 border border-[var(--border-primary)] rounded-lg bg-card">
                 <span className={`px-3 py-1 rounded-full border text-sm font-medium ${workoutTypeColors[selectedType]}`}>
                   {selectedType.charAt(0).toUpperCase() + selectedType.slice(1)} Day
                 </span>
@@ -305,7 +305,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
           {/* Plan Selection */}
           {selectedType && availablePlans.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-2">
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Create from Plan (optional)
               </label>
               <select
@@ -318,7 +318,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
                     setExercises([])
                   }
                 }}
-                className="w-full px-4 py-3 border border-border-primary rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-card"
+                className="w-full px-4 py-3 border border-[var(--border-primary)] rounded-lg bg-card text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 disabled={isSubmitting}
               >
                 <option value="">Select a plan...</option>
@@ -331,7 +331,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
                   ))}
               </select>
               {selectedPlanId && (
-                <p className="mt-2 text-xs text-text-secondary">
+                <p className="mt-2 text-xs text-[var(--text-secondary)]">
                   Plan selected. Exercises prefilled below. You can edit or remove them.
                 </p>
               )}
@@ -342,7 +342,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
           {selectedType && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-text-primary">
+                <label className="block text-sm font-medium text-[var(--text-primary)]">
                   Exercises <span className="text-red-500">*</span>
                 </label>
                 <Button
@@ -357,18 +357,18 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
               </div>
 
               {exercises.length === 0 ? (
-                <Card className="bg-gray-50 p-6 text-center">
-                  <p className="text-text-secondary text-sm">
+                <Card className="bg-[var(--bg-secondary)] p-6 text-center">
+                  <p className="text-[var(--text-secondary)] text-sm">
                     Click "Add Exercise" to add your first exercise
                   </p>
                 </Card>
               ) : (
-                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                <div className="space-y-3">
                   {exercises.map((exercise, index) => (
                     <Card key={index} className="bg-card p-4">
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-text-primary">
+                          <span className="text-sm font-medium text-[var(--text-primary)]">
                             Exercise #{index + 1}
                           </span>
                           <button
@@ -418,14 +418,14 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-text-secondary mb-1">
+                          <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
                             Notes (optional)
                           </label>
                           <textarea
                             value={exercise.notes}
                             onChange={(e) => handleExerciseChange(index, 'notes', e.target.value)}
                             placeholder="Add notes about this exercise..."
-                            className="w-full px-3 py-2 text-sm border border-border-primary rounded-lg text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                            className="w-full px-3 py-2 text-sm border border-[var(--border-primary)] rounded-lg bg-card text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                             rows={2}
                             disabled={isSubmitting}
                           />
@@ -441,14 +441,14 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
           {/* Workout Notes */}
           {selectedType && (
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-2">
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Workout Notes (optional)
               </label>
               <textarea
                 value={workoutNotes}
                 onChange={(e) => setWorkoutNotes(e.target.value)}
                 placeholder="Add notes about this workout..."
-                className="w-full px-4 py-3 border border-border-primary rounded-lg text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                className="w-full px-4 py-3 border border-[var(--border-primary)] rounded-lg bg-card text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                 rows={3}
                 disabled={isSubmitting}
               />
@@ -458,7 +458,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
 
           {/* Sticky Footer with Save Button */}
           {selectedType && (
-            <div className="sticky bottom-0 bg-card border-t border-border-primary z-10 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3 mt-auto">
+            <div className="sticky bottom-0 bg-card border-t border-[var(--border-primary)] z-10 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3 mt-auto flex-shrink-0">
               <Button
                 onClick={handleSaveWorkout}
                 disabled={!isValid() || isSubmitting}
