@@ -234,22 +234,22 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
         title="Add Workout"
         size="lg"
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full overflow-x-hidden">
           {/* Scrollable Content Area */}
-          <div className="flex-1 overflow-y-auto space-y-6 pb-4">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-6 pb-4 w-full max-w-full min-w-0">
           {/* Date Selection */}
-          <div>
+          <div className="w-full max-w-full min-w-0">
             <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
               Date <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
+            <div className="relative w-full max-w-full min-w-0">
               <input
                 type="date"
                 value={selectedDate}
                 onChange={handleDateChange}
                 min={minDate}
                 max={maxDate}
-                className="w-full px-4 py-3 pr-12 border border-[var(--border-primary)] rounded-lg bg-card text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full max-w-full min-w-0 px-4 py-3 pr-12 border border-[var(--border-primary)] rounded-lg bg-card text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 disabled={isSubmitting}
               />
               <Calendar 
@@ -265,12 +265,12 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
           </div>
 
           {/* Workout Type Selection */}
-          <div>
+          <div className="w-full max-w-full min-w-0">
             <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
               Workout Type <span className="text-red-500">*</span>
             </label>
             {selectedType ? (
-              <div className="flex items-center justify-between p-3 border border-[var(--border-primary)] rounded-lg bg-card">
+              <div className="flex items-center justify-between p-3 border border-[var(--border-primary)] rounded-lg bg-card w-full max-w-full min-w-0">
                 <span className={`px-3 py-1 rounded-full border text-sm font-medium ${workoutTypeColors[selectedType]}`}>
                   {selectedType.charAt(0).toUpperCase() + selectedType.slice(1)} Day
                 </span>
@@ -304,7 +304,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
 
           {/* Plan Selection */}
           {selectedType && availablePlans.length > 0 && (
-            <div>
+            <div className="w-full max-w-full min-w-0">
               <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Create from Plan (optional)
               </label>
@@ -318,7 +318,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
                     setExercises([])
                   }
                 }}
-                className="w-full px-4 py-3 border border-[var(--border-primary)] rounded-lg bg-card text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full max-w-full min-w-0 px-4 py-3 border border-[var(--border-primary)] rounded-lg bg-card text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 disabled={isSubmitting}
               >
                 <option value="">Select a plan...</option>
@@ -340,8 +340,8 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
 
           {/* Exercises Section */}
           {selectedType && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
+            <div className="space-y-4 w-full max-w-full min-w-0">
+              <div className="flex items-center justify-between w-full max-w-full min-w-0">
                 <label className="block text-sm font-medium text-[var(--text-primary)]">
                   Exercises <span className="text-red-500">*</span>
                 </label>
@@ -363,10 +363,10 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
                   </p>
                 </Card>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-3 w-full max-w-full">
                   {exercises.map((exercise, index) => (
-                    <Card key={index} className="bg-card p-4">
-                      <div className="space-y-3">
+                    <Card key={index} className="bg-card p-4 w-full max-w-full min-w-0">
+                      <div className="space-y-3 w-full max-w-full min-w-0">
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-[var(--text-primary)]">
                             Exercise #{index + 1}
@@ -380,44 +380,52 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
                           </button>
                         </div>
 
-                        <Input
-                          label="Exercise Name"
-                          value={exercise.name}
-                          onChange={(e) => handleExerciseChange(index, 'name', e.target.value)}
-                          placeholder="e.g., Bench Press"
-                          required
-                          disabled={isSubmitting}
-                        />
-
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="w-full max-w-full min-w-0">
                           <Input
-                            label="Sets"
-                            type="number"
-                            value={exercise.sets.toString()}
-                            onChange={(e) => handleExerciseChange(index, 'sets', Math.max(1, parseInt(e.target.value) || 1))}
-                            min="1"
-                            disabled={isSubmitting}
-                          />
-                          <Input
-                            label="Reps"
-                            type="number"
-                            value={exercise.reps.toString()}
-                            onChange={(e) => handleExerciseChange(index, 'reps', Math.max(1, parseInt(e.target.value) || 1))}
-                            min="1"
-                            disabled={isSubmitting}
-                          />
-                          <Input
-                            label="Weight (kg)"
-                            type="number"
-                            value={exercise.weight.toString()}
-                            onChange={(e) => handleExerciseChange(index, 'weight', Math.max(0, parseFloat(e.target.value) || 0))}
-                            min="0"
-                            step="0.5"
+                            label="Exercise Name"
+                            value={exercise.name}
+                            onChange={(e) => handleExerciseChange(index, 'name', e.target.value)}
+                            placeholder="e.g., Bench Press"
+                            required
                             disabled={isSubmitting}
                           />
                         </div>
 
-                        <div>
+                        <div className="grid grid-cols-3 gap-3 w-full max-w-full min-w-0">
+                          <div className="min-w-0">
+                            <Input
+                              label="Sets"
+                              type="number"
+                              value={exercise.sets.toString()}
+                              onChange={(e) => handleExerciseChange(index, 'sets', Math.max(1, parseInt(e.target.value) || 1))}
+                              min="1"
+                              disabled={isSubmitting}
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <Input
+                              label="Reps"
+                              type="number"
+                              value={exercise.reps.toString()}
+                              onChange={(e) => handleExerciseChange(index, 'reps', Math.max(1, parseInt(e.target.value) || 1))}
+                              min="1"
+                              disabled={isSubmitting}
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <Input
+                              label="Weight (kg)"
+                              type="number"
+                              value={exercise.weight.toString()}
+                              onChange={(e) => handleExerciseChange(index, 'weight', Math.max(0, parseFloat(e.target.value) || 0))}
+                              min="0"
+                              step="0.5"
+                              disabled={isSubmitting}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="w-full max-w-full min-w-0">
                           <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
                             Notes (optional)
                           </label>
@@ -425,7 +433,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
                             value={exercise.notes}
                             onChange={(e) => handleExerciseChange(index, 'notes', e.target.value)}
                             placeholder="Add notes about this exercise..."
-                            className="w-full px-3 py-2 text-sm border border-[var(--border-primary)] rounded-lg bg-card text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                            className="w-full max-w-full min-w-0 px-3 py-2 text-sm border border-[var(--border-primary)] rounded-lg bg-card text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                             rows={2}
                             disabled={isSubmitting}
                           />
@@ -440,7 +448,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
 
           {/* Workout Notes */}
           {selectedType && (
-            <div>
+            <div className="w-full max-w-full min-w-0">
               <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Workout Notes (optional)
               </label>
@@ -448,7 +456,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
                 value={workoutNotes}
                 onChange={(e) => setWorkoutNotes(e.target.value)}
                 placeholder="Add notes about this workout..."
-                className="w-full px-4 py-3 border border-[var(--border-primary)] rounded-lg bg-card text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                className="w-full max-w-full min-w-0 px-4 py-3 border border-[var(--border-primary)] rounded-lg bg-card text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                 rows={3}
                 disabled={isSubmitting}
               />
@@ -458,12 +466,12 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
 
           {/* Sticky Footer with Save Button */}
           {selectedType && (
-            <div className="sticky bottom-0 bg-card border-t border-[var(--border-primary)] z-10 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3 mt-auto flex-shrink-0">
+            <div className="sticky bottom-0 bg-card border-t border-[var(--border-primary)] z-10 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3 mt-auto flex-shrink-0 w-full max-w-full min-w-0 overflow-x-hidden">
               <Button
                 onClick={handleSaveWorkout}
                 disabled={!isValid() || isSubmitting}
                 fullWidth
-                className="min-h-[48px]"
+                className="min-h-[48px] w-full max-w-full"
               >
                 {isSubmitting ? 'Saving...' : 'Save Workout'}
               </Button>

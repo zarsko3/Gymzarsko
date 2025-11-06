@@ -52,6 +52,7 @@ function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalP
             animate-slide-up shadow-2xl
             pointer-events-auto
             mb-0 sm:mb-0
+            overflow-x-hidden
           `}
           style={{ 
             maxHeight: '95vh',
@@ -80,7 +81,7 @@ function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalP
         )}
 
         {/* Content - Scrollable Area */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 overscroll-contain min-h-0">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-4 overscroll-contain min-h-0">
           {children}
         </div>
 
