@@ -7,6 +7,7 @@ import AddMetricModal from '../components/bodyMetrics/AddMetricModal'
 import EditMetricModal from '../components/bodyMetrics/EditMetricModal'
 import MetricChart from '../components/bodyMetrics/MetricChart'
 import GoalSettings from '../components/bodyMetrics/GoalSettings'
+import { useAuth } from '../contexts/AuthContext'
 import {
   subscribeToBodyMetrics,
   getBodyMetricGoal,
@@ -18,6 +19,7 @@ type TimeRange = '7d' | '30d' | '90d' | 'all'
 
 function ProgressPage() {
   const navigate = useNavigate()
+  const { currentUser, loading: authLoading } = useAuth()
   const [entries, setEntries] = useState<BodyMetricEntry[]>([])
   const [goal, setGoal] = useState<BodyMetricGoal | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -27,23 +29,29 @@ function ProgressPage() {
   const [selectedEntry, setSelectedEntry] = useState<BodyMetricEntry | null>(null)
   const [timeRange, setTimeRange] = useState<TimeRange>('30d')
 
-  // Load goal on mount
+  // Load goal on mount (only when auth is ready)
   useEffect(() => {
-    loadGoal()
-  }, [])
-
-  // Subscribe to body metrics
-  useEffect(() => {
-    setIsLoading(true)
-    const unsubscribe = subscribeToBodyMetrics((metrics) => {
-      setEntries(metrics)
-      setIsLoading(false)
-    })
-
-    return () => {
-      unsubscribe()
+    if (!authLoading && currentUser) {
+      loadGoal()
     }
-  }, [])
+  }, [authLoading, currentUser])
+
+  // Subscribe to body metrics (only when auth is ready)
+  useEffect(() => {
+    if (!authLoading && currentUser) {
+      setIsLoading(true)
+      const unsubscribe = subscribeToBodyMetrics((metrics) => {
+        setEntries(metrics)
+        setIsLoading(false)
+      })
+
+      return () => {
+        unsubscribe()
+      }
+    } else {
+      setIsLoading(false)
+    }
+  }, [authLoading, currentUser])
 
   const loadGoal = async () => {
     try {
@@ -82,6 +90,15 @@ function ProgressPage() {
 
   // Get recent entries (last 7)
   const recentEntries = entries.slice(0, 7)
+
+  // Show loading state while auth is initializing
+  if (authLoading) {
+    return (
+      <div className="min-h-full flex items-center justify-center">
+        <div className="text-[var(--text-secondary)]">Loading...</div>
+      </div>
+    )
+  }
 
   // Empty state
   if (!isLoading && entries.length === 0) {
