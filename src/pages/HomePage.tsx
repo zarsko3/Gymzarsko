@@ -114,12 +114,12 @@ function HomePage() {
             <CountUpStatCard
               title="Workouts Logged"
               value={totalWorkouts}
-              chart={<AnimatedChart data={workoutChartData} type="area" color="#10B981" />}
+              chart={<AnimatedChart data={workoutChartData} type="area" />}
             />
             <StatCard
               title="Total Volume (kg)"
               value={totalVolume > 1000 ? `${(totalVolume / 1000).toFixed(1)}k` : Math.round(totalVolume)}
-              chart={<AnimatedChart data={volumeChartData} type="line" color="#10B981" />}
+              chart={<AnimatedChart data={volumeChartData} type="line" />}
             />
           </div>
         </div>

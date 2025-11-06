@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import {
   AreaChart,
@@ -21,11 +21,25 @@ interface AnimatedChartProps {
 
 function AnimatedChart({ 
   data, 
-  color = '#10B981', 
+  color, 
   type = 'area',
   height = 48 
 }: AnimatedChartProps) {
   const shouldReduceMotion = useReducedMotion() ?? false
+  const [accentColor, setAccentColor] = useState<string>(color || '#10B981')
+
+  // Get computed CSS variable value for accent color
+  useEffect(() => {
+    if (!color) {
+      const root = document.documentElement
+      const computed = getComputedStyle(root).getPropertyValue('--accent').trim()
+      if (computed) {
+        setAccentColor(computed)
+      }
+    } else {
+      setAccentColor(color)
+    }
+  }, [color])
 
   // Transform data array into Recharts format
   const chartData = useMemo(() => {
@@ -36,7 +50,10 @@ function AnimatedChart({
   }, [data])
 
   // Generate unique gradient ID to avoid conflicts
-  const gradientId = useMemo(() => `gradient-${color.replace('#', '')}-${type}`, [color, type])
+  const gradientId = useMemo(() => {
+    const colorStr = accentColor.replace(/[^a-zA-Z0-9]/g, '')
+    return `gradient-${colorStr}-${type}-${Math.random().toString(36).substr(2, 9)}`
+  }, [accentColor, type])
 
   // Chart configuration
   const chartProps = {
@@ -109,14 +126,14 @@ function AnimatedChart({
           <AreaChart {...chartProps}>
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={color} stopOpacity={0.3} />
-                <stop offset="100%" stopColor={color} stopOpacity={0} />
+                <stop offset="0%" stopColor={accentColor} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={accentColor} stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid 
               strokeDasharray="3 3" 
-              stroke="#E5E7EB" 
-              opacity={0.3}
+              stroke="var(--border-primary)" 
+              opacity={0.2}
               vertical={false}
             />
             <XAxis 
@@ -135,7 +152,7 @@ function AnimatedChart({
             <Area
               type="monotone"
               dataKey="value"
-              stroke={color}
+              stroke={accentColor}
               strokeWidth={2}
               fill={`url(#${gradientId})`}
               strokeLinecap="round"
@@ -149,8 +166,8 @@ function AnimatedChart({
           <LineChart {...chartProps}>
             <CartesianGrid 
               strokeDasharray="3 3" 
-              stroke="#E5E7EB" 
-              opacity={0.3}
+              stroke="var(--border-primary)" 
+              opacity={0.2}
               vertical={false}
             />
             <XAxis 
@@ -169,12 +186,12 @@ function AnimatedChart({
             <Line
               type="monotone"
               dataKey="value"
-              stroke={color}
-              strokeWidth={2.5}
+              stroke={accentColor}
+              strokeWidth={2}
               strokeLinecap="round"
               strokeLinejoin="round"
               dot={false}
-              activeDot={{ r: 4, fill: color, strokeWidth: 2 }}
+              activeDot={{ r: 4, fill: accentColor, strokeWidth: 2 }}
               isAnimationActive={!shouldReduceMotion}
               animationDuration={shouldReduceMotion ? 0 : 1000}
               animationEasing="ease-out"

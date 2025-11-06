@@ -77,13 +77,13 @@ function CountUpStatCard({ title, value, chart }: CountUpStatCardProps) {
 
   return (
     <div ref={cardRef} className="bg-card rounded-xl p-4 shadow-sm">
-      <div className="text-[var(--text-secondary)] text-xs font-medium mb-2">{title}</div>
-      <div className="flex flex-col items-center justify-center gap-2 min-h-[80px]">
+      <div className="text-[var(--text-secondary)] text-xs font-medium">{title}</div>
+      <div className="mt-1 flex flex-col items-center justify-center gap-2 min-h-[88px]">
         <div className="text-3xl font-extrabold text-[var(--text-primary)] leading-none">
           {displayValue}
         </div>
         {chart && (
-          <div className="w-full h-12 flex items-end">
+          <div className="w-full h-12 mt-1">
             {chart}
           </div>
         )}
