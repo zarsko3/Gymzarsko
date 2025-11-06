@@ -26,17 +26,13 @@ export default function Banner({ mode = 'random-banners' }: BannerProps) {
   if (!src) return null
 
   return (
-    <div className="px-4">
-      <div className="mx-auto my-4 rounded-2xl bg-[var(--bg-primary)] p-0 sm:p-0 flex justify-center items-center overflow-hidden">
+    <div className="w-full px-0">
+      <div className="w-full my-4 bg-[var(--bg-primary)] flex justify-center items-center overflow-hidden">
         {/* Use <img> to preserve SVG internal text layout */}
         <img
           src={src}
           alt={mode === 'logo-only' ? 'Gymzarsko Logo' : 'Motivational banner'}
-          className="mx-auto block w-[95%] sm:w-[96%] md:w-[98%] h-auto"
-          style={{
-            objectFit: 'contain',
-            width: 'clamp(280px, 98vw, 700px)',
-          }}
+          className="block w-full h-auto object-contain"
           role="img"
           aria-label={mode === 'logo-only' ? 'Gymzarsko Logo' : 'Gymzarsko Banner'}
         />
