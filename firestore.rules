@@ -37,6 +37,18 @@ service cloud.firestore {
         // Users can read/write their own plans
         allow read, write: if isAuthenticated() && request.auth.uid == uid;
       }
+      
+      // Body Metrics subcollection
+      match /bodyMetrics/{entryId} {
+        // Users can read/write their own body metrics
+        allow read, write: if isAuthenticated() && request.auth.uid == uid;
+      }
+      
+      // Body Metric Goals subcollection
+      match /bodyMetricGoals/{goalId} {
+        // Users can read/write their own body metric goals
+        allow read, write: if isAuthenticated() && request.auth.uid == uid;
+      }
     }
     
     // Block everything else by default

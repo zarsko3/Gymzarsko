@@ -77,4 +77,22 @@ export interface ProgressEntry {
   volume: number // weight * reps
 }
 
+// Body Metrics Tracking
+export interface BodyMetricEntry {
+  id: string
+  userId: string
+  date: Date // Normalized to start of day
+  weight: number // in kg
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface BodyMetricGoal {
+  userId: string
+  targetWeight: number // in kg
+  targetDate?: Date // optional deadline
+  createdAt: Date
+  updatedAt: Date
+}
+
 
