@@ -26,6 +26,9 @@
   /* Accent Colors */
   --accent: #10B981;
   --accent-mint: #D1E7DD;
+  --accent-soft-blue: #EFF6FF;
+  --accent-soft-green: #ECFDF5;
+  --accent-soft-purple: #F5F3FF;
   
   /* Border Colors */
   --border-primary: #E2E8F0;
@@ -67,6 +70,9 @@
   /* Accent Colors */
   --accent: #34D399;
   --accent-mint: #1E3A2F;
+  --accent-soft-blue: #1E3A5F;
+  --accent-soft-green: #1E3A2F;
+  --accent-soft-purple: #2E1F3A;
   
   /* Border Colors */
   --border-primary: #334155;
