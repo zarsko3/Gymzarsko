@@ -27,6 +27,18 @@ service cloud.firestore {
       }
     }
     
+    // Users collection - for user-specific subcollections
+    match /users/{uid} {
+      // Users can only access their own user document
+      allow read, write: if isAuthenticated() && request.auth.uid == uid;
+      
+      // Plans subcollection
+      match /plans/{planId} {
+        // Users can read/write their own plans
+        allow read, write: if isAuthenticated() && request.auth.uid == uid;
+      }
+    }
+    
     // Block everything else by default
     match /{document=**} {
       allow read, write: if false;

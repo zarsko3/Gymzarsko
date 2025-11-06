@@ -90,16 +90,55 @@ function firestoreToWorkout(docId: string, data: any): Workout {
 }
 
 /**
+ * Sanitize object for Firestore - remove undefined and NaN values
+ */
+function sanitizeForFirestore<T extends Record<string, any>>(obj: T): any {
+  if (obj === null || obj === undefined) {
+    return null
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeForFirestore(item))
+  }
+  
+  if (typeof obj === 'object' && obj.constructor === Object) {
+    const sanitized: any = {}
+    for (const [key, value] of Object.entries(obj)) {
+      // Skip undefined values
+      if (value === undefined) {
+        continue
+      }
+      
+      // Skip NaN values
+      if (typeof value === 'number' && Number.isNaN(value)) {
+        continue
+      }
+      
+      // Recursively sanitize nested objects and arrays
+      sanitized[key] = sanitizeForFirestore(value)
+    }
+    return sanitized
+  }
+  
+  // Return primitive values as-is
+  return obj
+}
+
+/**
  * Convert Workout object to Firestore document
  */
 function workoutToFirestore(workout: Workout) {
   const { startTime, endTime, ...rest } = workout
-  return {
+  
+  const firestoreData = {
     ...rest,
     date: toTimestampSafe(workout.date),
     startTime: startTime ? toTimestampSafe(startTime) : null,
     endTime: endTime ? toTimestampSafe(endTime) : null,
   }
+  
+  // Sanitize to remove undefined and NaN values
+  return sanitizeForFirestore(firestoreData)
 }
 
 /**
@@ -278,10 +317,38 @@ export async function createWorkoutWithDate(type: WorkoutType, date: Date): Prom
 export async function updateWorkout(workout: Workout): Promise<void> {
   try {
     const workoutRef = doc(db, WORKOUTS_COLLECTION, workout.id)
-    await updateDoc(workoutRef, {
+    const payload = {
       ...workoutToFirestore(workout),
       updatedAt: serverTimestamp(),
-    })
+    }
+    
+    // Debug: Check for undefined values before sending
+    const undefinedFields: string[] = []
+    const checkUndefined = (obj: any, path = ''): void => {
+      if (obj === null || typeof obj !== 'object') return
+      for (const [key, value] of Object.entries(obj)) {
+        const currentPath = path ? `${path}.${key}` : key
+        if (value === undefined) {
+          undefinedFields.push(currentPath)
+        } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          checkUndefined(value, currentPath)
+        } else if (Array.isArray(value)) {
+          value.forEach((item, index) => {
+            if (typeof item === 'object' && item !== null) {
+              checkUndefined(item, `${currentPath}[${index}]`)
+            }
+          })
+        }
+      }
+    }
+    checkUndefined(payload)
+    
+    if (undefinedFields.length > 0) {
+      console.warn('Found undefined fields in workout payload:', undefinedFields)
+    }
+    
+    console.log('Updating workout with payload:', JSON.stringify(payload, null, 2))
+    await updateDoc(workoutRef, payload)
   } catch (error) {
     console.error('Error updating workout:', error)
     throw error

@@ -84,11 +84,18 @@ export async function getAllPlans(): Promise<Plan[]> {
   const defaultPlans = getDefaultPlans()
   
   try {
+    // Check if user is authenticated before trying to get user plans
+    if (!auth.currentUser) {
+      console.log('User not authenticated, returning default plans only')
+      return defaultPlans
+    }
+    
     const userId = getUserId()
     const userPlans = await getUserPlans(userId)
     return [...defaultPlans, ...userPlans]
   } catch (error) {
-    // If not authenticated, return only default plans
+    console.error('Error getting all plans:', error)
+    // If there's an error (e.g., permission denied), return only default plans
     return defaultPlans
   }
 }
