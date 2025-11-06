@@ -159,7 +159,13 @@ export async function addBodyMetric(weight: number, date: Date): Promise<BodyMet
   const existingEntry = await getBodyMetricByDate(normalizedDate)
   if (existingEntry) {
     // Update existing entry instead of creating duplicate
-    return await updateBodyMetric(existingEntry.id, weight)
+    await updateBodyMetric(existingEntry.id, weight)
+    // Return the updated entry
+    return {
+      ...existingEntry,
+      weight,
+      updatedAt: new Date(),
+    }
   }
   
   const newEntry: Omit<BodyMetricEntry, 'id'> = {
