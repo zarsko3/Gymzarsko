@@ -1,11 +1,11 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Clock, Dumbbell, Calendar, Settings } from 'lucide-react'
+import { Home, Clock, Dumbbell, Scale, Settings } from 'lucide-react'
 
 const navItems = [
   { to: '/', icon: Home, label: 'Home' },
   { to: '/history', icon: Clock, label: 'History' },
   { to: '/workouts', icon: Dumbbell, label: 'Workout' },
-  { to: '/progress', icon: Calendar, label: 'Calendar' },
+  { to: '/progress', icon: Scale, label: 'Metrics' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
