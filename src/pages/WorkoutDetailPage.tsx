@@ -186,7 +186,7 @@ function WorkoutDetailPage() {
   if (isLoading) {
     return (
       <div className="min-h-full flex items-center justify-center px-4">
-        <div className="text-text-secondary">Loading workout...</div>
+        <div className="text-[var(--text-secondary)]">Loading workout...</div>
       </div>
     )
   }
@@ -201,10 +201,10 @@ function WorkoutDetailPage() {
           </div>
 
           {/* Text Content */}
-          <h3 className="text-2xl font-bold text-text-primary mb-3">
+          <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-3">
             Workout Not Found
           </h3>
-          <p className="text-text-secondary mb-8 text-base leading-relaxed">
+          <p className="text-[var(--text-secondary)] mb-8 text-base leading-relaxed">
             This workout may have been deleted or doesn't exist
           </p>
 
@@ -240,7 +240,7 @@ function WorkoutDetailPage() {
   return (
     <div className="min-h-full bg-[var(--bg-primary)]">
       {/* Header */}
-      <div className="sticky top-0 bg-card border-b border-border-primary z-10 shadow-sm">
+      <div className="sticky top-0 bg-card border-b border-[var(--border-primary)] z-10 shadow-sm">
         <div className="flex items-center justify-between px-4 py-4">
           <button 
             onClick={() => navigate('/history')}
@@ -249,12 +249,12 @@ function WorkoutDetailPage() {
             <ChevronLeft size={20} />
             <span>Back</span>
           </button>
-          <h1 className="text-lg font-semibold text-text-primary">Workout Details</h1>
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">Workout Details</h1>
           <div className="flex items-center gap-2">
             {hasChanges() && (
               <button
                 onClick={handleCancel}
-                className="text-text-secondary hover:text-text-primary min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] min-h-[44px] min-w-[44px] flex items-center justify-center"
                 aria-label="Cancel changes"
               >
                 <X size={20} />
@@ -288,8 +288,8 @@ function WorkoutDetailPage() {
             <div className="flex items-center gap-3">
               <Calendar size={20} className="text-primary-500" />
               <div>
-                <div className="text-sm text-text-secondary">Date</div>
-                <div className="font-semibold text-text-primary">
+                <div className="text-sm text-[var(--text-secondary)]">Date</div>
+                <div className="font-semibold text-[var(--text-primary)]">
                   {format(displayWorkout.date, 'EEEE, MMMM d, yyyy')}
                 </div>
               </div>
@@ -297,8 +297,8 @@ function WorkoutDetailPage() {
             <div className="flex items-center gap-3">
               <Clock size={20} className="text-primary-500" />
               <div>
-                <div className="text-sm text-text-secondary">Duration</div>
-                <div className="font-semibold text-text-primary">{duration}</div>
+                <div className="text-sm text-[var(--text-secondary)]">Duration</div>
+                <div className="font-semibold text-[var(--text-primary)]">{duration}</div>
               </div>
             </div>
           </div>
@@ -308,21 +308,21 @@ function WorkoutDetailPage() {
         <div className="grid grid-cols-3 gap-3">
           <Card className="bg-card text-center p-4">
             <div className="text-2xl font-bold text-primary-500">{displayWorkout.exercises.length}</div>
-            <div className="text-text-secondary text-xs mt-1">Exercises</div>
+            <div className="text-[var(--text-secondary)] text-xs mt-1">Exercises</div>
           </Card>
           <Card className="bg-card text-center p-4">
             <div className="text-2xl font-bold text-primary-500">{completedSets}/{totalSets}</div>
-            <div className="text-text-secondary text-xs mt-1">Sets</div>
+            <div className="text-[var(--text-secondary)] text-xs mt-1">Sets</div>
           </Card>
           <Card className="bg-card text-center p-4">
             <div className="text-2xl font-bold text-primary-500">{Math.round(totalVolume)}</div>
-            <div className="text-text-secondary text-xs mt-1">Volume (kg)</div>
+            <div className="text-[var(--text-secondary)] text-xs mt-1">Volume (kg)</div>
           </Card>
         </div>
 
         {/* Exercises */}
         <div className="space-y-3">
-          <h3 className="font-semibold text-text-primary">Exercises</h3>
+          <h3 className="font-semibold text-[var(--text-primary)]">Exercises</h3>
           {displayWorkout.exercises.map((exercise, index) => {
             const exerciseVolume = exercise.sets.reduce(
               (sum, set) => sum + calculateVolume(set.weight, set.reps),
@@ -337,10 +337,10 @@ function WorkoutDetailPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-text-secondary font-medium">#{index + 1}</span>
-                        <h4 className="font-semibold text-text-primary">{exercise.exercise.name}</h4>
+                        <span className="text-[var(--text-secondary)] font-medium">#{index + 1}</span>
+                        <h4 className="font-semibold text-[var(--text-primary)]">{exercise.exercise.name}</h4>
                       </div>
-                      <p className="text-sm text-text-secondary mt-1">
+                      <p className="text-sm text-[var(--text-secondary)] mt-1">
                         {exercise.exercise.muscleGroup}
                       </p>
                     </div>
@@ -348,7 +348,7 @@ function WorkoutDetailPage() {
                       <div className="text-sm font-semibold text-primary-500">
                         {Math.round(exerciseVolume)} kg
                       </div>
-                      <div className="text-xs text-text-secondary">
+                      <div className="text-xs text-[var(--text-secondary)]">
                         {completedCount}/{exercise.sets.length} sets
                       </div>
                     </div>
@@ -356,7 +356,7 @@ function WorkoutDetailPage() {
 
                   {/* Sets Table */}
                   <div className="space-y-1.5 overflow-x-hidden">
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-text-secondary pb-1 border-b">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-secondary)] pb-1 border-b border-[var(--border-primary)]">
                       <div className="w-8 flex-shrink-0 text-center">SET</div>
                       <div className="flex-1 min-w-0 text-center">WEIGHT</div>
                       <div className="flex-1 min-w-0 text-center">REPS</div>
@@ -370,7 +370,7 @@ function WorkoutDetailPage() {
                           set.completed ? 'bg-[var(--bg-primary)]-50 rounded-lg px-2' : ''
                         }`}
                       >
-                        <div className="w-8 flex-shrink-0 text-center text-sm font-medium text-text-primary">
+                        <div className="w-8 flex-shrink-0 text-center text-sm font-medium text-[var(--text-primary)]">
                           {setIndex + 1}
                         </div>
                         <div className="flex-1 min-w-0 flex items-center gap-1">
@@ -380,13 +380,13 @@ function WorkoutDetailPage() {
                             onChange={(e) =>
                               handleSetChange(index, setIndex, 'weight', parseFloat(e.target.value) || 0)
                             }
-                            className="flex-1 min-w-0 px-1.5 py-1.5 border border-gray-300 rounded-lg text-center text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            className="flex-1 min-w-0 px-1.5 py-1.5 border border-[var(--border)] rounded-lg text-center text-sm bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
                             disabled={isSubmitting}
                             step="0.5"
                             min="0"
                             placeholder="0"
                           />
-                          <span className="text-xs text-text-secondary flex-shrink-0">kg</span>
+                          <span className="text-xs text-[var(--text-secondary)] flex-shrink-0">kg</span>
                         </div>
                         <div className="flex-1 min-w-0 flex items-center gap-1">
                           <input
@@ -395,14 +395,14 @@ function WorkoutDetailPage() {
                             onChange={(e) =>
                               handleSetChange(index, setIndex, 'reps', parseInt(e.target.value) || 0)
                             }
-                            className="flex-1 min-w-0 px-1.5 py-1.5 border border-gray-300 rounded-lg text-center text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            className="flex-1 min-w-0 px-1.5 py-1.5 border border-[var(--border)] rounded-lg text-center text-sm bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
                             disabled={isSubmitting}
                             min="0"
                             placeholder="0"
                           />
-                          <span className="text-xs text-text-secondary flex-shrink-0">reps</span>
+                          <span className="text-xs text-[var(--text-secondary)] flex-shrink-0">reps</span>
                         </div>
-                        <div className="w-14 flex-shrink-0 text-center text-xs text-text-secondary">
+                        <div className="w-14 flex-shrink-0 text-center text-xs text-[var(--text-secondary)]">
                           {calculateVolume(set.weight, set.reps)}
                         </div>
                       </div>
@@ -411,7 +411,7 @@ function WorkoutDetailPage() {
                     {/* Exercise Total */}
                     <div className="flex items-center gap-1.5 pt-2 border-t">
                       <div className="w-8 flex-shrink-0"></div>
-                      <div className="flex-1 min-w-0 text-sm font-medium text-text-secondary">
+                      <div className="flex-1 min-w-0 text-sm font-medium text-[var(--text-secondary)]">
                         Total:
                       </div>
                       <div className="w-14 flex-shrink-0 text-center font-bold text-primary-500 text-sm">
@@ -421,10 +421,10 @@ function WorkoutDetailPage() {
                   </div>
 
                   {/* Exercise Notes */}
-                  <div className="pt-3 border-t border-gray-100">
+                  <div className="pt-3 border-t border-[var(--border-primary)]">
                     <button
                       onClick={() => toggleExerciseNotes(index)}
-                      className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors text-sm font-medium w-full mb-2"
+                      className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-sm font-medium w-full mb-2"
                     >
                       <MessageSquare size={16} />
                       <span>{exercise.notes ? 'Edit Notes' : 'Add Notes'}</span>
@@ -437,13 +437,13 @@ function WorkoutDetailPage() {
                         value={exercise.notes || ''}
                         onChange={(e) => handleExerciseNotesChange(index, e.target.value)}
                         placeholder="Add notes about this exercise..."
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                        className="w-full px-3 py-2 text-sm border border-[var(--border)] rounded-lg bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] resize-none"
                         rows={2}
                         disabled={isSubmitting}
                       />
                     )}
                     {!expandedExerciseNotes.has(index) && exercise.notes && (
-                      <div className="text-text-primary whitespace-pre-wrap text-sm">
+                      <div className="text-[var(--text-primary)] whitespace-pre-wrap text-sm">
                         {exercise.notes}
                       </div>
                     )}
@@ -461,7 +461,7 @@ function WorkoutDetailPage() {
             <div className="flex-1">
               <button
                 onClick={() => setShowWorkoutNotes(!showWorkoutNotes)}
-                className="flex items-center gap-2 text-text-primary hover:text-primary-500 transition-colors font-semibold w-full mb-2"
+                className="flex items-center gap-2 text-[var(--text-primary)] hover:text-primary-500 transition-colors font-semibold w-full mb-2"
               >
                 <span>Workout Notes</span>
                 {displayWorkout.notes && (
@@ -473,13 +473,13 @@ function WorkoutDetailPage() {
                   value={displayWorkout.notes || ''}
                   onChange={(e) => handleWorkoutNotesChange(e.target.value)}
                   placeholder="Add overall notes for this workout..."
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                  className="w-full px-3 py-2 text-sm border border-[var(--border)] rounded-lg bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] resize-none"
                   rows={3}
                   disabled={isSubmitting}
                 />
               )}
               {!showWorkoutNotes && displayWorkout.notes && (
-                <p className="text-text-primary whitespace-pre-wrap">
+                <p className="text-[var(--text-primary)] whitespace-pre-wrap">
                   {displayWorkout.notes}
                 </p>
               )}

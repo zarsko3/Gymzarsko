@@ -443,7 +443,7 @@ function ActiveWorkoutPage() {
     return (
       <div className="min-h-full bg-[var(--bg-primary)] flex items-center justify-center">
         <div className="text-center">
-          <div className="text-text-secondary">Loading workout...</div>
+          <div className="text-[var(--text-secondary)]">Loading workout...</div>
         </div>
       </div>
     )
@@ -458,7 +458,7 @@ function ActiveWorkoutPage() {
   return (
     <div className="min-h-full bg-[var(--bg-primary)]">
       {/* Header */}
-      <div className="sticky top-0 bg-card border-b border-border-primary z-10 shadow-sm">
+      <div className="sticky top-0 bg-card border-b border-[var(--border-primary)] z-10 shadow-sm">
         <div className="flex items-center justify-between px-4 py-4">
           <button 
             onClick={handleBack}
@@ -468,7 +468,7 @@ function ActiveWorkoutPage() {
             <span>Exit</span>
           </button>
           <div className="text-center">
-            <h1 className="text-lg font-semibold text-text-primary">{workoutTypeNames[workout.type]}</h1>
+            <h1 className="text-lg font-semibold text-[var(--text-primary)]">{workoutTypeNames[workout.type]}</h1>
             <div className="flex items-center gap-1 text-primary-500 text-sm font-medium">
               <Clock size={14} />
               <span>{formatTime(elapsedTime)}</span>
@@ -525,32 +525,32 @@ function ActiveWorkoutPage() {
                             handleCancelEditingExerciseName()
                           }
                         }}
-                        className="w-full px-3 py-2 border border-primary-500 rounded-lg text-text-primary text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-3 py-2 border border-primary-500 rounded-lg text-[var(--text-primary)] text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500"
                         placeholder="Exercise name"
                         maxLength={60}
                       />
                       {exerciseNameError && (
                         <p className="text-xs text-red-500">{exerciseNameError}</p>
                       )}
-                      <div className="flex gap-2 text-xs text-text-secondary">
+                      <div className="flex gap-2 text-xs text-[var(--text-secondary)]">
                         <span>Press Enter to save, Esc to cancel</span>
                       </div>
                     </div>
                   ) : (
                     <>
                       <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-text-primary text-lg">
+                <h3 className="font-semibold text-[var(--text-primary)] text-lg">
                   {exercise.exercise.name}
                 </h3>
                         <button
                           onClick={() => handleStartEditingExerciseName(exerciseIndex)}
-                          className="p-1 hover:bg-gray-100 rounded transition-colors text-primary-500"
+                          className="p-1 hover:bg-[var(--bg-secondary)] rounded transition-colors text-primary-500"
                           aria-label="Edit exercise name"
                         >
                           <Edit2 size={16} />
                         </button>
                       </div>
-                <p className="text-text-secondary text-sm">
+                <p className="text-[var(--text-secondary)] text-sm">
                   {exercise.exercise.muscleGroup}
                 </p>
                     </>
@@ -560,7 +560,7 @@ function ActiveWorkoutPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEditExercise(exerciseIndex)}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-primary-500"
+                      className="p-2 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors text-primary-500"
                       aria-label="Edit exercise"
                     >
                       <Edit2 size={18} />
@@ -578,7 +578,7 @@ function ActiveWorkoutPage() {
 
               {/* Sets Table */}
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs font-medium text-text-secondary pb-2 border-b">
+                <div className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)] pb-2 border-b border-[var(--border-primary)]">
                   <div className="w-8 text-center">SET</div>
                   <div className="flex-1 text-center">WEIGHT</div>
                   <div className="flex-1 text-center">REPS</div>
@@ -592,7 +592,7 @@ function ActiveWorkoutPage() {
                       set.completed ? 'opacity-60' : ''
                     }`}
                   >
-                    <div className="w-8 text-center text-text-primary font-medium text-sm">
+                    <div className="w-8 text-center text-[var(--text-primary)] font-medium text-sm">
                       {setIndex + 1}
                     </div>
                     
@@ -601,7 +601,7 @@ function ActiveWorkoutPage() {
                       inputMode="decimal"
                       value={set.weight || ''}
                       onChange={(e) => handleSetChange(exerciseIndex, setIndex, 'weight', e.target.value)}
-                      className="flex-1 px-2 py-2.5 border border-gray-300 rounded-lg text-center text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-0"
+                      className="flex-1 px-2 py-2.5 border border-[var(--border)] rounded-lg text-center text-sm bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] min-w-0"
                       placeholder="0"
                       disabled={set.completed}
                     />
@@ -611,7 +611,7 @@ function ActiveWorkoutPage() {
                       inputMode="numeric"
                       value={set.reps || ''}
                       onChange={(e) => handleSetChange(exerciseIndex, setIndex, 'reps', e.target.value)}
-                      className="flex-1 px-2 py-2.5 border border-gray-300 rounded-lg text-center text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-0"
+                      className="flex-1 px-2 py-2.5 border border-[var(--border)] rounded-lg text-center text-sm bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] min-w-0"
                       placeholder="0"
                       disabled={set.completed}
                     />
@@ -621,8 +621,8 @@ function ActiveWorkoutPage() {
                         onClick={() => handleToggleSet(exerciseIndex, setIndex)}
                         className={`flex-1 min-w-[36px] h-9 flex items-center justify-center rounded-lg transition-colors ${
                           set.completed
-                            ? 'bg-[var(--bg-primary)]-500 text-white'
-                            : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
+                            ? 'bg-primary-500 text-white'
+                            : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
                         }`}
                       >
                         <Check size={16} />
@@ -631,7 +631,7 @@ function ActiveWorkoutPage() {
                       {exercise.sets.length > 1 && (
                         <button
                           onClick={() => handleRemoveSet(exerciseIndex, setIndex)}
-                          className="min-w-[36px] h-9 flex items-center justify-center rounded-lg bg-gray-100 text-red-500 hover:bg-red-50"
+                          className="min-w-[36px] h-9 flex items-center justify-center rounded-lg bg-[var(--bg-secondary)] text-red-500 hover:opacity-80"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -643,7 +643,7 @@ function ActiveWorkoutPage() {
                 {/* Add Set Button */}
                 <button
                   onClick={() => handleAddSet(exerciseIndex)}
-                  className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-text-secondary hover:border-primary-500 hover:text-primary-500 transition-colors flex items-center justify-center gap-2 font-medium"
+                  className="w-full py-3 border-2 border-dashed border-[var(--border)] rounded-lg text-[var(--text-secondary)] hover:border-primary-500 hover:text-primary-500 transition-colors flex items-center justify-center gap-2 font-medium"
                 >
                   <Plus size={20} />
                   Add Set
@@ -651,10 +651,10 @@ function ActiveWorkoutPage() {
               </div>
 
               {/* Exercise Notes */}
-              <div className="border-t border-gray-100 pt-3">
+              <div className="border-t border-[var(--border-primary)] pt-3">
                 <button
                   onClick={() => toggleExerciseNotes(exerciseIndex)}
-                  className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors text-sm font-medium"
+                  className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-sm font-medium"
                 >
                   <MessageSquare size={16} />
                   <span>{exercise.notes ? 'Edit Notes' : 'Add Notes'}</span>
@@ -667,7 +667,7 @@ function ActiveWorkoutPage() {
                     value={exercise.notes || ''}
                     onChange={(e) => handleExerciseNoteChange(exerciseIndex, e.target.value)}
                     placeholder="Add notes for this exercise..."
-                    className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm min-h-[80px] resize-y"
+                    className="w-full mt-2 px-3 py-2 border border-[var(--border)] rounded-lg bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] text-sm min-h-[80px] resize-y"
                   />
                 )}
               </div>
@@ -680,7 +680,7 @@ function ActiveWorkoutPage() {
           <div className="space-y-3">
             <button
               onClick={() => setShowWorkoutNotes(!showWorkoutNotes)}
-              className="flex items-center gap-2 text-text-primary hover:text-primary-500 transition-colors font-medium w-full"
+              className="flex items-center gap-2 text-[var(--text-primary)] hover:text-primary-500 transition-colors font-medium w-full"
             >
               <FileText size={20} />
               <span>Workout Notes</span>
@@ -693,7 +693,7 @@ function ActiveWorkoutPage() {
                 value={workout.notes || ''}
                 onChange={(e) => handleWorkoutNoteChange(e.target.value)}
                 placeholder="Add overall notes for this workout..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm min-h-[100px] resize-y"
+                className="w-full px-3 py-2 border border-[var(--border)] rounded-lg bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] text-sm min-h-[100px] resize-y"
               />
             )}
           </div>
@@ -774,7 +774,7 @@ function ActiveWorkoutPage() {
               onChange={(e) => setExerciseForm({ ...exerciseForm, targetReps: Math.max(1, parseInt(e.target.value) || 1) })}
             />
           </div>
-          <p className="text-xs text-text-secondary">
+          <p className="text-xs text-[var(--text-secondary)]">
             Note: Weight and reps will be applied to incomplete sets only. Completed sets will remain unchanged.
           </p>
         </div>

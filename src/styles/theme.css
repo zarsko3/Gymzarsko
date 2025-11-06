@@ -31,8 +31,12 @@
   --accent-soft-purple: #F5F3FF;
   
   /* Border Colors */
+  --border: #E2E8F0;
   --border-primary: #E2E8F0;
   --border-secondary: #CBD5E1;
+  
+  /* Input Colors */
+  --input-bg: #FFFFFF;
   
   /* Shadow Colors */
   --shadow-sm: rgba(0, 0, 0, 0.05);
@@ -75,8 +79,12 @@
   --accent-soft-purple: #2E1F3A;
   
   /* Border Colors */
+  --border: #334155;
   --border-primary: #334155;
   --border-secondary: #475569;
+  
+  /* Input Colors */
+  --input-bg: #1E293B;
   
   /* Shadow Colors (lighter shadows in dark mode) */
   --shadow-sm: rgba(0, 0, 0, 0.3);
