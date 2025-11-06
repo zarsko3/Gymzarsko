@@ -3,10 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   ChevronLeft,
   User,
-  Mail,
   Palette,
-  Bell,
-  Globe,
   Lock,
   Trash2,
   LogOut,
@@ -41,13 +38,6 @@ function SettingsPage() {
 
   // Form states
   const [displayName, setDisplayName] = useState('')
-  const [email, setEmail] = useState('')
-  const [notifications, setNotifications] = useState({
-    workoutReminders: true,
-    progressUpdates: true,
-    emailNotifications: false,
-  })
-  const [language, setLanguage] = useState<'en' | 'es' | 'he'>('en')
 
   // Modal states
   const [showPasswordModal, setShowPasswordModal] = useState(false)
@@ -73,10 +63,7 @@ function SettingsPage() {
         if (userProfile) {
           setProfile(userProfile)
           setDisplayName(userProfile.displayName)
-          setEmail(userProfile.email)
           // Theme is managed by ThemeContext, no need to set it here
-          setNotifications(userProfile.notifications)
-          setLanguage(userProfile.language)
         }
       } catch (error) {
         console.error('Error loading profile:', error)
@@ -119,30 +106,6 @@ function SettingsPage() {
     // ThemeContext handles persistence to Firestore automatically
   }
 
-  // Handle notification preferences
-  async function handleNotificationChange(key: keyof typeof notifications, value: boolean) {
-    try {
-      const updated = { ...notifications, [key]: value }
-      setNotifications(updated)
-      await updateUserProfile({ notifications: updated })
-      showMessage('success', 'Notification preferences saved')
-    } catch (error) {
-      console.error('Error updating notifications:', error)
-      showMessage('error', 'Failed to save preferences')
-    }
-  }
-
-  // Handle language change
-  async function handleLanguageChange(newLanguage: 'en' | 'es' | 'he') {
-    try {
-      setLanguage(newLanguage)
-      await updateUserProfile({ language: newLanguage })
-      showMessage('success', 'Language preference saved')
-    } catch (error) {
-      console.error('Error updating language:', error)
-      showMessage('error', 'Failed to save language')
-    }
-  }
 
   // Handle password change
   async function handlePasswordChange() {
@@ -275,9 +238,6 @@ function SettingsPage() {
                 <h3 className="text-xl font-bold text-text-primary truncate">
                   {displayName || currentUser?.email?.split('@')[0] || 'User'}
                 </h3>
-                <p className="text-text-secondary text-sm mt-1 truncate">
-                  {email || currentUser?.email || 'No email'}
-                </p>
               </div>
             </div>
           </Card>
@@ -307,24 +267,6 @@ function SettingsPage() {
             </div>
           </Card>
 
-          {/* Email (Read-only for now) */}
-          <Card className="bg-card">
-            <div className="p-4">
-              <label className="block text-sm font-medium text-text-primary mb-2 flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                disabled
-                className="w-full px-4 py-2.5 border border-border-primary rounded-lg bg-secondary text-text-secondary"
-              />
-              <p className="text-xs text-text-secondary mt-2">
-                Contact support to change your email address
-              </p>
-            </div>
-          </Card>
         </section>
 
         {/* App Preferences */}
@@ -368,120 +310,6 @@ function SettingsPage() {
             </div>
           </Card>
 
-          {/* Notifications */}
-          <Card className="bg-card mb-3">
-            <div className="p-4 space-y-4">
-              <div className="flex items-center gap-3">
-                <Bell className="w-5 h-5 text-primary-500" />
-                <h3 className="font-medium text-text-primary">Notifications</h3>
-              </div>
-
-              {/* Workout Reminders */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-text-primary">Workout Reminders</p>
-                  <p className="text-xs text-text-secondary">Get notified to log workouts</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={notifications.workoutReminders}
-                    onChange={(e) =>
-                      handleNotificationChange('workoutReminders', e.target.checked)
-                    }
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border-border-primary after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--bg-primary)]-500"></div>
-                </label>
-              </div>
-
-              {/* Progress Updates */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-text-primary">Progress Updates</p>
-                  <p className="text-xs text-text-secondary">Weekly progress summaries</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={notifications.progressUpdates}
-                    onChange={(e) =>
-                      handleNotificationChange('progressUpdates', e.target.checked)
-                    }
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border-border-primary after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--bg-primary)]-500"></div>
-                </label>
-              </div>
-
-              {/* Email Notifications */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-text-primary">Email Notifications</p>
-                  <p className="text-xs text-text-secondary">Receive updates via email</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={notifications.emailNotifications}
-                    onChange={(e) =>
-                      handleNotificationChange('emailNotifications', e.target.checked)
-                    }
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border-border-primary after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--bg-primary)]-500"></div>
-                </label>
-              </div>
-            </div>
-          </Card>
-
-          {/* Language */}
-          <Card className="bg-card">
-            <div className="p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <Globe className="w-5 h-5 text-primary-500" />
-                <div>
-                  <h3 className="font-medium text-text-primary">Language</h3>
-                  <p className="text-sm text-text-secondary">Choose your language</p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleLanguageChange('en')}
-                  className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
-                    language === 'en'
-                      ? 'border-primary-500 bg-[var(--bg-primary)]-50 text-primary-700'
-                      : 'border-border-primary text-text-secondary hover:border-border-primary'
-                  }`}
-                >
-                  English
-                </button>
-                <button
-                  onClick={() => handleLanguageChange('es')}
-                  className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
-                    language === 'es'
-                      ? 'border-primary-500 bg-[var(--bg-primary)]-50 text-primary-700'
-                      : 'border-border-primary text-text-secondary hover:border-border-primary'
-                  }`}
-                >
-                  Español
-                </button>
-                <button
-                  onClick={() => handleLanguageChange('he')}
-                  className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
-                    language === 'he'
-                      ? 'border-primary-500 bg-[var(--bg-primary)]-50 text-primary-700'
-                      : 'border-border-primary text-text-secondary hover:border-border-primary'
-                  }`}
-                >
-                  עברית
-                </button>
-              </div>
-              <p className="text-xs text-text-secondary mt-2">
-                Note: Localization coming soon
-              </p>
-            </div>
-          </Card>
         </section>
 
         {/* Account Management */}
