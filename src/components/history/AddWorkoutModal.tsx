@@ -171,6 +171,7 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
 
       // Create workout with date and type
       const workout = await createWorkoutWithDate(selectedType, date)
+      console.log('Workout created with ID:', workout.id)
 
       // Convert exercise forms to WorkoutExercise format
       const workoutExercises: WorkoutExercise[] = exercises.map((ex, index) => {
@@ -203,18 +204,25 @@ function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
         completed: true,
       }
 
+      console.log('Updating workout with exercises:', updatedWorkout.exercises.length)
       await updateWorkout(updatedWorkout)
+      console.log('Workout updated successfully')
       
       showToast('success', 'Workout saved 💪')
-      await onSave(selectedType, date)
+      
+      // Close modal first
       onClose()
       
       // Navigate to workout detail
-      navigate(`/workout/detail/${workout.id}`)
+      // Use setTimeout to ensure modal closes before navigation
+      setTimeout(() => {
+        navigate(`/workout/detail/${workout.id}`)
+      }, 100)
     } catch (err) {
       console.error('Error saving workout:', err)
-      setError('Couldn\'t save workout. Try again.')
-      showToast('error', 'Couldn\'t save workout. Try again.')
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
+      setError(`Couldn't save workout: ${errorMessage}. Please try again.`)
+      showToast('error', `Couldn't save workout: ${errorMessage}`)
     } finally {
       setIsSubmitting(false)
     }
