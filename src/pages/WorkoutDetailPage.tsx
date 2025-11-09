@@ -5,7 +5,7 @@ import { Timestamp } from 'firebase/firestore'
 import { ChevronLeft, Clock, Calendar, TrendingUp, Trash2, CheckCircle, FileText, MessageSquare, Save, X } from 'lucide-react'
 import type { Workout } from '../types'
 import { getWorkoutById, deleteWorkout, updateWorkout } from '../services/workoutServiceFacade'
-import { formatDuration, calculateVolume } from '../utils/formatters'
+import { formatDuration, calculateVolume, formatDateCustom } from '../utils/formatters'
 import { useToast } from '../hooks/useToast'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
@@ -65,7 +65,17 @@ function WorkoutDetailPage() {
           }
           
           setWorkout(normalizedWorkout)
-          setEditedWorkout(JSON.parse(JSON.stringify(normalizedWorkout)))
+          // Deep clone while preserving Date objects (JSON.stringify converts dates to strings)
+          setEditedWorkout({
+            ...normalizedWorkout,
+            date: normalizedDate instanceof Date ? new Date(normalizedDate) : normalizedDate,
+            startTime: normalizedStartTime instanceof Date ? new Date(normalizedStartTime) : normalizedStartTime,
+            endTime: normalizedEndTime instanceof Date ? new Date(normalizedEndTime) : normalizedEndTime,
+            exercises: normalizedWorkout.exercises.map(ex => ({
+              ...ex,
+              // Clone exercise if needed
+            })),
+          })
           setShowWorkoutNotes(!!normalizedWorkout.notes)
         } else {
           setWorkout(null)
@@ -180,7 +190,34 @@ function WorkoutDetailPage() {
 
   const hasChanges = () => {
     if (!workout || !editedWorkout) return false
-    return JSON.stringify(workout) !== JSON.stringify(editedWorkout)
+    // Compare workouts without relying on JSON.stringify (which converts dates to strings)
+    // Compare key fields that can change
+    if (workout.notes !== editedWorkout.notes) return true
+    if (workout.exercises.length !== editedWorkout.exercises.length) return true
+    
+    // Compare exercises and sets
+    for (let i = 0; i < workout.exercises.length; i++) {
+      const workoutEx = workout.exercises[i]
+      const editedEx = editedWorkout.exercises[i]
+      if (!editedEx) return true
+      
+      if (workoutEx.notes !== editedEx.notes) return true
+      if (workoutEx.sets.length !== editedEx.sets.length) return true
+      
+      for (let j = 0; j < workoutEx.sets.length; j++) {
+        const workoutSet = workoutEx.sets[j]
+        const editedSet = editedEx.sets[j]
+        if (!editedSet) return true
+        
+        if (workoutSet.weight !== editedSet.weight ||
+            workoutSet.reps !== editedSet.reps ||
+            workoutSet.completed !== editedSet.completed) {
+          return true
+        }
+      }
+    }
+    
+    return false
   }
 
   if (isLoading) {
@@ -290,7 +327,7 @@ function WorkoutDetailPage() {
               <div>
                 <div className="text-sm text-[var(--text-secondary)]">Date</div>
                 <div className="font-semibold text-[var(--text-primary)]">
-                  {format(displayWorkout.date, 'EEEE, MMMM d, yyyy')}
+                  {formatDateCustom(displayWorkout.date, 'EEEE, MMMM d, yyyy')}
                 </div>
               </div>
             </div>
