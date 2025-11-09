@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, Clock, Plus, Trash2, Check, MessageSquare, FileText, Edit2, X } from 'lucide-react'
 import type { Workout, WorkoutType, WorkoutExercise, WorkoutSet, Exercise } from '../types'
@@ -17,6 +17,7 @@ function ActiveWorkoutPage() {
   const [searchParams] = useSearchParams()
   const { showToast } = useToast()
   const workoutType = searchParams.get('type') as WorkoutType
+  const workoutId = searchParams.get('id') // Support opening existing workout by ID
   
   const [workout, setWorkout] = useState<Workout | null>(null)
   const [isLoadingWorkout, setIsLoadingWorkout] = useState(true)
@@ -31,6 +32,10 @@ function ActiveWorkoutPage() {
   const [showAddExercise, setShowAddExercise] = useState(false)
   const [isAddingExercise, setIsAddingExercise] = useState(false)
   const [prefilledSets, setPrefilledSets] = useState<Map<string, { weight: number; reps: number }>>(new Map())
+  
+  // Refs to prevent duplicate operations
+  const isCreatingWorkoutRef = useRef(false)
+  const workoutLoadErrorRef = useRef(false)
   
   // Form state for editing/adding exercises
   const [exerciseForm, setExerciseForm] = useState({
@@ -114,40 +119,100 @@ function ActiveWorkoutPage() {
     }
   }
 
-  // Load workout based on URL type parameter
+  // Load workout based on URL type parameter or ID
   useEffect(() => {
     async function loadWorkout() {
       setIsLoadingWorkout(true)
+      workoutLoadErrorRef.current = false
       
       try {
+        // If workoutId is provided, load that specific workout
+        if (workoutId) {
+          try {
+            const existingWorkout = await getWorkoutById(workoutId)
+            if (existingWorkout) {
+              // Auto-populate sets with latest data
+              const populatedWorkout = await autoPopulateWorkoutSets(existingWorkout)
+              setWorkout(populatedWorkout)
+              setIsLoadingWorkout(false)
+              return
+            } else {
+              showToast('error', 'Workout not found')
+              navigate('/')
+              return
+            }
+          } catch (error) {
+            const errorInfo = handleFirestoreError(error)
+            showToast('error', errorInfo.message)
+            navigate('/')
+            return
+          }
+        }
+        
         if (workoutType) {
           // Check if there's a current workout that matches the requested type
-          const currentWorkout = await getCurrentWorkout()
-          if (currentWorkout && currentWorkout.type === workoutType) {
-            // Auto-populate sets with latest data
-            const populatedWorkout = await autoPopulateWorkoutSets(currentWorkout)
-            setWorkout(populatedWorkout)
+          try {
+            const currentWorkout = await getCurrentWorkout()
+            if (currentWorkout && currentWorkout.type === workoutType) {
+              // Auto-populate sets with latest data
+              const populatedWorkout = await autoPopulateWorkoutSets(currentWorkout)
+              setWorkout(populatedWorkout)
+              setIsLoadingWorkout(false)
+              return
+            }
+          } catch (error) {
+            // If getCurrentWorkout fails, log but continue to create new workout
+            const errorInfo = handleFirestoreError(error)
+            console.warn('Could not check for existing workout:', errorInfo.message)
+            workoutLoadErrorRef.current = true
+            // Show error but don't block - allow user to continue
+            if (errorInfo.isIndexError) {
+              showToast('error', 'Index required. Creating new workout anyway. Please create the index to prevent this.')
+            }
+          }
+          
+          // Otherwise, start a new workout with the requested type
+          // Prevent duplicate creation
+          if (isCreatingWorkoutRef.current) {
+            console.log('Workout creation already in progress, skipping...')
             setIsLoadingWorkout(false)
             return
           }
-          // Otherwise, start a new workout with the requested type
-          const newWorkout = await startWorkout(workoutType)
-          // Auto-populate sets with latest data
-          const populatedWorkout = await autoPopulateWorkoutSets(newWorkout)
-          setWorkout(populatedWorkout)
+          
+          isCreatingWorkoutRef.current = true
+          try {
+            const newWorkout = await startWorkout(workoutType)
+            // Auto-populate sets with latest data
+            const populatedWorkout = await autoPopulateWorkoutSets(newWorkout)
+            setWorkout(populatedWorkout)
+          } finally {
+            isCreatingWorkoutRef.current = false
+          }
           setIsLoadingWorkout(false)
           return
         }
         
         // If no type in URL, check for existing workout
-        const currentWorkout = await getCurrentWorkout()
-        if (currentWorkout) {
-          // Auto-populate sets with latest data
-          const populatedWorkout = await autoPopulateWorkoutSets(currentWorkout)
-          setWorkout(populatedWorkout)
-        } else {
-          // No workout and no type specified - navigate away
-          navigate('/')
+        try {
+          const currentWorkout = await getCurrentWorkout()
+          if (currentWorkout) {
+            // Auto-populate sets with latest data
+            const populatedWorkout = await autoPopulateWorkoutSets(currentWorkout)
+            setWorkout(populatedWorkout)
+          } else {
+            // No workout and no type specified - navigate away
+            navigate('/')
+          }
+        } catch (error) {
+          // If getCurrentWorkout fails, show error but don't navigate away
+          // User might want to add exercises even without a workout loaded
+          const errorInfo = handleFirestoreError(error)
+          showToast('error', errorInfo.message)
+          if (errorInfo.indexLink) {
+            console.error('Index creation link:', errorInfo.indexLink)
+          }
+          workoutLoadErrorRef.current = true
+          // Don't navigate away - allow user to see error and potentially continue
         }
       } catch (error) {
         const errorInfo = handleFirestoreError(error)
@@ -155,34 +220,45 @@ function ActiveWorkoutPage() {
         if (errorInfo.indexLink) {
           console.error('Index creation link:', errorInfo.indexLink)
         }
-        // Still try to navigate away on error
-        navigate('/')
+        workoutLoadErrorRef.current = true
+        // Don't navigate away on error - show error and allow user to continue
       } finally {
         setIsLoadingWorkout(false)
       }
     }
     
     loadWorkout()
-  }, [workoutType, navigate, showToast])
+  }, [workoutType, workoutId, navigate, showToast])
 
   // Handle workout type changes in URL - if type changes, start new workout
   useEffect(() => {
     async function handleTypeChange() {
-      if (workoutType && workout) {
+      if (workoutType && workout && !workoutId) {
         // If URL type doesn't match current workout type, start new workout
+        // But only if we're not loading a specific workout by ID
         if (workout.type !== workoutType) {
+          // Prevent duplicate creation
+          if (isCreatingWorkoutRef.current) {
+            return
+          }
+          
           setIsLoadingWorkout(true)
-          const newWorkout = await startWorkout(workoutType)
-          // Auto-populate sets with latest data
-          const populatedWorkout = await autoPopulateWorkoutSets(newWorkout)
-          setWorkout(populatedWorkout)
-          setIsLoadingWorkout(false)
+          isCreatingWorkoutRef.current = true
+          try {
+            const newWorkout = await startWorkout(workoutType)
+            // Auto-populate sets with latest data
+            const populatedWorkout = await autoPopulateWorkoutSets(newWorkout)
+            setWorkout(populatedWorkout)
+          } finally {
+            isCreatingWorkoutRef.current = false
+            setIsLoadingWorkout(false)
+          }
         }
       }
     }
     
     handleTypeChange()
-  }, [workoutType, workout])
+  }, [workoutType, workout, workoutId])
 
   // Timer effect
   useEffect(() => {
@@ -613,11 +689,22 @@ function ActiveWorkoutPage() {
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
+              // Ensure modal can open even if workout load failed
+              if (!workout && !workoutLoadErrorRef.current) {
+                // If workout is still loading, wait a bit
+                if (isLoadingWorkout) {
+                  showToast('info', 'Please wait for workout to load...')
+                  return
+                }
+                // If no workout and no error, can't add exercise
+                showToast('error', 'No workout available. Please start a workout first.')
+                return
+              }
               setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
               setShowAddExercise(true)
             }}
             type="button"
-            disabled={isAddingExercise || isLoadingWorkout}
+            disabled={isAddingExercise}
           >
             <Plus size={20} />
             {isAddingExercise ? 'Adding...' : 'Add Exercise'}
@@ -925,6 +1012,8 @@ function ActiveWorkoutPage() {
         onClose={() => {
           setShowAddExercise(false)
           setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
+          // Reset any error state
+          workoutLoadErrorRef.current = false
         }}
         title="Add Custom Exercise"
         size="md"

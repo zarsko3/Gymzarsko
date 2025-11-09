@@ -193,12 +193,49 @@ export async function getWorkoutById(id: string): Promise<Workout | null> {
   }
 }
 
+// Global flag to prevent duplicate workout creation across multiple calls
+let isCreatingWorkout = false
+let lastWorkoutCreationTime = 0
+const WORKOUT_CREATION_DEBOUNCE_MS = 2000 // 2 second debounce
+
 /**
  * Start a new workout
  * Makes creation idempotent by checking for existing active workout first
+ * Uses debounce and in-flight flag to prevent duplicates
  */
 export async function startWorkout(type: WorkoutType): Promise<Workout> {
   const userId = getUserId()
+  
+  // Debounce: prevent rapid successive calls
+  const now = Date.now()
+  if (isCreatingWorkout || (now - lastWorkoutCreationTime < WORKOUT_CREATION_DEBOUNCE_MS)) {
+    console.log('Workout creation debounced or in progress, checking for existing workout...')
+    // Try to get existing workout instead
+    try {
+      const existingWorkout = await getCurrentWorkout()
+      if (existingWorkout && existingWorkout.type === type && !existingWorkout.completed) {
+        console.log('Returning existing active workout')
+        return existingWorkout
+      }
+    } catch (error) {
+      // If check fails, wait a bit and try again
+      await new Promise(resolve => setTimeout(resolve, 500))
+      try {
+        const existingWorkout = await getCurrentWorkout()
+        if (existingWorkout && existingWorkout.type === type && !existingWorkout.completed) {
+          console.log('Returning existing active workout (retry)')
+          return existingWorkout
+        }
+      } catch (retryError) {
+        console.warn('Could not check for existing workout:', retryError)
+      }
+    }
+    
+    // If still creating, throw error to prevent duplicate
+    if (isCreatingWorkout) {
+      throw new Error('Workout creation already in progress. Please wait...')
+    }
+  }
   
   // Check for existing active workout of the same type to prevent duplicates
   try {
@@ -212,6 +249,10 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
     // This prevents blocking workout creation if index is still building
     console.warn('Could not check for existing workout (index may be building):', error)
   }
+  
+  // Set flag and timestamp
+  isCreatingWorkout = true
+  lastWorkoutCreationTime = now
   
   // Define number of sets per exercise based on workout program
   const setsPerExercise: Record<string, number> = {
@@ -254,11 +295,18 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
       userId, // Ensure userId is included in Firestore doc
     })
     
-    return {
+    const createdWorkout = {
       ...newWorkout,
       id: docRef.id,
     } as Workout
+    
+    // Reset flag after successful creation
+    isCreatingWorkout = false
+    
+    return createdWorkout
   } catch (error) {
+    // Reset flag on error
+    isCreatingWorkout = false
     console.error('Error starting workout:', error)
     throw error
   }
