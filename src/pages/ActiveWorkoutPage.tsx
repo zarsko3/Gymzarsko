@@ -29,6 +29,11 @@ function ActiveWorkoutPage() {
   const [exerciseNameError, setExerciseNameError] = useState('')
   const [showAddExercise, setShowAddExercise] = useState(false)
   
+  // Debug: Log when showAddExercise changes
+  useEffect(() => {
+    console.log('showAddExercise state changed to:', showAddExercise)
+  }, [showAddExercise])
+  
   // Form state for editing/adding exercises
   const [exerciseForm, setExerciseForm] = useState({
     name: '',
@@ -554,19 +559,21 @@ function ActiveWorkoutPage() {
       <div className="px-4 py-6 space-y-4">
         {/* Action Buttons */}
         <div className="flex gap-2">
-          <Button
-            fullWidth
-            variant="secondary"
+          <button
+            className="font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:opacity-80 active:opacity-70 px-6 py-3 text-base min-h-[48px] w-full"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
+              console.log('Add Exercise button clicked - direct button')
               setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
               setShowAddExercise(true)
+              console.log('showAddExercise set to true - direct button')
             }}
+            type="button"
           >
             <Plus size={20} />
             Add Exercise
-          </Button>
+          </button>
         </div>
 
         {/* Exercises */}
@@ -851,9 +858,16 @@ function ActiveWorkoutPage() {
       </Modal>
 
       {/* Add Custom Exercise Modal */}
+      {/* Debug: Show state value */}
+      {showAddExercise && (
+        <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 9999, background: 'red', color: 'white', padding: '10px' }}>
+          DEBUG: Modal should be open (showAddExercise = true)
+        </div>
+      )}
       <Modal
         isOpen={showAddExercise}
         onClose={() => {
+          console.log('Modal onClose called')
           setShowAddExercise(false)
           setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
         }}
