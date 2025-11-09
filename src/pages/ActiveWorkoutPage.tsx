@@ -6,6 +6,7 @@ import { startWorkout, updateWorkout, completeWorkout, getCurrentWorkout, getWor
 import { updateExerciseName, addExerciseToWorkout } from '../services/firestoreExerciseService'
 import { getLatestExerciseData } from '../services/firestoreProgressService'
 import { useToast } from '../hooks/useToast'
+import { handleFirestoreError } from '../utils/firestoreErrorHandler'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
@@ -28,11 +29,8 @@ function ActiveWorkoutPage() {
   const [editingExerciseNameValue, setEditingExerciseNameValue] = useState('')
   const [exerciseNameError, setExerciseNameError] = useState('')
   const [showAddExercise, setShowAddExercise] = useState(false)
-  
-  // Debug: Log when showAddExercise changes
-  useEffect(() => {
-    console.log('showAddExercise state changed to:', showAddExercise)
-  }, [showAddExercise])
+  const [isAddingExercise, setIsAddingExercise] = useState(false)
+  const [prefilledSets, setPrefilledSets] = useState<Map<string, { weight: number; reps: number }>>(new Map())
   
   // Form state for editing/adding exercises
   const [exerciseForm, setExerciseForm] = useState({
@@ -55,6 +53,7 @@ function ActiveWorkoutPage() {
     }
     
     let hasUpdates = false
+    const newPrefilledSets = new Map<string, { weight: number; reps: number }>()
 
     for (const exercise of updatedWorkout.exercises) {
       // Only populate if sets are empty (weight/reps are 0)
@@ -64,6 +63,9 @@ function ActiveWorkoutPage() {
         const latestData = await getLatestExerciseData(exercise.exercise.name)
         
         if (latestData && latestData.weight > 0 && latestData.reps > 0) {
+          // Track that this exercise was prefilled
+          newPrefilledSets.set(exercise.id, { weight: latestData.weight, reps: latestData.reps })
+          
           // Populate all incomplete sets with latest data
           exercise.sets.forEach(set => {
             if (!set.completed && set.weight === 0 && set.reps === 0) {
@@ -77,6 +79,7 @@ function ActiveWorkoutPage() {
     }
 
     if (hasUpdates) {
+      setPrefilledSets(newPrefilledSets)
       setWorkout(updatedWorkout)
       await updateWorkout(updatedWorkout)
     }
@@ -84,45 +87,83 @@ function ActiveWorkoutPage() {
     return updatedWorkout
   }
 
+  // Clear prefilled data for a specific exercise
+  const clearPrefilledData = (exerciseIndex: number) => {
+    if (!workout) return
+    
+    const exercise = workout.exercises[exerciseIndex]
+    const prefilledData = prefilledSets.get(exercise.id)
+    
+    if (prefilledData) {
+      const newWorkout = { ...workout }
+      // Clear all sets that match the prefilled values
+      newWorkout.exercises[exerciseIndex].sets.forEach(set => {
+        if (!set.completed && set.weight === prefilledData.weight && set.reps === prefilledData.reps) {
+          set.weight = 0
+          set.reps = 0
+        }
+      })
+      
+      setWorkout(newWorkout)
+      updateWorkout(newWorkout)
+      
+      // Remove from prefilled sets
+      const newPrefilledSets = new Map(prefilledSets)
+      newPrefilledSets.delete(exercise.id)
+      setPrefilledSets(newPrefilledSets)
+    }
+  }
+
   // Load workout based on URL type parameter
   useEffect(() => {
     async function loadWorkout() {
       setIsLoadingWorkout(true)
       
-      if (workoutType) {
-        // Check if there's a current workout that matches the requested type
-        const currentWorkout = await getCurrentWorkout()
-        if (currentWorkout && currentWorkout.type === workoutType) {
+      try {
+        if (workoutType) {
+          // Check if there's a current workout that matches the requested type
+          const currentWorkout = await getCurrentWorkout()
+          if (currentWorkout && currentWorkout.type === workoutType) {
+            // Auto-populate sets with latest data
+            const populatedWorkout = await autoPopulateWorkoutSets(currentWorkout)
+            setWorkout(populatedWorkout)
+            setIsLoadingWorkout(false)
+            return
+          }
+          // Otherwise, start a new workout with the requested type
+          const newWorkout = await startWorkout(workoutType)
           // Auto-populate sets with latest data
-          const populatedWorkout = await autoPopulateWorkoutSets(currentWorkout)
+          const populatedWorkout = await autoPopulateWorkoutSets(newWorkout)
           setWorkout(populatedWorkout)
           setIsLoadingWorkout(false)
           return
         }
-        // Otherwise, start a new workout with the requested type
-        const newWorkout = await startWorkout(workoutType)
-        // Auto-populate sets with latest data
-        const populatedWorkout = await autoPopulateWorkoutSets(newWorkout)
-        setWorkout(populatedWorkout)
-        setIsLoadingWorkout(false)
-        return
-      }
-      
-      // If no type in URL, check for existing workout
-      const currentWorkout = await getCurrentWorkout()
-      if (currentWorkout) {
-        // Auto-populate sets with latest data
-        const populatedWorkout = await autoPopulateWorkoutSets(currentWorkout)
-        setWorkout(populatedWorkout)
-      } else {
-        // No workout and no type specified - navigate away
+        
+        // If no type in URL, check for existing workout
+        const currentWorkout = await getCurrentWorkout()
+        if (currentWorkout) {
+          // Auto-populate sets with latest data
+          const populatedWorkout = await autoPopulateWorkoutSets(currentWorkout)
+          setWorkout(populatedWorkout)
+        } else {
+          // No workout and no type specified - navigate away
+          navigate('/')
+        }
+      } catch (error) {
+        const errorInfo = handleFirestoreError(error)
+        showToast('error', errorInfo.message)
+        if (errorInfo.indexLink) {
+          console.error('Index creation link:', errorInfo.indexLink)
+        }
+        // Still try to navigate away on error
         navigate('/')
+      } finally {
+        setIsLoadingWorkout(false)
       }
-      setIsLoadingWorkout(false)
     }
     
     loadWorkout()
-  }, [workoutType, navigate])
+  }, [workoutType, navigate, showToast])
 
   // Handle workout type changes in URL - if type changes, start new workout
   useEffect(() => {
@@ -344,6 +385,7 @@ function ActiveWorkoutPage() {
   const handleAddCustomExercise = async () => {
     if (!workout || !workout.id) {
       console.error('Cannot add exercise: workout or workout.id is missing')
+      showToast('error', 'Workout not found. Please try again.')
       return
     }
 
@@ -353,6 +395,7 @@ function ActiveWorkoutPage() {
       return
     }
 
+    setIsAddingExercise(true)
     try {
       // Try to get latest data for this exercise if weight/reps are not set
       let avgWeight = exerciseForm.targetWeight || 0
@@ -410,7 +453,13 @@ function ActiveWorkoutPage() {
       setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
     } catch (error) {
       console.error('Error adding exercise:', error)
-      showToast('error', 'Failed to add exercise. Please try again.')
+      const errorInfo = handleFirestoreError(error)
+      showToast('error', errorInfo.message)
+      if (errorInfo.indexLink) {
+        console.error('Index creation link:', errorInfo.indexLink)
+      }
+    } finally {
+      setIsAddingExercise(false)
     }
   }
 
@@ -564,15 +613,14 @@ function ActiveWorkoutPage() {
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              console.log('Add Exercise button clicked - direct button')
               setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
               setShowAddExercise(true)
-              console.log('showAddExercise set to true - direct button')
             }}
             type="button"
+            disabled={isAddingExercise || isLoadingWorkout}
           >
             <Plus size={20} />
-            Add Exercise
+            {isAddingExercise ? 'Adding...' : 'Add Exercise'}
           </button>
         </div>
 
@@ -627,9 +675,23 @@ function ActiveWorkoutPage() {
                           <Edit2 size={16} />
                         </button>
                       </div>
-                <p className="text-[var(--text-secondary)] text-sm">
-                  {exercise.exercise.muscleGroup}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-[var(--text-secondary)] text-sm">
+                    {exercise.exercise.muscleGroup}
+                  </p>
+                  {prefilledSets.has(exercise.id) && (
+                    <div className="flex items-center gap-1 text-xs text-primary-500">
+                      <span>• From last session</span>
+                      <button
+                        onClick={() => clearPrefilledData(exerciseIndex)}
+                        className="text-primary-500 hover:text-primary-600 underline"
+                        type="button"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
+                </div>
                     </>
                   )}
                 </div>
@@ -858,16 +920,9 @@ function ActiveWorkoutPage() {
       </Modal>
 
       {/* Add Custom Exercise Modal */}
-      {/* Debug: Show state value */}
-      {showAddExercise && (
-        <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 9999, background: 'red', color: 'white', padding: '10px' }}>
-          DEBUG: Modal should be open (showAddExercise = true)
-        </div>
-      )}
       <Modal
         isOpen={showAddExercise}
         onClose={() => {
-          console.log('Modal onClose called')
           setShowAddExercise(false)
           setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
         }}
@@ -893,9 +948,9 @@ function ActiveWorkoutPage() {
                 e.stopPropagation()
                 handleAddCustomExercise()
               }}
-              disabled={!exerciseForm.name.trim() || !exerciseForm.muscleGroup.trim()}
+              disabled={!exerciseForm.name.trim() || !exerciseForm.muscleGroup.trim() || isAddingExercise}
             >
-              Add Exercise
+              {isAddingExercise ? 'Adding...' : 'Add Exercise'}
             </Button>
           </div>
         }

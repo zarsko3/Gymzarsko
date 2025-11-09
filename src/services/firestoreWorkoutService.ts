@@ -195,9 +195,23 @@ export async function getWorkoutById(id: string): Promise<Workout | null> {
 
 /**
  * Start a new workout
+ * Makes creation idempotent by checking for existing active workout first
  */
 export async function startWorkout(type: WorkoutType): Promise<Workout> {
   const userId = getUserId()
+  
+  // Check for existing active workout of the same type to prevent duplicates
+  try {
+    const existingWorkout = await getCurrentWorkout()
+    if (existingWorkout && existingWorkout.type === type && !existingWorkout.completed) {
+      console.log('Active workout of same type already exists, returning existing workout')
+      return existingWorkout
+    }
+  } catch (error) {
+    // If getCurrentWorkout fails (e.g., index not ready), log but continue
+    // This prevents blocking workout creation if index is still building
+    console.warn('Could not check for existing workout (index may be building):', error)
+  }
   
   // Define number of sets per exercise based on workout program
   const setsPerExercise: Record<string, number> = {
@@ -391,11 +405,14 @@ export async function deleteWorkout(id: string): Promise<void> {
 /**
  * Get current active workout (if any)
  * In Firestore, we'll query for workouts without an endTime
+ * Note: This query requires a composite index: userId (Ascending), endTime (Ascending), startTime (Descending)
  */
 export async function getCurrentWorkout(): Promise<Workout | null> {
   try {
     const userId = getUserId()
     const workoutsRef = collection(db, WORKOUTS_COLLECTION)
+    
+    // Query order must match index: userId, endTime, startTime
     const q = query(
       workoutsRef,
       where('userId', '==', userId),
@@ -409,9 +426,20 @@ export async function getCurrentWorkout(): Promise<Workout | null> {
       return firestoreToWorkout(firstDoc.id, firstDoc.data())
     }
     return null
-  } catch (error) {
+  } catch (error: any) {
+    // Check if it's an index error
+    if (error?.code === 'failed-precondition' && error?.message?.includes('index')) {
+      console.error('Firestore index required. Please create the composite index:', error.message)
+      // Extract index creation link if available
+      const indexLinkMatch = error.message.match(/https:\/\/console\.firebase\.google\.com[^\s]+/)
+      if (indexLinkMatch) {
+        console.error('Create index at:', indexLinkMatch[0])
+      }
+      // Re-throw with more context for error handler
+      throw new Error(`Firestore index required. ${indexLinkMatch ? `Create it at: ${indexLinkMatch[0]}` : 'Check Firebase console for required indexes.'}`)
+    }
     console.error('Error getting current workout:', error)
-    return null
+    throw error
   }
 }
 
