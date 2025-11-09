@@ -31,7 +31,7 @@ export default function SplashScreen({
     <AnimatePresence>
       {show && (
         <motion.div
-          className="fixed inset-0 z-[9999] bg-[#F8FAFC] flex items-center justify-center"
+          className="fixed inset-0 z-[9999] bg-[var(--bg-primary)] flex items-center justify-center"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={shouldReduceMotion ? { duration: 0.1 } : { duration: 0.35, ease: 'easeOut' }}
@@ -46,14 +46,24 @@ export default function SplashScreen({
             transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.5, ease: 'easeOut' }}
           />
 
-          {/* Subtle breathing glow behind the logo */}
+          {/* Subtle breathing glow behind the logo - theme-aware */}
           {!shouldReduceMotion && (
-            <motion.div
-              className="absolute w-48 h-48 rounded-full bg-emerald-500/10 blur-3xl"
-              initial={{ opacity: 0.0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: [0.9, 1.05, 0.9] }}
-              transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-            />
+            <>
+              {/* Light mode glow */}
+              <motion.div
+                className="absolute w-48 h-48 rounded-full bg-primary-500/10 dark:bg-primary-400/20 blur-3xl"
+                initial={{ opacity: 0.0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: [0.9, 1.05, 0.9] }}
+                transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+              />
+              {/* Additional subtle glow for depth in dark mode */}
+              <motion.div
+                className="absolute w-64 h-64 rounded-full bg-primary-500/5 dark:bg-primary-500/10 blur-3xl"
+                initial={{ opacity: 0.0, scale: 0.7 }}
+                animate={{ opacity: 1, scale: [0.85, 1.1, 0.85] }}
+                transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
+              />
+            </>
           )}
         </motion.div>
       )}
