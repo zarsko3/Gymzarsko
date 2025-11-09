@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
-import { ChevronLeft, MoreVertical, Clock, TrendingUp, Calendar, Dumbbell, Search, X, Flame, Activity, Plus, Edit2 } from 'lucide-react'
+import { ChevronLeft, Trash2, Clock, TrendingUp, Calendar, Dumbbell, Search, X, Flame, Activity, Plus } from 'lucide-react'
 import type { Workout, WorkoutType } from '../types'
 import { getWorkouts, deleteWorkout, subscribeToWorkouts, createWorkoutWithDate, updateWorkout } from '../services/workoutServiceFacade'
 import { useToast } from '../hooks/useToast'
@@ -106,10 +106,6 @@ function HistoryPage() {
       showToast('error', 'Failed to add workout. Please try again.')
       throw error
     }
-  }
-
-  const handleEditWorkout = (workout: Workout) => {
-    navigate(`/workout/detail/${workout.id}`)
   }
 
   const getWorkoutStats = (workout: typeof workouts[0]) => {
@@ -364,22 +360,12 @@ function HistoryPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                          handleEditWorkout(workout)
-                        }}
-                        className="text-[var(--text-secondary)] hover:text-primary-500 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
-                        aria-label="Edit workout"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
                           handleDeleteWorkout(workout.id)
                         }}
-                        className="text-[var(--text-secondary)] hover:text-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                        className="text-red-500 hover:text-red-600 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
                         aria-label="Delete workout"
                       >
-                        <MoreVertical size={20} />
+                        <Trash2 size={20} />
                       </button>
                     </div>
                   </div>
