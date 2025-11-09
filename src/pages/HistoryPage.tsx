@@ -143,9 +143,7 @@ function HistoryPage() {
               <span>Back</span>
             </button>
             <h1 className="text-lg font-semibold text-primary-600">History</h1>
-            <button className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] min-h-[44px] min-w-[44px] flex items-center justify-center">
-              <MoreVertical size={24} />
-            </button>
+            <div className="min-w-[44px]"></div>
           </div>
         </div>
 
