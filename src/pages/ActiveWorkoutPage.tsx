@@ -4,6 +4,7 @@ import { ChevronLeft, Clock, Plus, Trash2, Check, MessageSquare, FileText, Edit2
 import type { Workout, WorkoutType, WorkoutExercise, WorkoutSet, Exercise } from '../types'
 import { startWorkout, updateWorkout, completeWorkout, getCurrentWorkout, getWorkoutById } from '../services/workoutServiceFacade'
 import { updateExerciseName, addExerciseToWorkout } from '../services/firestoreExerciseService'
+import { getLatestExerciseData } from '../services/firestoreProgressService'
 import { useToast } from '../hooks/useToast'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -37,6 +38,47 @@ function ActiveWorkoutPage() {
     targetReps: 10,
   })
 
+  // Helper function to auto-populate sets with latest data
+  const autoPopulateWorkoutSets = async (workout: Workout): Promise<Workout> => {
+    // Create a deep copy of the workout to avoid mutating the original
+    const updatedWorkout: Workout = {
+      ...workout,
+      exercises: workout.exercises.map(exercise => ({
+        ...exercise,
+        sets: exercise.sets.map(set => ({ ...set }))
+      }))
+    }
+    
+    let hasUpdates = false
+
+    for (const exercise of updatedWorkout.exercises) {
+      // Only populate if sets are empty (weight/reps are 0)
+      const hasEmptySets = exercise.sets.some(set => set.weight === 0 && set.reps === 0 && !set.completed)
+      
+      if (hasEmptySets) {
+        const latestData = await getLatestExerciseData(exercise.exercise.name)
+        
+        if (latestData && latestData.weight > 0 && latestData.reps > 0) {
+          // Populate all incomplete sets with latest data
+          exercise.sets.forEach(set => {
+            if (!set.completed && set.weight === 0 && set.reps === 0) {
+              set.weight = latestData.weight
+              set.reps = latestData.reps
+              hasUpdates = true
+            }
+          })
+        }
+      }
+    }
+
+    if (hasUpdates) {
+      setWorkout(updatedWorkout)
+      await updateWorkout(updatedWorkout)
+    }
+    
+    return updatedWorkout
+  }
+
   // Load workout based on URL type parameter
   useEffect(() => {
     async function loadWorkout() {
@@ -46,13 +88,17 @@ function ActiveWorkoutPage() {
         // Check if there's a current workout that matches the requested type
         const currentWorkout = await getCurrentWorkout()
         if (currentWorkout && currentWorkout.type === workoutType) {
-          setWorkout(currentWorkout)
+          // Auto-populate sets with latest data
+          const populatedWorkout = await autoPopulateWorkoutSets(currentWorkout)
+          setWorkout(populatedWorkout)
           setIsLoadingWorkout(false)
           return
         }
         // Otherwise, start a new workout with the requested type
         const newWorkout = await startWorkout(workoutType)
-        setWorkout(newWorkout)
+        // Auto-populate sets with latest data
+        const populatedWorkout = await autoPopulateWorkoutSets(newWorkout)
+        setWorkout(populatedWorkout)
         setIsLoadingWorkout(false)
         return
       }
@@ -60,7 +106,9 @@ function ActiveWorkoutPage() {
       // If no type in URL, check for existing workout
       const currentWorkout = await getCurrentWorkout()
       if (currentWorkout) {
-        setWorkout(currentWorkout)
+        // Auto-populate sets with latest data
+        const populatedWorkout = await autoPopulateWorkoutSets(currentWorkout)
+        setWorkout(populatedWorkout)
       } else {
         // No workout and no type specified - navigate away
         navigate('/')
@@ -79,7 +127,9 @@ function ActiveWorkoutPage() {
         if (workout.type !== workoutType) {
           setIsLoadingWorkout(true)
           const newWorkout = await startWorkout(workoutType)
-          setWorkout(newWorkout)
+          // Auto-populate sets with latest data
+          const populatedWorkout = await autoPopulateWorkoutSets(newWorkout)
+          setWorkout(populatedWorkout)
           setIsLoadingWorkout(false)
         }
       }
@@ -287,12 +337,30 @@ function ActiveWorkoutPage() {
   }
 
   const handleAddCustomExercise = async () => {
-    if (!workout || !workout.id) return
+    if (!workout || !workout.id) {
+      console.error('Cannot add exercise: workout or workout.id is missing')
+      return
+    }
+
+    // Validate form
+    if (!exerciseForm.name.trim() || !exerciseForm.muscleGroup.trim()) {
+      showToast('error', 'Please fill in all required fields')
+      return
+    }
 
     try {
-      // Calculate average weight and reps for the sets
-      const avgWeight = exerciseForm.targetWeight || 0
-      const avgReps = exerciseForm.targetReps || 10
+      // Try to get latest data for this exercise if weight/reps are not set
+      let avgWeight = exerciseForm.targetWeight || 0
+      let avgReps = exerciseForm.targetReps || 10
+      
+      if (avgWeight === 0 || avgReps === 10) {
+        const latestData = await getLatestExerciseData(exerciseForm.name.trim())
+        if (latestData) {
+          avgWeight = avgWeight || latestData.weight
+          avgReps = avgReps === 10 ? latestData.reps : avgReps
+        }
+      }
+
       const numSets = Math.max(1, Math.floor(exerciseForm.sets))
 
       // Save exercise to Firestore subcollection and get the exercise ID
@@ -489,7 +557,9 @@ function ActiveWorkoutPage() {
           <Button
             fullWidth
             variant="secondary"
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
               setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
               setShowAddExercise(true)
             }}
@@ -804,7 +874,11 @@ function ActiveWorkoutPage() {
             <Button
               variant="primary"
               fullWidth
-              onClick={handleAddCustomExercise}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                handleAddCustomExercise()
+              }}
               disabled={!exerciseForm.name.trim() || !exerciseForm.muscleGroup.trim()}
             >
               Add Exercise

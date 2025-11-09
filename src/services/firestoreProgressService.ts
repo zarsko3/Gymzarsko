@@ -1,4 +1,4 @@
-import { getWorkouts } from './firestoreWorkoutService'
+import { getWorkouts } from './workoutServiceFacade'
 import type { Workout } from '../types'
 
 interface ExercisePR {
@@ -101,5 +101,47 @@ export async function getExerciseHistory(exerciseId: string): Promise<ExerciseHi
 
   // Sort by date, most recent first
   return history.sort((a, b) => b.date.getTime() - a.date.getTime())
+}
+
+/**
+ * Get latest weight and reps for an exercise by name
+ * Returns the most recent completed set data for the exercise
+ * Workouts are already sorted by date descending from getWorkouts()
+ */
+export async function getLatestExerciseData(exerciseName: string): Promise<{ weight: number; reps: number } | null> {
+  try {
+    const allWorkouts = await getWorkouts()
+    
+    // Workouts are already sorted by date descending (most recent first)
+    // Find the most recent workout that contains this exercise with completed sets
+    for (const workout of allWorkouts) {
+      const exercise = workout.exercises.find(
+        ex => ex.exercise.name.toLowerCase() === exerciseName.toLowerCase()
+      )
+      
+      if (exercise) {
+        // Find completed sets with actual data
+        const completedSets = exercise.sets.filter(
+          set => set.completed && set.weight > 0 && set.reps > 0
+        )
+        
+        if (completedSets.length > 0) {
+          // Get the set with the highest weight (or most recent if weights are equal)
+          // For simplicity, we'll use the first completed set from the most recent workout
+          // In practice, you might want to average or use the last set
+          const latestSet = completedSets[completedSets.length - 1]
+          return {
+            weight: latestSet.weight,
+            reps: latestSet.reps,
+          }
+        }
+      }
+    }
+    
+    return null
+  } catch (error) {
+    console.error('Error getting latest exercise data:', error)
+    return null
+  }
 }
 
