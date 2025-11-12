@@ -12,7 +12,6 @@ import {
   ReferenceLine,
 } from 'recharts'
 import type { BodyMetricEntry, BodyMetricGoal } from '../../types'
-import { useClientWidth } from '../../hooks/useClientWidth'
 
 interface MetricChartProps {
   entries: BodyMetricEntry[]
@@ -23,7 +22,6 @@ interface MetricChartProps {
 
 function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChartProps) {
   const [accentColor, setAccentColor] = useState<string>('#10B981')
-  const { ref: containerRef, width: containerWidth } = useClientWidth()
   const shouldReduceMotion = useReducedMotion() ?? false
 
   // Get computed CSS variable value for accent color
@@ -74,26 +72,8 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
         : Number(String(entry.weight).replace(/[^0-9.]/g, '')) || 0,
     }))
 
-    console.log('[MetricChart] Chart data prepared:', { 
-      inputCount: entries.length, 
-      filteredCount: filtered.length,
-      validCount: validEntries.length,
-      finalCount: data.length, 
-      timeRange,
-      sample: data[0] 
-    })
-
     return data
   }, [entries, timeRange])
-
-  // Debug: Log container width changes
-  useEffect(() => {
-    console.log('[MetricChart] Container width:', containerWidth, 'chartData length:', chartData.length)
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect()
-      console.log('[MetricChart] Container rect:', { width: rect.width, height: rect.height })
-    }
-  }, [containerWidth, chartData.length, containerRef])
 
 
   // Calculate Y-axis domain with padding
@@ -223,79 +203,74 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
       </div>
 
       <div 
-        ref={containerRef}
         className="bg-card rounded-xl p-4 border border-[var(--border-primary)] w-full min-w-0 flex-1"
         style={{ minWidth: 0 }}
       >
-        {containerWidth > 0 && chartData.length > 0 ? (
-          <ResponsiveContainer width={containerWidth} height={250} key={timeRange}>
-            <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="var(--border-primary)"
-              opacity={0.2}
-              vertical={false}
-            />
-            <XAxis
-              dataKey="dateLabel"
-              stroke="var(--text-secondary)"
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-              interval="preserveStartEnd"
-            />
-            <YAxis
-              domain={yAxisDomain}
-              stroke="var(--text-secondary)"
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(value) => `${value}kg`}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            
-            {/* Goal line */}
-            {goal && (
-              <ReferenceLine
-                y={goal.targetWeight}
-                stroke="#10B981"
-                strokeDasharray="5 5"
-                strokeWidth={2}
-                label={{
-                  value: `Goal: ${goal.targetWeight}kg`,
-                  position: 'right',
-                  fill: '#10B981',
-                  fontSize: 12,
-                }}
-              />
-            )}
-            
-            <Line
-              type="monotone"
-              dataKey="weight"
-              stroke={accentColor}
-              strokeWidth={2}
-              dot={{ fill: accentColor, r: 4 }}
-              activeDot={{ r: 6, stroke: accentColor, strokeWidth: 2 }}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              isAnimationActive={!shouldReduceMotion}
-              animationDuration={shouldReduceMotion ? 0 : 1000}
-              animationEasing="ease-out"
-            />
-          </LineChart>
-        </ResponsiveContainer>
-        ) : containerWidth === 0 ? (
-          <div className="w-full h-[250px] flex items-center justify-center">
-            <div className="text-[var(--text-secondary)] text-sm">
-              {chartData.length === 0 ? 'No data available' : 'Loading chart...'}
-            </div>
+        {chartData.length > 0 ? (
+          <div style={{ overflow: 'visible', position: 'relative', zIndex: 2 }}>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--border-primary)"
+                  opacity={0.2}
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="dateLabel"
+                  stroke="var(--text-secondary)"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  interval="preserveStartEnd"
+                />
+                <YAxis
+                  domain={yAxisDomain}
+                  stroke="var(--text-secondary)"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `${value}kg`}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                
+                {/* Goal line */}
+                {goal && (
+                  <ReferenceLine
+                    y={goal.targetWeight}
+                    stroke="#10B981"
+                    strokeDasharray="5 5"
+                    strokeWidth={2}
+                    label={{
+                      value: `Goal: ${goal.targetWeight}kg`,
+                      position: 'right',
+                      fill: '#10B981',
+                      fontSize: 12,
+                    }}
+                  />
+                )}
+                
+                <Line
+                  type="monotone"
+                  dataKey="weight"
+                  stroke={accentColor}
+                  strokeWidth={2}
+                  dot={{ fill: accentColor, r: 4 }}
+                  activeDot={{ r: 6, stroke: accentColor, strokeWidth: 2 }}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  isAnimationActive={!shouldReduceMotion}
+                  animationDuration={shouldReduceMotion ? 0 : 1000}
+                  animationEasing="ease-out"
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
-        ) : chartData.length === 0 ? (
+        ) : (
           <div className="w-full h-[250px] flex items-center justify-center">
             <div className="text-[var(--text-secondary)] text-sm">No data available</div>
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   )

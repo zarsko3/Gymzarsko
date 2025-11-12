@@ -272,10 +272,6 @@ function ProgressPage() {
           initial={shouldReduceMotion ? {} : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          onAnimationComplete={() => {
-            // Force width check after animation completes
-            console.log('[ProgressPage] Chart animation complete, forcing width check')
-          }}
         >
           <MetricChart
             entries={entries}
