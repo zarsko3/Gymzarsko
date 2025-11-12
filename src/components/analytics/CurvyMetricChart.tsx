@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { AreaChart, Area, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
+import { AreaChart, Area, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine } from 'recharts'
 
 export type MetricType = 'volume' | 'intensity' | 'duration' | 'density'
 
@@ -186,25 +186,21 @@ function CurvyMetricChart({ data, metric, compare, height = 220, unit }: CurvyMe
         
         {/* Custom tooltip with full-height vertical cursor */}
         <Tooltip
-          cursor={(props: any) => {
-            if (!props?.points?.[0]) return null
-            const { x, height, viewBox } = props
-            return (
-              <g>
-                <line
-                  x1={x}
-                  x2={x}
-                  y1={viewBox.y}
-                  y2={viewBox.y + height}
-                  stroke="rgba(255,255,255,.35)"
-                  strokeWidth={2}
-                />
-              </g>
-            )
+          cursor={{
+            stroke: 'rgba(255,255,255,.35)',
+            strokeWidth: 2,
           }}
           content={<PillTooltip />}
           wrapperStyle={{ outline: 'none' }}
         />
+        {/* Full-height vertical line on hover */}
+        {activeIndex !== null && chartData[activeIndex] && (
+          <ReferenceLine
+            x={chartData[activeIndex].label}
+            stroke="rgba(255,255,255,.35)"
+            strokeWidth={2}
+          />
+        )}
         
         {/* Compare line (dashed) */}
         {compare && compare.length > 0 && (
