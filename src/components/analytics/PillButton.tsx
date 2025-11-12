@@ -12,13 +12,22 @@ function PillButton({ active, onClick, children, className = '' }: PillButtonPro
     <motion.button
       onClick={onClick}
       data-active={active}
-      className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${className} ${
+      className={`rounded-full transition-all ${className} ${
         active
-          ? 'bg-[var(--accent)] text-[var(--text)]'
+          ? 'bg-[var(--accent)] text-[var(--text)] shadow-[0_4px_12px_rgba(255,181,92,0.25)]'
           : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
       }`}
-      whileTap={{ scale: 0.98 }}
+      whileHover={active ? {} : { 
+        scale: 1.02,
+        transition: { duration: 0.2 }
+      }}
+      whileTap={{ scale: 0.96 }}
       transition={{ duration: 0.15 }}
+      style={{
+        boxShadow: active 
+          ? '0 4px 12px rgba(255, 181, 92, 0.25), 0 0 0 1px rgba(255, 181, 92, 0.1) inset'
+          : 'none',
+      }}
     >
       {children}
     </motion.button>
