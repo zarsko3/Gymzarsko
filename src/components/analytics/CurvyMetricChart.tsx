@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { AreaChart, Area, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine, CartesianGrid } from 'recharts'
+import { AreaChart, Area, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
 
 export type MetricType = 'volume' | 'intensity' | 'duration' | 'density'
 
@@ -19,9 +19,42 @@ interface CurvyMetricChartProps {
   metric: MetricType
   compare?: CompareDataPoint[] | null
   height?: number
+  unit?: string
 }
 
-function CurvyMetricChart({ data, metric, compare, height = 200 }: CurvyMetricChartProps) {
+// Reference-style metric colors (lighter, softer)
+const METRIC = {
+  volume: {
+    line: '#FFF7D1',
+    glow: '#FFF7D1',
+    fillTop: 'rgba(255,247,209,.25)',
+    fillBottom: 'rgba(255,247,209,0)',
+    tooltipBg: '#FFF1B8',
+  },
+  intensity: {
+    line: '#D7E8FF',
+    glow: '#D7E8FF',
+    fillTop: 'rgba(215,232,255,.25)',
+    fillBottom: 'rgba(215,232,255,0)',
+    tooltipBg: '#B8D9FF',
+  },
+  duration: {
+    line: '#E6DAFF',
+    glow: '#E6DAFF',
+    fillTop: 'rgba(230,218,255,.25)',
+    fillBottom: 'rgba(230,218,255,0)',
+    tooltipBg: '#D4C2FF',
+  },
+  density: {
+    line: '#CFF8E7',
+    glow: '#CFF8E7',
+    fillTop: 'rgba(207,248,231,.25)',
+    fillBottom: 'rgba(207,248,231,0)',
+    tooltipBg: '#B8F5D9',
+  },
+} as const
+
+function CurvyMetricChart({ data, metric, compare, height = 220, unit }: CurvyMetricChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   
   if (data.length === 0) {
@@ -32,51 +65,69 @@ function CurvyMetricChart({ data, metric, compare, height = 200 }: CurvyMetricCh
     )
   }
   
-  // Metric-specific colors
-  const metricColors = {
-    volume: { line: '#FFD37A', fill: '#FFD37A', strong: '#FFB55C' },
-    intensity: { line: '#7ACBFF', fill: '#7ACBFF', strong: '#5AA3E0' },
-    duration: { line: '#B58CFF', fill: '#B58CFF', strong: '#9A6FE0' },
-    density: { line: '#41D696', fill: '#41D696', strong: '#2EB875' },
-  }
+  const theme = METRIC[metric]
+  const ids = useMemo(() => {
+    const uid = Math.random().toString(36).slice(2)
+    return { fill: `fill-${uid}`, glow: `glow-${uid}` }
+  }, [])
   
-  const colors = metricColors[metric]
-  const gradientId = `grad-${metric}-${Math.random().toString(36).substr(2, 9)}`
-  const fillGradientId = `fill-${metric}-${Math.random().toString(36).substr(2, 9)}`
+  // Determine unit if not provided
+  const displayUnit = unit || (metric === 'volume' ? 'KG' : metric === 'intensity' ? 'KG' : metric === 'duration' ? 'min' : 'kg/min')
   
-  // Format value based on metric type
+  // Format value for tooltip
   const formatValue = (value: number) => {
-    const nf = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
-    if (metric === 'volume') return `${nf.format(value)} kg`
-    if (metric === 'intensity') return `${Math.round(value)} kg`
+    if (metric === 'volume' || metric === 'intensity') {
+      return Math.round(value)
+    }
     if (metric === 'duration') {
       const hours = Math.floor(value / 60)
       const minutes = Math.round(value % 60)
       return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
     }
-    if (metric === 'density') return `${value.toFixed(1)} kg/min`
-    return nf.format(value)
+    if (metric === 'density') {
+      return value.toFixed(1)
+    }
+    return Math.round(value)
   }
   
-  // Custom tooltip component
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (!active || !payload || payload.length === 0) return null
+  // Pill tooltip with tail
+  const PillTooltip = ({ active, payload }: any) => {
+    if (!active || !payload?.length) return null
     
-    const dataPoint = payload[0]
-    const value = dataPoint.value as number
+    const value = payload[0].value as number
     const compareValue = payload[1]?.value
     
     return (
-      <div className="bg-[var(--surface-2)] border border-white/10 rounded-lg px-3 py-2 shadow-lg">
-        <div className="text-xs text-[var(--text-dim)] mb-1">{dataPoint.payload.label}</div>
-        <div className="text-sm font-semibold" style={{ color: colors.line }}>
-          {formatValue(value)}
+      <div className="relative">
+        <div
+          className="rounded-xl px-4 py-2 font-extrabold shadow-lg"
+          style={{
+            background: theme.tooltipBg,
+            color: '#262626',
+            borderRadius: 12,
+          }}
+        >
+          {formatValue(value)} {displayUnit}
+          {compare && compareValue !== undefined && (
+            <div className="text-xs mt-1 opacity-70">
+              vs {formatValue(compareValue)}
+            </div>
+          )}
         </div>
-        {compare && compareValue !== undefined && (
-          <div className="text-xs text-[var(--text-dim)] mt-1">
-            Compare: {formatValue(compareValue)}
-          </div>
-        )}
+        {/* Tail */}
+        <div
+          style={{
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            top: '100%',
+            width: 0,
+            height: 0,
+            borderLeft: '8px solid transparent',
+            borderRight: '8px solid transparent',
+            borderTop: `8px solid ${theme.tooltipBg}`,
+          }}
+        />
       </div>
     )
   }
@@ -98,70 +149,106 @@ function CurvyMetricChart({ data, metric, compare, height = 200 }: CurvyMetricCh
   
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <AreaChart 
-        data={chartData} 
-        margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
-        onMouseMove={(state) => {
-          if (state?.activeTooltipIndex !== undefined && typeof state.activeTooltipIndex === 'number') {
-            setActiveIndex(state.activeTooltipIndex)
-          }
+      <AreaChart
+        data={chartData}
+        margin={{ top: 12, right: 8, left: 8, bottom: 8 }}
+        onMouseMove={(e: any) => {
+          const idx = e?.activeTooltipIndex
+          setActiveIndex(typeof idx === 'number' ? idx : null)
         }}
         onMouseLeave={() => setActiveIndex(null)}
       >
         <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={colors.strong} stopOpacity="1" />
-            <stop offset="100%" stopColor={colors.line} stopOpacity="0.3" />
+          {/* Area fill gradient */}
+          <linearGradient id={ids.fill} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={theme.fillTop} />
+            <stop offset="100%" stopColor={theme.fillBottom} />
           </linearGradient>
-          <linearGradient id={fillGradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={colors.fill} stopOpacity="0.25" />
-            <stop offset="100%" stopColor={colors.fill} stopOpacity="0" />
-          </linearGradient>
+          {/* Glow filter for active dot */}
+          <filter id={ids.glow}>
+            <feGaussianBlur stdDeviation="3.5" result="coloredBlur" />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
-        <CartesianGrid strokeDasharray="0" stroke="rgba(255,255,255,0.03)" />
-        <XAxis 
-          dataKey="label" 
-          hide 
+        
+        {/* X-axis with weekday labels */}
+        <XAxis
+          dataKey="label"
+          tick={{ fill: 'rgba(255,255,255,.6)', fontSize: 14, fontWeight: 600 }}
           axisLine={false}
           tickLine={false}
+          tickFormatter={(d) => d.toLowerCase()}
         />
-        <YAxis 
-          hide
-          axisLine={false}
-          tickLine={false}
+        <YAxis hide />
+        
+        {/* Custom tooltip with full-height vertical cursor */}
+        <Tooltip
+          cursor={(props: any) => {
+            if (!props?.points?.[0]) return null
+            const { x, height, viewBox } = props
+            return (
+              <g>
+                <line
+                  x1={x}
+                  x2={x}
+                  y1={viewBox.y}
+                  y2={viewBox.y + height}
+                  stroke="rgba(255,255,255,.35)"
+                  strokeWidth={2}
+                />
+              </g>
+            )
+          }}
+          content={<PillTooltip />}
+          wrapperStyle={{ outline: 'none' }}
         />
-        <Tooltip content={<CustomTooltip />} />
-        {/* Vertical reference line on hover */}
-        {activeIndex !== null && chartData[activeIndex] && (
-          <ReferenceLine
-            x={chartData[activeIndex].label}
-            stroke="rgba(255,255,255,0.2)"
-            strokeWidth={1}
-            strokeDasharray="2 2"
-          />
-        )}
+        
         {/* Compare line (dashed) */}
         {compare && compare.length > 0 && (
-          <Line
+          <Area
             type="monotone"
             dataKey="compareValue"
-            stroke={colors.line}
-            strokeWidth={2}
-            strokeDasharray="4 4"
-            strokeOpacity={0.5}
+            stroke={theme.line}
+            strokeWidth={3}
+            strokeDasharray="6 6"
+            strokeOpacity={0.4}
+            fill="none"
             dot={false}
             activeDot={false}
           />
         )}
-        {/* Main area chart */}
+        
+        {/* Main area chart with curvy line and glowing active dot */}
         <Area
           type="monotone"
           dataKey="value"
-          stroke={colors.line}
-          strokeWidth={3}
-          fill={`url(#${fillGradientId})`}
-          dot={data.length <= 20 ? { r: 3, fill: colors.strong, strokeWidth: 2 } : false}
-          activeDot={{ r: 5, fill: colors.strong, stroke: colors.line, strokeWidth: 2 }}
+          stroke={theme.line}
+          strokeWidth={4}
+          fill={`url(#${ids.fill})`}
+          dot={data.length <= 20 ? (p: any) => {
+            const isActive = p.index === activeIndex
+            return (
+              <circle
+                cx={p.cx}
+                cy={p.cy}
+                r={isActive ? 6 : 4}
+                fill={theme.line}
+                stroke="#1a1930"
+                strokeWidth={2}
+                filter={isActive ? `url(#${ids.glow})` : undefined}
+              />
+            )
+          } : false}
+          activeDot={{
+            r: 6,
+            fill: theme.line,
+            stroke: '#1a1930',
+            strokeWidth: 2,
+            filter: `url(#${ids.glow})`,
+          }}
         />
       </AreaChart>
     </ResponsiveContainer>

@@ -18,7 +18,8 @@ function VolumeTrendChart({ metrics, compareMode }: VolumeTrendChartProps) {
       data={chartData}
       metric="volume"
       compare={comparisonData}
-      height={200}
+      height={220}
+      unit="KG"
     />
   )
 }

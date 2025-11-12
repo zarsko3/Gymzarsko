@@ -21,26 +21,27 @@ function DurationDensityChart({ metrics, compareMode }: DurationDensityChartProp
   // Primary: density with compare line
   // Overlay: duration as thin dashed line
   return (
-    <div className="relative w-full" style={{ height: 200 }}>
+    <div className="relative w-full" style={{ height: 220 }}>
       <CurvyMetricChart
         data={densityData}
         metric="density"
         compare={comparisonData}
-        height={200}
+        height={220}
+        unit="kg/min"
       />
       {/* Duration overlay */}
       {durationData.length > 0 && (
         <div className="absolute inset-0 pointer-events-none">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={durationData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+            <AreaChart data={durationData} margin={{ top: 12, right: 8, left: 8, bottom: 8 }}>
               <XAxis hide />
               <YAxis hide />
               <Line
                 type="monotone"
                 dataKey="duration"
-                stroke="rgba(181,140,255,0.4)"
-                strokeWidth={1.5}
-                strokeDasharray="3 3"
+                stroke="rgba(230,218,255,0.5)"
+                strokeWidth={2}
+                strokeDasharray="4 4"
                 dot={false}
                 activeDot={false}
               />

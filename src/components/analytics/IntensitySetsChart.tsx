@@ -20,7 +20,8 @@ function IntensitySetsChart({ metrics, compareMode }: IntensitySetsChartProps) {
       data={chartData}
       metric="intensity"
       compare={comparisonData}
-      height={200}
+      height={220}
+      unit="KG"
     />
   )
 }
