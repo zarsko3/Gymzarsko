@@ -227,7 +227,7 @@ function ProgressPage() {
         </div>
 
         {/* Chart */}
-        <div className="w-full min-w-0">
+        <div className="w-full min-w-0 flex-1 flex flex-col">
           <MetricChart
             entries={entries}
             goal={goal}

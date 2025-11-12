@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState, useRef, useLayoutEffect } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import { format, subDays, startOfDay } from 'date-fns'
 import {
   LineChart,
@@ -11,6 +11,7 @@ import {
   ReferenceLine,
 } from 'recharts'
 import type { BodyMetricEntry, BodyMetricGoal } from '../../types'
+import { useClientWidth } from '../../hooks/useClientWidth'
 
 interface MetricChartProps {
   entries: BodyMetricEntry[]
@@ -21,8 +22,7 @@ interface MetricChartProps {
 
 function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChartProps) {
   const [accentColor, setAccentColor] = useState<string>('#10B981')
-  const [containerWidth, setContainerWidth] = useState<number>(0)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const { ref: containerRef, width: containerWidth } = useClientWidth()
 
   // Get computed CSS variable value for accent color
   useEffect(() => {
@@ -32,68 +32,6 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
       setAccentColor(computed)
     }
   }, [])
-
-  // Use ResizeObserver to detect container width changes
-  useEffect(() => {
-    if (!containerRef.current) return
-
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const width = entry.contentRect.width
-        if (width > 0) {
-          console.log('ResizeObserver detected width:', width)
-          setContainerWidth(width)
-        }
-      }
-    })
-
-    resizeObserver.observe(containerRef.current)
-
-    // Check width immediately and with retries
-    let retryCount = 0
-    const maxRetries = 5
-    
-    const checkWidth = () => {
-      if (!containerRef.current) return
-      
-      const width = containerRef.current.getBoundingClientRect().width
-      console.log(`Chart container width check (attempt ${retryCount + 1}):`, width)
-      
-      if (width > 0) {
-        setContainerWidth(width)
-      } else if (retryCount < maxRetries) {
-        retryCount++
-        // Try again on next frame
-        requestAnimationFrame(checkWidth)
-      }
-    }
-    
-    // Check immediately
-    checkWidth()
-    
-    // Also check after delays to catch layout changes
-    const timeoutId1 = setTimeout(checkWidth, 50)
-    const timeoutId2 = setTimeout(checkWidth, 200)
-    
-    // Final fallback - force render after 500ms if width is still 0
-    const timeoutId3 = setTimeout(() => {
-      if (containerRef.current) {
-        const width = containerRef.current.getBoundingClientRect().width
-        if (width === 0) {
-          console.warn('Width still 0 after 500ms, forcing render with fallback')
-          // Use a reasonable fallback width (typical mobile width)
-          setContainerWidth(350)
-        }
-      }
-    }, 500)
-
-    return () => {
-      resizeObserver.disconnect()
-      clearTimeout(timeoutId1)
-      clearTimeout(timeoutId2)
-      clearTimeout(timeoutId3)
-    }
-  }, [timeRange])
 
   // Filter entries based on time range
   const filteredEntries = useMemo(() => {
@@ -221,11 +159,11 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
 
       <div 
         ref={containerRef}
-        className="bg-card rounded-xl p-4 border border-[var(--border-primary)] w-full min-w-0"
-        style={{ minWidth: 0, width: '100%' }}
+        className="bg-card rounded-xl p-4 border border-[var(--border-primary)] w-full min-w-0 flex-1"
+        style={{ minWidth: 0 }}
       >
         {containerWidth > 0 && chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={250} key={`${timeRange}-${containerWidth}`}>
+          <ResponsiveContainer width={containerWidth} height={250} key={`${timeRange}-${containerWidth}`}>
             <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
