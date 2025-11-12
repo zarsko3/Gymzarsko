@@ -198,6 +198,10 @@ let isCreatingWorkout = false
 let lastWorkoutCreationTime = 0
 const WORKOUT_CREATION_DEBOUNCE_MS = 2000 // 2 second debounce
 
+// Track recently completed workouts to prevent immediate duplicates
+let recentlyCompletedWorkouts: Map<string, number> = new Map() // type -> timestamp
+const RECENTLY_COMPLETED_WINDOW_MS = 5000 // 5 second window to prevent duplicates after completion
+
 /**
  * Start a new workout
  * Makes creation idempotent by checking for existing active workout first
@@ -248,6 +252,31 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
     // If getCurrentWorkout fails (e.g., index not ready), log but continue
     // This prevents blocking workout creation if index is still building
     console.warn('Could not check for existing workout (index may be building):', error)
+  }
+  
+  // Check if a workout of this type was recently completed to prevent duplicates
+  const recentlyCompletedTime = recentlyCompletedWorkouts.get(type)
+  if (recentlyCompletedTime && (now - recentlyCompletedTime < RECENTLY_COMPLETED_WINDOW_MS)) {
+    const timeSinceCompletion = now - recentlyCompletedTime
+    console.log(`Workout of type ${type} was completed ${timeSinceCompletion}ms ago, checking for active workout again...`)
+    
+    // Wait a bit for Firestore to propagate the completion update, then check again
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    // Double-check for active workout - if completion hasn't propagated, we might still find it
+    try {
+      const existingWorkout = await getCurrentWorkout()
+      if (existingWorkout && existingWorkout.type === type && !existingWorkout.completed) {
+        console.log('Found active workout after waiting, returning it instead of creating duplicate')
+        return existingWorkout
+      }
+    } catch (checkError) {
+      console.warn('Error checking for active workout after completion:', checkError)
+    }
+    
+    // If we still don't find an active workout, it's safe to create a new one
+    // (the recently completed workout has been properly saved)
+    console.log('No active workout found after completion, proceeding with new workout creation')
   }
   
   // Set flag and timestamp
@@ -430,6 +459,15 @@ export async function completeWorkout(workout: Workout): Promise<Workout> {
   try {
     const workoutRef = doc(db, WORKOUTS_COLLECTION, workout.id)
     await updateDoc(workoutRef, workoutToFirestore(completedWorkout))
+    
+    // Track this completed workout to prevent immediate duplicates
+    recentlyCompletedWorkouts.set(workout.type, Date.now())
+    
+    // Clean up old entries after window expires
+    setTimeout(() => {
+      recentlyCompletedWorkouts.delete(workout.type)
+    }, RECENTLY_COMPLETED_WINDOW_MS)
+    
     return completedWorkout
   } catch (error) {
     console.error('Error completing workout:', error)
@@ -452,7 +490,7 @@ export async function deleteWorkout(id: string): Promise<void> {
 
 /**
  * Get current active workout (if any)
- * In Firestore, we'll query for workouts without an endTime
+ * In Firestore, we'll query for workouts without an endTime and not completed
  * Note: This query requires a composite index: userId (Ascending), endTime (Ascending), startTime (Descending)
  */
 export async function getCurrentWorkout(): Promise<Workout | null> {
@@ -471,7 +509,13 @@ export async function getCurrentWorkout(): Promise<Workout | null> {
     
     if (!querySnapshot.empty) {
       const firstDoc = querySnapshot.docs[0]
-      return firestoreToWorkout(firstDoc.id, firstDoc.data())
+      const workout = firestoreToWorkout(firstDoc.id, firstDoc.data())
+      // Double-check that the workout is not completed (safety check)
+      if (workout.completed || workout.endTime) {
+        console.warn('Found workout with endTime or completed flag set, ignoring it')
+        return null
+      }
+      return workout
     }
     return null
   } catch (error: any) {

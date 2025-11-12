@@ -202,3 +202,4 @@ The `getCurrentWorkout()` query requires a composite index:
 - The "Clear" button only clears sets that match the prefilled values
 - Error handling is centralized and can be extended for other Firestore operations
 
+

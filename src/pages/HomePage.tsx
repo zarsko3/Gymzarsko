@@ -1,15 +1,22 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { format, addDays, subDays, startOfWeek, isWithinInterval } from 'date-fns'
-import type { Workout, WorkoutType } from '../types'
+import { format, addDays, subDays, startOfWeek, endOfWeek, isWithinInterval, endOfDay, startOfDay } from 'date-fns'
+import type { Workout, WorkoutType, FilterOptions, CompareMode } from '../types'
 import WeeklyCalendar from '../components/home/WeeklyCalendar'
-import StatCard from '../components/home/StatCard'
-import CountUpStatCard from '../components/home/CountUpStatCard'
-import AnimatedChart from '../components/home/AnimatedChart'
 import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
 import Banner from '../components/home/Banner'
-import { getWorkouts, subscribeToWorkouts } from '../services/workoutServiceFacade'
-import { calculateVolume } from '../utils/formatters'
+import { subscribeToWorkouts } from '../services/workoutServiceFacade'
+import AnalyticsFilters from '../components/analytics/AnalyticsFilters'
+import MiniChartCard from '../components/analytics/MiniChartCard'
+import VolumeTrendChart from '../components/analytics/VolumeTrendChart'
+import IntensitySetsChart from '../components/analytics/IntensitySetsChart'
+import DurationDensityChart from '../components/analytics/DurationDensityChart'
+import ConsistencyHeatmap from '../components/analytics/ConsistencyHeatmap'
+import {
+  filterWorkouts,
+  getAllWorkoutMetrics,
+  compareWorkouts,
+} from '../services/workoutAnalyticsService'
 
 function HomePage() {
   const navigate = useNavigate()
@@ -17,6 +24,16 @@ function HomePage() {
   const [showWorkoutModal, setShowWorkoutModal] = useState(false)
   const [allWorkouts, setAllWorkouts] = useState<Workout[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  
+  // Filter and comparison state
+  const [filters, setFilters] = useState<FilterOptions>({
+    dateRange: {
+      start: startOfDay(subDays(today, 29)), // 30 days
+      end: endOfDay(today),
+    },
+    workoutType: 'all',
+  })
+  const [compareMode, setCompareMode] = useState<CompareMode>('last-vs-average')
   
   // Subscribe to workout data for real-time updates
   useEffect(() => {
@@ -31,46 +48,80 @@ function HomePage() {
       unsubscribe()
     }
   }, [])
+  
   const weekStart = startOfWeek(today, { weekStartsOn: 0 }) // Start on Sunday (U.S. calendar)
   const weekEnd = addDays(weekStart, 6)
   
-  const thisWeekWorkouts = allWorkouts.filter(w => 
-    isWithinInterval(w.date, { start: weekStart, end: weekEnd })
-  )
-  
   const workoutDays = allWorkouts.map(w => w.date)
 
-  // Calculate stats
-  const totalWorkouts = thisWeekWorkouts.length
-  const totalVolume = allWorkouts.reduce((sum, workout) => {
-    return sum + workout.exercises.reduce((exSum, exercise) => {
-      return exSum + exercise.sets.reduce((setSum, set) => {
-        return setSum + calculateVolume(set.weight, set.reps)
-      }, 0)
-    }, 0)
-  }, 0)
-
-  // Create chart data for last 7 days
-  const last7Days = Array.from({ length: 7 }, (_, i) => subDays(today, 6 - i))
-  const workoutChartData = last7Days.map(day => {
-    const dayWorkouts = allWorkouts.filter(w => 
-      format(w.date, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd')
-    )
-    return dayWorkouts.length
-  })
+  // Filter and compute metrics
+  const filteredWorkouts = useMemo(() => {
+    return filterWorkouts(allWorkouts, filters)
+  }, [allWorkouts, filters])
   
-  const volumeChartData = last7Days.map(day => {
-    const dayWorkouts = allWorkouts.filter(w => 
-      format(w.date, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd')
-    )
-    return Math.round(dayWorkouts.reduce((sum, workout) => {
-      return sum + workout.exercises.reduce((exSum, exercise) => {
-        return exSum + exercise.sets.reduce((setSum, set) => {
-          return setSum + calculateVolume(set.weight, set.reps)
-        }, 0)
-      }, 0)
-    }, 0))
-  })
+  const metrics = useMemo(() => {
+    return getAllWorkoutMetrics(filteredWorkouts)
+  }, [filteredWorkouts])
+  
+  // Comparison results for each metric
+  const volumeComparison = useMemo(() => {
+    return compareWorkouts(metrics, compareMode, 'totalVolume')
+  }, [metrics, compareMode])
+  
+  const intensityComparison = useMemo(() => {
+    return compareWorkouts(metrics, compareMode, 'intensity')
+  }, [metrics, compareMode])
+  
+  const durationComparison = useMemo(() => {
+    return compareWorkouts(metrics, compareMode, 'duration')
+  }, [metrics, compareMode])
+  
+  const consistencyComparison = useMemo(() => {
+    // For consistency, we compare workout count
+    const workoutCount = metrics.length
+    if (compareMode === 'week-over-week') {
+      const thisWeekStart = startOfWeek(today, { weekStartsOn: 0 })
+      const thisWeekEnd = endOfWeek(today, { weekStartsOn: 0 })
+      const lastWeekStart = subDays(thisWeekStart, 7)
+      const lastWeekEnd = subDays(thisWeekEnd, 7)
+      
+      const thisWeekCount = metrics.filter(m =>
+        isWithinInterval(m.date, { start: thisWeekStart, end: thisWeekEnd })
+      ).length
+      
+      const lastWeekCount = metrics.filter(m =>
+        isWithinInterval(m.date, { start: lastWeekStart, end: lastWeekEnd })
+      ).length
+      
+      const change = thisWeekCount - lastWeekCount
+      const changePercent = lastWeekCount > 0 ? (change / lastWeekCount) * 100 : 0
+      
+      return {
+        current: thisWeekCount,
+        previous: lastWeekCount,
+        change,
+        changePercent,
+      }
+    }
+    return null
+  }, [metrics, compareMode, today])
+  
+  // Format values for display
+  const formatVolume = (volume: number) => {
+    if (volume >= 1000) return `${(volume / 1000).toFixed(1)}k`
+    return Math.round(volume).toString()
+  }
+  
+  const formatIntensity = (intensity: number) => {
+    return `${Math.round(intensity)}kg`
+  }
+  
+  const formatDuration = (duration: number) => {
+    const hours = Math.floor(duration / 60)
+    const minutes = Math.round(duration % 60)
+    if (hours > 0) return `${hours}h ${minutes}m`
+    return `${minutes}m`
+  }
 
   // Show loading state if needed
   if (isLoading) {
@@ -107,34 +158,55 @@ function HomePage() {
           onTodayClick={handleTodayClick}
         />
 
-        {/* Stats Snapshot */}
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-[var(--text-primary)]">Stats Snapshot</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <CountUpStatCard
-              title="Workouts Logged"
-              value={totalWorkouts}
-              chart={<AnimatedChart data={workoutChartData} type="area" />}
+        {/* Analytics Dashboard */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">Workout Analytics</h3>
+          
+          {/* Filters */}
+          <AnalyticsFilters
+            filters={filters}
+            compareMode={compareMode}
+            onFiltersChange={setFilters}
+            onCompareModeChange={setCompareMode}
+          />
+          
+          {/* Mini Charts Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Volume Trend */}
+            <MiniChartCard
+              title="Volume Trend"
+              value={volumeComparison ? `${formatVolume(volumeComparison.current)} kg` : '--'}
+              comparison={volumeComparison}
+              isLoading={isLoading}
+              chart={<VolumeTrendChart metrics={metrics} compareMode={compareMode} />}
             />
-            <StatCard
-              title="Total Volume (kg)"
-              value={totalVolume > 1000 ? `${(totalVolume / 1000).toFixed(1)}k` : Math.round(totalVolume)}
-              chart={<AnimatedChart data={volumeChartData} type="line" />}
+            
+            {/* Intensity vs Sets */}
+            <MiniChartCard
+              title="Intensity vs Sets"
+              value={intensityComparison ? formatIntensity(intensityComparison.current) : '--'}
+              comparison={intensityComparison}
+              isLoading={isLoading}
+              chart={<IntensitySetsChart metrics={metrics} />}
             />
-          </div>
-        </div>
-
-        {/* Additional Stats */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-card rounded-xl p-4 shadow-sm text-center">
-            <div className="text-3xl font-bold text-primary-500">{allWorkouts.length}</div>
-            <div className="text-[var(--text-secondary)] text-sm mt-1">Total Workouts</div>
-          </div>
-          <div className="bg-card rounded-xl p-4 shadow-sm text-center">
-            <div className="text-3xl font-bold text-primary-500">
-              {totalWorkouts > 0 ? Math.round((totalWorkouts / 7) * 100) : 0}%
-            </div>
-            <div className="text-[var(--text-secondary)] text-sm mt-1">This Week</div>
+            
+            {/* Duration & Density */}
+            <MiniChartCard
+              title="Duration & Density"
+              value={durationComparison ? formatDuration(durationComparison.current) : '--'}
+              comparison={durationComparison}
+              isLoading={isLoading}
+              chart={<DurationDensityChart metrics={metrics} compareMode={compareMode} />}
+            />
+            
+            {/* Consistency Heatmap */}
+            <MiniChartCard
+              title="Consistency"
+              value={consistencyComparison ? `${consistencyComparison.current} workouts` : `${metrics.length} workouts`}
+              comparison={consistencyComparison}
+              isLoading={isLoading}
+              chart={<ConsistencyHeatmap metrics={metrics} dateRange={filters.dateRange} />}
+            />
           </div>
         </div>
       </div>
