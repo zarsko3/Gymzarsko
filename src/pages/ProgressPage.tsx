@@ -191,7 +191,7 @@ function ProgressPage() {
         </div>
       </div>
 
-      <div className="px-4 py-6 space-y-6 flex flex-col min-w-0">
+      <div className="px-4 py-6 space-y-6 flex flex-col flex-1 min-w-0">
         {/* Stats Cards */}
         <div className="grid grid-cols-3 gap-3">
           <Card className="bg-card text-center p-4">

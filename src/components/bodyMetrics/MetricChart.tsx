@@ -21,7 +21,7 @@ interface MetricChartProps {
 
 function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChartProps) {
   const [accentColor, setAccentColor] = useState<string>('#10B981')
-  const [chartReady, setChartReady] = useState(false)
+  const [containerWidth, setContainerWidth] = useState<number>(0)
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Get computed CSS variable value for accent color
@@ -32,6 +32,50 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
       setAccentColor(computed)
     }
   }, [])
+
+  // Use ResizeObserver to detect container width changes
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const width = entry.contentRect.width
+        if (width > 0) {
+          setContainerWidth(width)
+        }
+      }
+    })
+
+    resizeObserver.observe(containerRef.current)
+
+    // Also check immediately and on next frame
+    let timeoutId: NodeJS.Timeout | null = null
+    const checkWidth = () => {
+      if (containerRef.current) {
+        const width = containerRef.current.getBoundingClientRect().width
+        console.log('Chart container width:', width)
+        if (width > 0) {
+          setContainerWidth(width)
+        } else {
+          // Retry on next frame if width is still 0
+          requestAnimationFrame(checkWidth)
+        }
+      }
+    }
+    
+    // Check immediately
+    checkWidth()
+    
+    // Also check after a short delay to catch layout changes
+    timeoutId = setTimeout(checkWidth, 100)
+
+    return () => {
+      resizeObserver.disconnect()
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+    }
+  }, [timeRange])
 
   // Filter entries based on time range
   const filteredEntries = useMemo(() => {
@@ -59,27 +103,6 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
     }))
   }, [sortedEntries])
 
-  // Ensure chart renders after container has width
-  useLayoutEffect(() => {
-    setChartReady(false)
-    if (!containerRef.current) return
-    
-    const checkWidth = () => {
-      if (containerRef.current) {
-        const width = containerRef.current.offsetWidth
-        if (width > 0) {
-          setChartReady(true)
-        } else {
-          // Retry after a short delay
-          requestAnimationFrame(() => {
-            requestAnimationFrame(checkWidth)
-          })
-        }
-      }
-    }
-    
-    checkWidth()
-  }, [timeRange, chartData.length])
 
   // Calculate Y-axis domain with padding
   const yAxisDomain = useMemo(() => {
@@ -156,8 +179,8 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
   }
 
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-between mb-4">
+    <div className="w-full min-w-0 flex flex-col">
+      <div className="flex items-center justify-between mb-4 min-w-0">
         <h3 className="text-lg font-semibold text-[var(--text-primary)]">Weight Trend</h3>
         <div className="flex gap-2">
           {(['7d', '30d', '90d', 'all'] as const).map((range) => (
@@ -178,10 +201,11 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
 
       <div 
         ref={containerRef}
-        className="bg-card rounded-xl p-4 border border-[var(--border-primary)] w-full min-w-0"
+        className="bg-card rounded-xl p-4 border border-[var(--border-primary)] w-full min-w-0 flex-1"
+        style={{ minWidth: 0 }}
       >
-        {chartReady ? (
-          <ResponsiveContainer width="100%" height={250} key={timeRange}>
+        {containerWidth > 0 ? (
+          <ResponsiveContainer width="100%" height={250} key={`${timeRange}-${containerWidth}`}>
             <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
