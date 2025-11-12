@@ -49,7 +49,7 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
     resizeObserver.observe(containerRef.current)
 
     // Also check immediately and on next frame
-    let timeoutId: NodeJS.Timeout | null = null
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
     const checkWidth = () => {
       if (containerRef.current) {
         const width = containerRef.current.getBoundingClientRect().width
