@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import { subDays, startOfDay, endOfDay } from 'date-fns'
 import type { FilterOptions, CompareMode, WorkoutType } from '../../types'
+import PillButton from './PillButton'
 
 interface AnalyticsFiltersProps {
   filters: FilterOptions
@@ -15,8 +15,6 @@ function AnalyticsFilters({
   onFiltersChange,
   onCompareModeChange,
 }: AnalyticsFiltersProps) {
-  const [showDatePicker, setShowDatePicker] = useState(false)
-  
   const handleDateRangePreset = (days: number) => {
     const end = endOfDay(new Date())
     const start = startOfDay(subDays(end, days - 1))
@@ -24,7 +22,6 @@ function AnalyticsFilters({
       ...filters,
       dateRange: { start, end },
     })
-    setShowDatePicker(false)
   }
   
   const handleWorkoutTypeChange = (type: 'all' | WorkoutType) => {
@@ -34,121 +31,43 @@ function AnalyticsFilters({
     })
   }
   
+  const isDateRangeActive = (days: number) => {
+    const end = endOfDay(new Date())
+    return (
+      filters.dateRange.end.getTime() === end.getTime() &&
+      Math.ceil((filters.dateRange.end.getTime() - filters.dateRange.start.getTime()) / (1000 * 60 * 60 * 24)) === days
+    )
+  }
+  
   return (
     <div className="space-y-3">
-      {/* Date Range Presets */}
+      {/* Row 1: Workout Type */}
       <div className="flex gap-2 overflow-x-auto pb-2">
-        <button
-          onClick={() => handleDateRangePreset(7)}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-            filters.dateRange.end.getTime() === endOfDay(new Date()).getTime() &&
-            Math.ceil((filters.dateRange.end.getTime() - filters.dateRange.start.getTime()) / (1000 * 60 * 60 * 24)) === 7
-              ? 'bg-primary-500 text-white'
-              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
-          }`}
-        >
-          7 Days
-        </button>
-        <button
-          onClick={() => handleDateRangePreset(30)}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-            filters.dateRange.end.getTime() === endOfDay(new Date()).getTime() &&
-            Math.ceil((filters.dateRange.end.getTime() - filters.dateRange.start.getTime()) / (1000 * 60 * 60 * 24)) === 30
-              ? 'bg-primary-500 text-white'
-              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
-          }`}
-        >
-          30 Days
-        </button>
-        <button
-          onClick={() => handleDateRangePreset(90)}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-            filters.dateRange.end.getTime() === endOfDay(new Date()).getTime() &&
-            Math.ceil((filters.dateRange.end.getTime() - filters.dateRange.start.getTime()) / (1000 * 60 * 60 * 24)) === 90
-              ? 'bg-primary-500 text-white'
-              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
-          }`}
-        >
-          90 Days
-        </button>
-      </div>
-      
-      {/* Workout Type Filter */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        <button
-          onClick={() => handleWorkoutTypeChange('all')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-            filters.workoutType === 'all'
-              ? 'bg-primary-500 text-white'
-              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
-          }`}
-        >
+        <PillButton active={filters.workoutType === 'all'} onClick={() => handleWorkoutTypeChange('all')}>
           All Types
-        </button>
-        <button
-          onClick={() => handleWorkoutTypeChange('push')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-            filters.workoutType === 'push'
-              ? 'bg-primary-500 text-white'
-              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
-          }`}
-        >
+        </PillButton>
+        <PillButton active={filters.workoutType === 'push'} onClick={() => handleWorkoutTypeChange('push')}>
           Push
-        </button>
-        <button
-          onClick={() => handleWorkoutTypeChange('pull')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-            filters.workoutType === 'pull'
-              ? 'bg-primary-500 text-white'
-              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
-          }`}
-        >
+        </PillButton>
+        <PillButton active={filters.workoutType === 'pull'} onClick={() => handleWorkoutTypeChange('pull')}>
           Pull
-        </button>
-        <button
-          onClick={() => handleWorkoutTypeChange('legs')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-            filters.workoutType === 'legs'
-              ? 'bg-primary-500 text-white'
-              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
-          }`}
-        >
+        </PillButton>
+        <PillButton active={filters.workoutType === 'legs'} onClick={() => handleWorkoutTypeChange('legs')}>
           Legs
-        </button>
+        </PillButton>
       </div>
       
-      {/* Comparison Mode */}
+      {/* Row 2: Compare Mode */}
       <div className="flex gap-2 overflow-x-auto pb-2">
-        <button
-          onClick={() => onCompareModeChange('none')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-            compareMode === 'none'
-              ? 'bg-primary-500 text-white'
-              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
-          }`}
-        >
+        <PillButton active={compareMode === 'none'} onClick={() => onCompareModeChange('none')}>
           Trend Only
-        </button>
-        <button
-          onClick={() => onCompareModeChange('last-vs-average')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-            compareMode === 'last-vs-average'
-              ? 'bg-primary-500 text-white'
-              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
-          }`}
-        >
+        </PillButton>
+        <PillButton active={compareMode === 'last-vs-average'} onClick={() => onCompareModeChange('last-vs-average')}>
           vs 5-Session Avg
-        </button>
-        <button
-          onClick={() => onCompareModeChange('week-over-week')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-            compareMode === 'week-over-week'
-              ? 'bg-primary-500 text-white'
-              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
-          }`}
-        >
+        </PillButton>
+        <PillButton active={compareMode === 'week-over-week'} onClick={() => onCompareModeChange('week-over-week')}>
           Week vs Week
-        </button>
+        </PillButton>
       </div>
     </div>
   )

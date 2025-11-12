@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine } from 'recharts'
 import type { WorkoutMetrics, CompareMode } from '../../types'
 import { getVolumeTrendData } from '../../services/workoutAnalyticsService'
 
@@ -15,61 +15,58 @@ function VolumeTrendChart({ metrics, compareMode }: VolumeTrendChartProps) {
   
   if (chartData.length === 0) {
     return (
-      <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)] text-xs">
+      <div className="w-full h-full flex items-center justify-center text-[var(--text-dim)] text-xs">
         No data
       </div>
     )
   }
   
-  const maxVolume = Math.max(...chartData.map(d => d.volume), 1)
-  const formatVolume = (value: number) => {
-    if (value >= 1000) return `${(value / 1000).toFixed(1)}k`
-    return Math.round(value).toString()
-  }
-  
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={chartData} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
-        <XAxis 
-          dataKey="dateLabel" 
-          tick={{ fontSize: 10, fill: 'var(--text-secondary)' }}
-          axisLine={false}
-          tickLine={false}
-        />
-        <YAxis 
-          tick={{ fontSize: 10, fill: 'var(--text-secondary)' }}
-          axisLine={false}
-          tickLine={false}
-          width={30}
-          tickFormatter={formatVolume}
-        />
+    <ResponsiveContainer width="100%" height={140}>
+      <AreaChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id="gradLineVolume" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--accent-strong)" stopOpacity="1" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity=".2" />
+          </linearGradient>
+          <linearGradient id="gradFillVolume" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity=".18" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <XAxis dataKey="dateLabel" hide />
+        <YAxis hide />
         <Tooltip
           contentStyle={{
-            backgroundColor: 'var(--bg-primary)',
-            border: '1px solid var(--border-primary)',
+            background: '#0f1726',
+            border: '1px solid rgba(255,255,255,.06)',
             borderRadius: '8px',
             fontSize: '12px',
           }}
-          formatter={(value: number) => [`${formatVolume(value)} kg`, 'Volume']}
+          formatter={(value: number) => {
+            const nf = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
+            return [`${nf.format(value)} kg`, 'Volume']
+          }}
           labelFormatter={(label) => `Date: ${label}`}
         />
         {comparisonData && (
           <ReferenceLine
             y={comparisonData[0]?.value}
-            stroke="var(--text-secondary)"
+            stroke="rgba(255,255,255,.2)"
             strokeDasharray="3 3"
             strokeOpacity={0.5}
           />
         )}
-        <Line
+        <Area
           type="monotone"
           dataKey="volume"
-          stroke="var(--primary-500)"
-          strokeWidth={2}
-          dot={false}
-          activeDot={{ r: 4, fill: 'var(--primary-500)' }}
+          stroke="url(#gradLineVolume)"
+          strokeWidth={3}
+          fill="url(#gradFillVolume)"
+          dot={{ r: 3, strokeWidth: 2, fill: 'var(--accent-strong)' }}
+          activeDot={{ r: 5, fill: 'var(--accent-strong)' }}
         />
-      </LineChart>
+      </AreaChart>
     </ResponsiveContainer>
   )
 }

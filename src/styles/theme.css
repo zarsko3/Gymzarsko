@@ -49,14 +49,30 @@
 
 /* Dark Theme */
 .dark {
-  /* Background Colors */
-  --bg-primary: #0F172A;
-  --bg-card: #1E293B;
-  --bg-secondary: #334155;
+  /* Premium Dark Theme - Primary Values */
+  --bg: #0b1220;
+  --surface: #121a2a;
+  --surface-2: #0f1726;
+  --text: #e6edf7;
+  --text-dim: #a5b0c5;
+  --ring: rgba(255, 255, 255, 0.06);
   
-  /* Text Colors */
-  --text-primary: #F8FAFC;
-  --text-secondary: #CBD5E1;
+  /* Accent (warm orange) */
+  --accent: #ffb55c;
+  --accent-strong: #ff9b2e;
+  
+  /* Deltas */
+  --up: #41d696;
+  --down: #ff6b6b;
+  
+  /* Background Colors (backward compatibility) */
+  --bg-primary: var(--bg);
+  --bg-card: var(--surface);
+  --bg-secondary: var(--surface-2);
+  
+  /* Text Colors (backward compatibility) */
+  --text-primary: var(--text);
+  --text-secondary: var(--text-dim);
   --text-inactive: #94A3B8;
   
   /* Primary Brand Colors (slightly adjusted for dark mode) */
@@ -71,8 +87,7 @@
   --primary-800: #BBF7D0;
   --primary-900: #DCFCE7;
   
-  /* Accent Colors */
-  --accent: #34D399;
+  /* Accent Colors (backward compatibility) */
   --accent-mint: #1E3A2F;
   --accent-soft-blue: #1E3A5F;
   --accent-soft-green: #1E3A2F;
@@ -80,11 +95,11 @@
   
   /* Border Colors */
   --border: #334155;
-  --border-primary: #334155;
+  --border-primary: rgba(255, 255, 255, 0.05);
   --border-secondary: #475569;
   
   /* Input Colors */
-  --input-bg: #1E293B;
+  --input-bg: var(--surface);
   
   /* Shadow Colors (lighter shadows in dark mode) */
   --shadow-sm: rgba(0, 0, 0, 0.3);
