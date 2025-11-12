@@ -22,26 +22,28 @@ function AnalyticsFilters({
   }
   
   return (
-    <div className="flex flex-wrap gap-2 justify-center md:justify-start pb-1 items-center">
-      {/* First Row: Workout Type + Week */}
-      <PillButton active={filters.workoutType === 'push'} onClick={() => handleWorkoutTypeChange('push')}>
-        Push
-      </PillButton>
-      <PillButton active={filters.workoutType === 'pull'} onClick={() => handleWorkoutTypeChange('pull')}>
-        Pull
-      </PillButton>
-      <PillButton active={filters.workoutType === 'legs'} onClick={() => handleWorkoutTypeChange('legs')}>
-        Legs
-      </PillButton>
-      <PillButton active={filters.workoutType === 'all'} onClick={() => handleWorkoutTypeChange('all')}>
-        All
-      </PillButton>
-      <PillButton active={compareMode === 'week-over-week'} onClick={() => onCompareModeChange('week-over-week')}>
-        Week
-      </PillButton>
+    <div className="flex flex-wrap gap-2 justify-center items-center pb-1">
+      {/* First Row: Workout Type */}
+      <div className="flex justify-center gap-2 w-full">
+        <PillButton active={filters.workoutType === 'push'} onClick={() => handleWorkoutTypeChange('push')}>
+          Push
+        </PillButton>
+        <PillButton active={filters.workoutType === 'pull'} onClick={() => handleWorkoutTypeChange('pull')}>
+          Pull
+        </PillButton>
+        <PillButton active={filters.workoutType === 'legs'} onClick={() => handleWorkoutTypeChange('legs')}>
+          Legs
+        </PillButton>
+        <PillButton active={filters.workoutType === 'all'} onClick={() => handleWorkoutTypeChange('all')}>
+          All
+        </PillButton>
+      </div>
       
-      {/* Second Row: Trend and Avg */}
-      <div className="w-full flex justify-center gap-2 mt-1">
+      {/* Second Row: Week, Trend, Avg */}
+      <div className="flex justify-center gap-2 w-full mt-1">
+        <PillButton active={compareMode === 'week-over-week'} onClick={() => onCompareModeChange('week-over-week')}>
+          Week
+        </PillButton>
         <PillButton active={compareMode === 'none'} onClick={() => onCompareModeChange('none')}>
           Trend
         </PillButton>
