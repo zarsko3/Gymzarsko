@@ -21,12 +21,12 @@ function DurationDensityChart({ metrics, compareMode }: DurationDensityChartProp
   // Primary: density with compare line
   // Overlay: duration as thin dashed line
   return (
-    <div className="relative w-full" style={{ height: 220, overflow: 'visible', zIndex: 2 }}>
+    <div className="relative w-full" style={{ height: 180, overflow: 'visible', zIndex: 2 }}>
       <CurvyMetricChart
         data={densityData}
         metric="density"
         compare={comparisonData}
-        height={220}
+        height={180}
         unit="kg/min"
       />
       {/* Duration overlay */}

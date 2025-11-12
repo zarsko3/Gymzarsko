@@ -14,13 +14,13 @@ function VolumeTrendChart({ metrics, compareMode }: VolumeTrendChartProps) {
   }, [metrics, compareMode])
   
   return (
-    <CurvyMetricChart
-      data={chartData}
-      metric="volume"
-      compare={comparisonData}
-      height={220}
-      unit="KG"
-    />
+      <CurvyMetricChart
+        data={chartData}
+        metric="volume"
+        compare={comparisonData}
+        height={180}
+        unit="KG"
+      />
   )
 }
 

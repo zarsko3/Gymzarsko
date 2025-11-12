@@ -16,13 +16,13 @@ function IntensitySetsChart({ metrics, compareMode }: IntensitySetsChartProps) {
   // For ultra-minimal, just show the intensity line
   // Sets can be shown as faint bars if desired, but keeping it minimal for now
   return (
-    <CurvyMetricChart
-      data={chartData}
-      metric="intensity"
-      compare={comparisonData}
-      height={220}
-      unit="KG"
-    />
+      <CurvyMetricChart
+        data={chartData}
+        metric="intensity"
+        compare={comparisonData}
+        height={180}
+        unit="KG"
+      />
   )
 }
 

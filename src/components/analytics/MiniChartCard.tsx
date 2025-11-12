@@ -43,13 +43,13 @@ function MiniChartCard({ title, value, chart, comparison, isLoading }: MiniChart
   
   if (isLoading) {
     return (
-      <div className="bg-card rounded-xl p-4 shadow-sm">
+      <div className="bg-card rounded-xl p-4 shadow-sm relative" style={{ zIndex: 0, isolation: 'isolate' }}>
         <div className="text-[var(--text-secondary)] text-xs font-medium text-center">{title}</div>
-        <div className="mt-1 flex flex-col items-center justify-center gap-2 min-h-[88px]">
+        <div className="mt-1 flex flex-col items-center justify-center gap-2">
           <div className="text-3xl font-extrabold text-[var(--text-primary)] leading-none text-center">
             --
           </div>
-          <div className="w-full h-12 mt-1 bg-[var(--bg-secondary)] rounded animate-pulse" />
+          <div className="w-full h-[160px] md:h-[180px] mt-2 bg-[var(--bg-secondary)] rounded animate-pulse" />
         </div>
       </div>
     )
@@ -65,10 +65,10 @@ function MiniChartCard({ title, value, chart, comparison, isLoading }: MiniChart
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
         transition: { duration: 0.15 }
       }}
-      style={{ willChange: 'transform, opacity', zIndex: 1 }}
+      style={{ willChange: 'transform, opacity', zIndex: 0, isolation: 'isolate' }}
     >
       <div className="text-[var(--text-secondary)] text-xs font-medium text-center">{title}</div>
-      <div className="mt-1 flex flex-col items-center justify-center gap-2 min-h-[88px]">
+      <div className="mt-1 flex flex-col items-center justify-center gap-2">
         <div className="flex items-center gap-2">
           <div className="text-3xl font-extrabold text-[var(--text-primary)] leading-none text-center">
             {value}
@@ -80,7 +80,7 @@ function MiniChartCard({ title, value, chart, comparison, isLoading }: MiniChart
             </div>
           )}
         </div>
-        <div className="w-full h-12 mt-1 relative" style={{ overflow: 'visible', zIndex: 2 }}>
+        <div className="w-full h-[160px] md:h-[180px] mt-2 relative" style={{ overflow: 'visible', zIndex: 2 }}>
           {chart}
         </div>
       </div>

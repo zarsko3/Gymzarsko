@@ -16,12 +16,12 @@ interface StatCardProps {
 function StatCard({ title, value, delta, children, isLoading }: StatCardProps) {
   if (isLoading) {
     return (
-      <div className="rounded-3xl bg-[var(--surface)] border border-white/5 p-4 md:p-6 shadow-[0_10px_30px_rgba(0,0,0,.25)]">
+      <div className="rounded-3xl bg-[var(--surface)] border border-white/5 p-4 md:p-6 shadow-[0_10px_30px_rgba(0,0,0,.25)] relative" style={{ zIndex: 0, isolation: 'isolate' }}>
         <div className="text-sm text-[var(--text-dim)] text-center">{title}</div>
         <div className="mt-2 flex items-baseline justify-center gap-3">
           <div className="text-4xl md:text-5xl font-extrabold tabular-nums">--</div>
         </div>
-        <div className="mt-4 h-[140px] bg-[var(--surface-2)] rounded animate-pulse" />
+        <div className="mt-4 h-[160px] md:h-[180px] bg-[var(--surface-2)] rounded animate-pulse" />
       </div>
     )
   }
@@ -32,7 +32,7 @@ function StatCard({ title, value, delta, children, isLoading }: StatCardProps) {
       initial={{ y: 6, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.35 }}
-      style={{ zIndex: 1 }}
+      style={{ zIndex: 0, isolation: 'isolate' }}
     >
       <div className="text-sm text-[var(--text-dim)] text-center">{title}</div>
       <div className="mt-2 flex items-baseline justify-center gap-3">
@@ -47,7 +47,7 @@ function StatCard({ title, value, delta, children, isLoading }: StatCardProps) {
         )}
       </div>
       {children && (
-        <div className="mt-4 relative" style={{ overflow: 'visible', zIndex: 2 }}>
+        <div className="mt-4 relative h-[160px] md:h-[180px]" style={{ overflow: 'visible', zIndex: 2 }}>
           {children}
         </div>
       )}
