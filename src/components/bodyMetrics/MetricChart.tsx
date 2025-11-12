@@ -74,7 +74,7 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
         : Number(String(entry.weight).replace(/[^0-9.]/g, '')) || 0,
     }))
 
-    console.log('Chart data prepared:', { 
+    console.log('[MetricChart] Chart data prepared:', { 
       inputCount: entries.length, 
       filteredCount: filtered.length,
       validCount: validEntries.length,
@@ -85,6 +85,15 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
 
     return data
   }, [entries, timeRange])
+
+  // Debug: Log container width changes
+  useEffect(() => {
+    console.log('[MetricChart] Container width:', containerWidth, 'chartData length:', chartData.length)
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      console.log('[MetricChart] Container rect:', { width: rect.width, height: rect.height })
+    }
+  }, [containerWidth, chartData.length, containerRef])
 
 
   // Calculate Y-axis domain with padding
@@ -218,7 +227,7 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
         className="bg-card rounded-xl p-4 border border-[var(--border-primary)] w-full min-w-0 flex-1"
         style={{ minWidth: 0 }}
       >
-        {containerWidth > 0 ? (
+        {containerWidth > 0 && chartData.length > 0 ? (
           <ResponsiveContainer width={containerWidth} height={250} key={timeRange}>
             <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
             <CartesianGrid
@@ -278,7 +287,13 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
         </ResponsiveContainer>
         ) : containerWidth === 0 ? (
           <div className="w-full h-[250px] flex items-center justify-center">
-            <div className="text-[var(--text-secondary)] text-sm">Loading chart...</div>
+            <div className="text-[var(--text-secondary)] text-sm">
+              {chartData.length === 0 ? 'No data available' : 'Loading chart...'}
+            </div>
+          </div>
+        ) : chartData.length === 0 ? (
+          <div className="w-full h-[250px] flex items-center justify-center">
+            <div className="text-[var(--text-secondary)] text-sm">No data available</div>
           </div>
         ) : null}
       </div>
