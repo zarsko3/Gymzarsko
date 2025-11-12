@@ -203,13 +203,13 @@ export function getVolumeTrendData(metrics: WorkoutMetrics[], compareMode: Compa
   const sorted = [...metrics].sort((a, b) => a.date.getTime() - b.date.getTime())
   
   const chartData = sorted.map(m => ({
+    label: m.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    value: m.totalVolume,
     date: m.date,
-    volume: m.totalVolume,
-    dateLabel: m.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
   }))
   
   // Calculate comparison line data
-  let comparisonData: { date: Date; value: number; dateLabel: string }[] | null = null
+  let comparisonData: { label: string; value: number }[] | null = null
   
   if (compareMode === 'last-vs-average' && sorted.length > 1) {
     const sessionsToAverage = Math.min(5, sorted.length - 1)
@@ -217,9 +217,8 @@ export function getVolumeTrendData(metrics: WorkoutMetrics[], compareMode: Compa
     const average = previousSessions.reduce((sum, m) => sum + m.totalVolume, 0) / previousSessions.length
     
     comparisonData = chartData.map(d => ({
-      date: d.date,
+      label: d.label,
       value: average,
-      dateLabel: d.dateLabel,
     }))
   } else if (compareMode === 'week-over-week' && sorted.length > 0) {
     // For week-over-week, we'll show last week's average as a line
@@ -233,9 +232,96 @@ export function getVolumeTrendData(metrics: WorkoutMetrics[], compareMode: Compa
     if (lastWeekMetrics.length > 0) {
       const lastWeekAvg = lastWeekMetrics.reduce((sum, m) => sum + m.totalVolume, 0) / lastWeekMetrics.length
       comparisonData = chartData.map(d => ({
-        date: d.date,
+        label: d.label,
         value: lastWeekAvg,
-        dateLabel: d.dateLabel,
+      }))
+    }
+  }
+  
+  return { chartData, comparisonData }
+}
+
+/**
+ * Get chart data for intensity
+ */
+export function getIntensityData(metrics: WorkoutMetrics[], compareMode: CompareMode) {
+  const sorted = [...metrics].sort((a, b) => a.date.getTime() - b.date.getTime())
+  
+  const chartData = sorted.map(m => ({
+    label: m.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    value: m.intensity,
+    date: m.date,
+    sets: m.totalSets, // Keep sets for potential bar overlay
+  }))
+  
+  let comparisonData: { label: string; value: number }[] | null = null
+  
+  if (compareMode === 'last-vs-average' && sorted.length > 1) {
+    const sessionsToAverage = Math.min(5, sorted.length - 1)
+    const previousSessions = sorted.slice(0, sorted.length - 1).slice(-sessionsToAverage)
+    const average = previousSessions.reduce((sum, m) => sum + m.intensity, 0) / previousSessions.length
+    
+    comparisonData = chartData.map(d => ({
+      label: d.label,
+      value: average,
+    }))
+  } else if (compareMode === 'week-over-week' && sorted.length > 0) {
+    const lastWeekStart = subWeeks(startOfWeek(sorted[sorted.length - 1].date, { weekStartsOn: 0 }), 1)
+    const lastWeekEnd = subWeeks(endOfWeek(sorted[sorted.length - 1].date, { weekStartsOn: 0 }), 1)
+    
+    const lastWeekMetrics = sorted.filter(m =>
+      isWithinInterval(m.date, { start: lastWeekStart, end: lastWeekEnd })
+    )
+    
+    if (lastWeekMetrics.length > 0) {
+      const lastWeekAvg = lastWeekMetrics.reduce((sum, m) => sum + m.intensity, 0) / lastWeekMetrics.length
+      comparisonData = chartData.map(d => ({
+        label: d.label,
+        value: lastWeekAvg,
+      }))
+    }
+  }
+  
+  return { chartData, comparisonData }
+}
+
+/**
+ * Get chart data for density
+ */
+export function getDensityData(metrics: WorkoutMetrics[], compareMode: CompareMode) {
+  const sorted = [...metrics].sort((a, b) => a.date.getTime() - b.date.getTime())
+  
+  const chartData = sorted.map(m => ({
+    label: m.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    value: m.volumePerMinute,
+    date: m.date,
+    duration: m.duration, // Keep duration for overlay
+  }))
+  
+  let comparisonData: { label: string; value: number }[] | null = null
+  
+  if (compareMode === 'last-vs-average' && sorted.length > 1) {
+    const sessionsToAverage = Math.min(5, sorted.length - 1)
+    const previousSessions = sorted.slice(0, sorted.length - 1).slice(-sessionsToAverage)
+    const average = previousSessions.reduce((sum, m) => sum + m.volumePerMinute, 0) / previousSessions.length
+    
+    comparisonData = chartData.map(d => ({
+      label: d.label,
+      value: average,
+    }))
+  } else if (compareMode === 'week-over-week' && sorted.length > 0) {
+    const lastWeekStart = subWeeks(startOfWeek(sorted[sorted.length - 1].date, { weekStartsOn: 0 }), 1)
+    const lastWeekEnd = subWeeks(endOfWeek(sorted[sorted.length - 1].date, { weekStartsOn: 0 }), 1)
+    
+    const lastWeekMetrics = sorted.filter(m =>
+      isWithinInterval(m.date, { start: lastWeekStart, end: lastWeekEnd })
+    )
+    
+    if (lastWeekMetrics.length > 0) {
+      const lastWeekAvg = lastWeekMetrics.reduce((sum, m) => sum + m.volumePerMinute, 0) / lastWeekMetrics.length
+      comparisonData = chartData.map(d => ({
+        label: d.label,
+        value: lastWeekAvg,
       }))
     }
   }

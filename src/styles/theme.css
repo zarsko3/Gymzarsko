@@ -61,6 +61,12 @@
   --accent: #ffb55c;
   --accent-strong: #ff9b2e;
   
+  /* Per-metric colors */
+  --metric-volume: #FFD37A;
+  --metric-intensity: #7ACBFF;
+  --metric-duration: #B58CFF;
+  --metric-density: #41D696;
+  
   /* Deltas */
   --up: #41d696;
   --down: #ff6b6b;

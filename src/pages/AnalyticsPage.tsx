@@ -122,7 +122,7 @@ function AnalyticsPage() {
             delta={intensityDelta}
             isLoading={isLoading}
           >
-            <IntensitySetsChart metrics={metrics} />
+            <IntensitySetsChart metrics={metrics} compareMode={compareMode} />
           </StatCard>
           
           {/* Duration & Density */}

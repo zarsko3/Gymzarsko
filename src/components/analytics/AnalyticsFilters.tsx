@@ -22,35 +22,34 @@ function AnalyticsFilters({
   }
   
   return (
-    <div className="space-y-2">
-      {/* Row 1: Workout Type */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        <PillButton active={filters.workoutType === 'push'} onClick={() => handleWorkoutTypeChange('push')}>
-          Push
-        </PillButton>
-        <PillButton active={filters.workoutType === 'pull'} onClick={() => handleWorkoutTypeChange('pull')}>
-          Pull
-        </PillButton>
-        <PillButton active={filters.workoutType === 'legs'} onClick={() => handleWorkoutTypeChange('legs')}>
-          Legs
-        </PillButton>
-        <PillButton active={filters.workoutType === 'all'} onClick={() => handleWorkoutTypeChange('all')}>
-          All
-        </PillButton>
-      </div>
+    <div className="flex gap-2 overflow-x-auto pb-1 items-center">
+      {/* Workout Type */}
+      <PillButton active={filters.workoutType === 'push'} onClick={() => handleWorkoutTypeChange('push')}>
+        Push
+      </PillButton>
+      <PillButton active={filters.workoutType === 'pull'} onClick={() => handleWorkoutTypeChange('pull')}>
+        Pull
+      </PillButton>
+      <PillButton active={filters.workoutType === 'legs'} onClick={() => handleWorkoutTypeChange('legs')}>
+        Legs
+      </PillButton>
+      <PillButton active={filters.workoutType === 'all'} onClick={() => handleWorkoutTypeChange('all')}>
+        All
+      </PillButton>
       
-      {/* Row 2: Compare Mode */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        <PillButton active={compareMode === 'none'} onClick={() => onCompareModeChange('none')}>
-          Trend
-        </PillButton>
-        <PillButton active={compareMode === 'last-vs-average'} onClick={() => onCompareModeChange('last-vs-average')}>
-          Avg
-        </PillButton>
-        <PillButton active={compareMode === 'week-over-week'} onClick={() => onCompareModeChange('week-over-week')}>
-          Week
-        </PillButton>
-      </div>
+      {/* Dot separator */}
+      <span className="text-[var(--text-dim)] mx-1">•</span>
+      
+      {/* Compare Mode */}
+      <PillButton active={compareMode === 'none'} onClick={() => onCompareModeChange('none')}>
+        Trend
+      </PillButton>
+      <PillButton active={compareMode === 'last-vs-average'} onClick={() => onCompareModeChange('last-vs-average')}>
+        Avg
+      </PillButton>
+      <PillButton active={compareMode === 'week-over-week'} onClick={() => onCompareModeChange('week-over-week')}>
+        Week
+      </PillButton>
     </div>
   )
 }
