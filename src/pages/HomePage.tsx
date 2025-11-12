@@ -187,7 +187,7 @@ function HomePage() {
               value={intensityComparison ? formatIntensity(intensityComparison.current) : '--'}
               comparison={intensityComparison}
               isLoading={isLoading}
-              chart={<IntensitySetsChart metrics={metrics} />}
+              chart={<IntensitySetsChart metrics={metrics} compareMode={compareMode} />}
             />
             
             {/* Duration & Density */}

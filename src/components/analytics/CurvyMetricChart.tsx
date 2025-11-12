@@ -102,7 +102,7 @@ function CurvyMetricChart({ data, metric, compare, height = 200 }: CurvyMetricCh
         data={chartData} 
         margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
         onMouseMove={(state) => {
-          if (state?.activeTooltipIndex !== undefined) {
+          if (state?.activeTooltipIndex !== undefined && typeof state.activeTooltipIndex === 'number') {
             setActiveIndex(state.activeTooltipIndex)
           }
         }}
