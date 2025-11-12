@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState } from 'react'
+import { useMemo, useEffect, useState, useRef, useLayoutEffect } from 'react'
 import { format, subDays, startOfDay } from 'date-fns'
 import {
   LineChart,
@@ -21,6 +21,8 @@ interface MetricChartProps {
 
 function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChartProps) {
   const [accentColor, setAccentColor] = useState<string>('#10B981')
+  const [chartReady, setChartReady] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   // Get computed CSS variable value for accent color
   useEffect(() => {
@@ -56,6 +58,28 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
       weight: entry.weight,
     }))
   }, [sortedEntries])
+
+  // Ensure chart renders after container has width
+  useLayoutEffect(() => {
+    setChartReady(false)
+    if (!containerRef.current) return
+    
+    const checkWidth = () => {
+      if (containerRef.current) {
+        const width = containerRef.current.offsetWidth
+        if (width > 0) {
+          setChartReady(true)
+        } else {
+          // Retry after a short delay
+          requestAnimationFrame(() => {
+            requestAnimationFrame(checkWidth)
+          })
+        }
+      }
+    }
+    
+    checkWidth()
+  }, [timeRange, chartData.length])
 
   // Calculate Y-axis domain with padding
   const yAxisDomain = useMemo(() => {
@@ -152,9 +176,13 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
         </div>
       </div>
 
-      <div className="bg-card rounded-xl p-4 border border-[var(--border-primary)]">
-        <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+      <div 
+        ref={containerRef}
+        className="bg-card rounded-xl p-4 border border-[var(--border-primary)] w-full min-w-0"
+      >
+        {chartReady ? (
+          <ResponsiveContainer width="100%" height={250} key={timeRange}>
+            <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke="var(--border-primary)"
@@ -207,6 +235,11 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
             />
           </LineChart>
         </ResponsiveContainer>
+        ) : (
+          <div className="w-full h-[250px] flex items-center justify-center">
+            <div className="text-[var(--text-secondary)] text-sm">Loading chart...</div>
+          </div>
+        )}
       </div>
     </div>
   )

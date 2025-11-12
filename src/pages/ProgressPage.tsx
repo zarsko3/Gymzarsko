@@ -191,7 +191,7 @@ function ProgressPage() {
         </div>
       </div>
 
-      <div className="px-4 py-6 space-y-6">
+      <div className="px-4 py-6 space-y-6 flex flex-col min-w-0">
         {/* Stats Cards */}
         <div className="grid grid-cols-3 gap-3">
           <Card className="bg-card text-center p-4">
@@ -227,12 +227,14 @@ function ProgressPage() {
         </div>
 
         {/* Chart */}
-        <MetricChart
-          entries={entries}
-          goal={goal}
-          timeRange={timeRange}
-          onTimeRangeChange={setTimeRange}
-        />
+        <div className="w-full min-w-0">
+          <MetricChart
+            entries={entries}
+            goal={goal}
+            timeRange={timeRange}
+            onTimeRangeChange={setTimeRange}
+          />
+        </div>
 
         {/* Recent Entries */}
         <div className="space-y-3">
