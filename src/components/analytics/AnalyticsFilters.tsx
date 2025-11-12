@@ -22,7 +22,7 @@ function AnalyticsFilters({
   }
   
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 items-center">
+    <div className="flex flex-wrap md:flex-nowrap gap-2 justify-center md:justify-start pb-1 items-center">
       {/* Workout Type */}
       <PillButton active={filters.workoutType === 'push'} onClick={() => handleWorkoutTypeChange('push')}>
         Push
@@ -38,7 +38,7 @@ function AnalyticsFilters({
       </PillButton>
       
       {/* Dot separator */}
-      <span className="text-[var(--text-dim)] mx-1">•</span>
+      <span className="text-[var(--text-dim)] mx-1 hidden md:inline">•</span>
       
       {/* Compare Mode */}
       <PillButton active={compareMode === 'none'} onClick={() => onCompareModeChange('none')}>
