@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { Timestamp } from 'firebase/firestore'
-import { Dumbbell, TrendingUp, MessageSquare, Save, X } from 'lucide-react'
+import { Calendar, Clock } from 'lucide-react'
 import type { Workout, WorkoutSet } from '../../types'
 import Modal from '../ui/Modal'
 import Button from '../ui/Button'
@@ -108,6 +108,86 @@ function EditWorkoutModal({ isOpen, onClose, workout, onSave }: EditWorkoutModal
     setEditedWorkout(newWorkout)
   }
 
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!editedWorkout) return
+
+    const newDate = new Date(e.target.value)
+    const newWorkout = { ...editedWorkout }
+    
+    // Preserve time if startTime exists
+    if (newWorkout.startTime) {
+      const startTime = new Date(newWorkout.startTime)
+      newDate.setHours(startTime.getHours(), startTime.getMinutes(), startTime.getSeconds())
+      newWorkout.startTime = newDate
+    }
+    
+    newWorkout.date = newDate
+    setEditedWorkout(newWorkout)
+  }
+
+  const handleStartTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!editedWorkout) return
+
+    const timeValue = e.target.value
+    if (!timeValue) {
+      const newWorkout = { ...editedWorkout }
+      newWorkout.startTime = undefined
+      setEditedWorkout(newWorkout)
+      return
+    }
+
+    const [hours, minutes] = timeValue.split(':').map(Number)
+    const newStartTime = new Date(editedWorkout.date)
+    newStartTime.setHours(hours, minutes, 0, 0)
+
+    const newWorkout = { ...editedWorkout }
+    newWorkout.startTime = newStartTime
+    setEditedWorkout(newWorkout)
+  }
+
+  const handleEndTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!editedWorkout) return
+
+    const timeValue = e.target.value
+    if (!timeValue) {
+      const newWorkout = { ...editedWorkout }
+      newWorkout.endTime = undefined
+      setEditedWorkout(newWorkout)
+      return
+    }
+
+    const [hours, minutes] = timeValue.split(':').map(Number)
+    const newEndTime = new Date(editedWorkout.date)
+    newEndTime.setHours(hours, minutes, 0, 0)
+
+    const newWorkout = { ...editedWorkout }
+    newWorkout.endTime = newEndTime
+    setEditedWorkout(newWorkout)
+  }
+
+  const handleExerciseNameChange = (exerciseIndex: number, name: string) => {
+    if (!editedWorkout) return
+
+    const newWorkout = { ...editedWorkout }
+    newWorkout.exercises[exerciseIndex] = {
+      ...newWorkout.exercises[exerciseIndex],
+      exercise: {
+        ...newWorkout.exercises[exerciseIndex].exercise,
+        name: name.trim(),
+      },
+    }
+    setEditedWorkout(newWorkout)
+  }
+
+  const formatDateForInput = (date: Date) => {
+    return format(date, 'yyyy-MM-dd')
+  }
+
+  const formatTimeForInput = (date: Date | undefined) => {
+    if (!date) return ''
+    return format(date, 'HH:mm')
+  }
+
   const handleSave = async () => {
     if (!editedWorkout) return
 
@@ -161,14 +241,52 @@ function EditWorkoutModal({ isOpen, onClose, workout, onSave }: EditWorkoutModal
     >
       <div className="space-y-6">
         {/* Workout Header */}
-        <div className="space-y-2">
+        <div className="space-y-4">
           <div className="flex items-center gap-2">
             <span className={`px-3 py-1 rounded-full border text-sm font-medium ${workoutTypeColors[workout.type]}`}>
               {workout.type.charAt(0).toUpperCase() + workout.type.slice(1)} Day
             </span>
-            <span className="text-sm text-text-secondary">
-              {format(workout.date, 'EEEE, MMM d, yyyy')}
-            </span>
+          </div>
+
+          {/* Date and Time Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-2 flex items-center gap-2">
+                <Calendar size={16} />
+                Workout Date
+              </label>
+              <Input
+                type="date"
+                value={formatDateForInput(editedWorkout.date)}
+                onChange={handleDateChange}
+                disabled={isSubmitting}
+                max={format(new Date(), 'yyyy-MM-dd')}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-2 flex items-center gap-2">
+                <Clock size={16} />
+                Start Time
+              </label>
+              <Input
+                type="time"
+                value={formatTimeForInput(editedWorkout.startTime)}
+                onChange={handleStartTimeChange}
+                disabled={isSubmitting}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-2 flex items-center gap-2">
+                <Clock size={16} />
+                End Time
+              </label>
+              <Input
+                type="time"
+                value={formatTimeForInput(editedWorkout.endTime)}
+                onChange={handleEndTimeChange}
+                disabled={isSubmitting}
+              />
+            </div>
           </div>
 
           {/* Workout Notes */}
@@ -200,10 +318,18 @@ function EditWorkoutModal({ isOpen, onClose, workout, onSave }: EditWorkoutModal
             <Card key={exercise.id} className="bg-card p-4">
               <div className="space-y-3">
                 {/* Exercise Header */}
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold text-text-primary">{exercise.exercise.name}</h4>
-                  <div className="text-xs text-text-secondary">
-                    {exercise.sets.filter((s: WorkoutSet) => s.completed).length} / {exercise.sets.length} sets
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Input
+                      value={exercise.exercise.name}
+                      onChange={(e) => handleExerciseNameChange(exerciseIndex, e.target.value)}
+                      placeholder="Exercise name"
+                      className="font-semibold"
+                      disabled={isSubmitting}
+                    />
+                    <div className="text-xs text-text-secondary ml-2 whitespace-nowrap">
+                      {exercise.sets.filter((s: WorkoutSet) => s.completed).length} / {exercise.sets.length} sets
+                    </div>
                   </div>
                 </div>
 
