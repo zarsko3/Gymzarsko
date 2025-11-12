@@ -33,33 +33,56 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
     }
   }, [])
 
-  // Filter entries based on time range
-  const filteredEntries = useMemo(() => {
-    if (timeRange === 'all') {
-      return entries
+  // Pure data derivation - filter, sort, and transform in one step
+  // Never returns intermediate empty arrays - only derived from entries
+  const chartData = useMemo(() => {
+    // Guard: if no entries, return empty array (not undefined/null)
+    if (!entries || entries.length === 0) {
+      return []
     }
 
-    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90
-    const cutoffDate = startOfDay(subDays(new Date(), days))
+    // Filter by time range
+    let filtered = entries
+    if (timeRange !== 'all') {
+      const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90
+      const cutoffDate = startOfDay(subDays(new Date(), days))
+      filtered = entries.filter(entry => {
+        if (!entry || !entry.date) return false
+        return entry.date >= cutoffDate
+      })
+    }
 
-    return entries.filter(entry => entry.date >= cutoffDate)
-  }, [entries, timeRange])
+    // Filter out invalid entries and transform
+    const validEntries = filtered.filter(entry => {
+      return entry && 
+             entry.date && 
+             entry.weight != null && 
+             !isNaN(Number(entry.weight))
+    })
 
-  // Sort entries by date (ascending for chart)
-  const sortedEntries = useMemo(() => {
-    return [...filteredEntries].sort((a, b) => a.date.getTime() - b.date.getTime())
-  }, [filteredEntries])
+    // Sort by date (ascending for chart)
+    const sorted = [...validEntries].sort((a, b) => a.date.getTime() - b.date.getTime())
 
-  // Transform data for Recharts
-  const chartData = useMemo(() => {
-    const data = sortedEntries.map(entry => ({
+    // Transform to chart format
+    const data = sorted.map(entry => ({
       date: entry.date,
       dateLabel: format(entry.date, 'MMM d'),
-      weight: typeof entry.weight === 'number' ? entry.weight : Number(String(entry.weight).replace(/[^0-9.]/g, '')) || 0,
+      weight: typeof entry.weight === 'number' 
+        ? entry.weight 
+        : Number(String(entry.weight).replace(/[^0-9.]/g, '')) || 0,
     }))
-    console.log('Chart data prepared:', { count: data.length, timeRange, sample: data[0] })
+
+    console.log('Chart data prepared:', { 
+      inputCount: entries.length, 
+      filteredCount: filtered.length,
+      validCount: validEntries.length,
+      finalCount: data.length, 
+      timeRange,
+      sample: data[0] 
+    })
+
     return data
-  }, [sortedEntries, timeRange])
+  }, [entries, timeRange])
 
 
   // Calculate Y-axis domain with padding
@@ -105,8 +128,8 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
     )
   }
 
-  // Empty state
-  if (chartData.length === 0) {
+  // Empty state - only show if we have no entries at all (not just filtered)
+  if (entries.length === 0) {
     return (
       <div className="w-full">
         <div className="flex items-center justify-between mb-4">
@@ -130,6 +153,37 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
         <div className="bg-card rounded-xl p-8 text-center border border-[var(--border-primary)]">
           <p className="text-[var(--text-secondary)] text-sm">
             Add your first entry to see your progress
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // No data for selected time range
+  if (chartData.length === 0) {
+    return (
+      <div className="w-full">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">Weight Trend</h3>
+          <div className="flex gap-2">
+            {(['7d', '30d', '90d', 'all'] as const).map((range) => (
+              <button
+                key={range}
+                onClick={() => onTimeRangeChange(range)}
+                className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                  timeRange === range
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
+                }`}
+              >
+                {range === 'all' ? 'All' : range}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="bg-card rounded-xl p-8 text-center border border-[var(--border-primary)]">
+          <p className="text-[var(--text-secondary)] text-sm">
+            No entries found for the selected time range
           </p>
         </div>
       </div>
@@ -162,7 +216,7 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
         className="bg-card rounded-xl p-4 border border-[var(--border-primary)] w-full min-w-0 flex-1"
         style={{ minWidth: 0 }}
       >
-        {containerWidth > 0 && chartData.length > 0 ? (
+        {containerWidth > 0 ? (
           <ResponsiveContainer width={containerWidth} height={250} key={`${timeRange}-${containerWidth}`}>
             <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
             <CartesianGrid
