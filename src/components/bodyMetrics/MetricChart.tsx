@@ -41,6 +41,7 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
       for (const entry of entries) {
         const width = entry.contentRect.width
         if (width > 0) {
+          console.log('ResizeObserver detected width:', width)
           setContainerWidth(width)
         }
       }
@@ -48,32 +49,49 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
 
     resizeObserver.observe(containerRef.current)
 
-    // Also check immediately and on next frame
-    let timeoutId: ReturnType<typeof setTimeout> | null = null
+    // Check width immediately and with retries
+    let retryCount = 0
+    const maxRetries = 5
+    
     const checkWidth = () => {
-      if (containerRef.current) {
-        const width = containerRef.current.getBoundingClientRect().width
-        console.log('Chart container width:', width)
-        if (width > 0) {
-          setContainerWidth(width)
-        } else {
-          // Retry on next frame if width is still 0
-          requestAnimationFrame(checkWidth)
-        }
+      if (!containerRef.current) return
+      
+      const width = containerRef.current.getBoundingClientRect().width
+      console.log(`Chart container width check (attempt ${retryCount + 1}):`, width)
+      
+      if (width > 0) {
+        setContainerWidth(width)
+      } else if (retryCount < maxRetries) {
+        retryCount++
+        // Try again on next frame
+        requestAnimationFrame(checkWidth)
       }
     }
     
     // Check immediately
     checkWidth()
     
-    // Also check after a short delay to catch layout changes
-    timeoutId = setTimeout(checkWidth, 100)
+    // Also check after delays to catch layout changes
+    const timeoutId1 = setTimeout(checkWidth, 50)
+    const timeoutId2 = setTimeout(checkWidth, 200)
+    
+    // Final fallback - force render after 500ms if width is still 0
+    const timeoutId3 = setTimeout(() => {
+      if (containerRef.current) {
+        const width = containerRef.current.getBoundingClientRect().width
+        if (width === 0) {
+          console.warn('Width still 0 after 500ms, forcing render with fallback')
+          // Use a reasonable fallback width (typical mobile width)
+          setContainerWidth(350)
+        }
+      }
+    }, 500)
 
     return () => {
       resizeObserver.disconnect()
-      if (timeoutId) {
-        clearTimeout(timeoutId)
-      }
+      clearTimeout(timeoutId1)
+      clearTimeout(timeoutId2)
+      clearTimeout(timeoutId3)
     }
   }, [timeRange])
 
@@ -96,12 +114,14 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
 
   // Transform data for Recharts
   const chartData = useMemo(() => {
-    return sortedEntries.map(entry => ({
+    const data = sortedEntries.map(entry => ({
       date: entry.date,
       dateLabel: format(entry.date, 'MMM d'),
-      weight: entry.weight,
+      weight: typeof entry.weight === 'number' ? entry.weight : Number(String(entry.weight).replace(/[^0-9.]/g, '')) || 0,
     }))
-  }, [sortedEntries])
+    console.log('Chart data prepared:', { count: data.length, timeRange, sample: data[0] })
+    return data
+  }, [sortedEntries, timeRange])
 
 
   // Calculate Y-axis domain with padding
@@ -201,10 +221,10 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
 
       <div 
         ref={containerRef}
-        className="bg-card rounded-xl p-4 border border-[var(--border-primary)] w-full min-w-0 flex-1"
-        style={{ minWidth: 0 }}
+        className="bg-card rounded-xl p-4 border border-[var(--border-primary)] w-full min-w-0"
+        style={{ minWidth: 0, width: '100%' }}
       >
-        {containerWidth > 0 ? (
+        {containerWidth > 0 && chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={250} key={`${timeRange}-${containerWidth}`}>
             <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
             <CartesianGrid
@@ -259,11 +279,11 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
             />
           </LineChart>
         </ResponsiveContainer>
-        ) : (
+        ) : containerWidth === 0 ? (
           <div className="w-full h-[250px] flex items-center justify-center">
             <div className="text-[var(--text-secondary)] text-sm">Loading chart...</div>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   )
