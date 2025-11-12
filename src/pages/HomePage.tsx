@@ -10,8 +10,6 @@ import AnalyticsFilters from '../components/analytics/AnalyticsFilters'
 import MiniChartCard from '../components/analytics/MiniChartCard'
 import VolumeTrendChart from '../components/analytics/VolumeTrendChart'
 import IntensitySetsChart from '../components/analytics/IntensitySetsChart'
-import DurationDensityChart from '../components/analytics/DurationDensityChart'
-import ConsistencyHeatmap from '../components/analytics/ConsistencyHeatmap'
 import {
   filterWorkouts,
   getAllWorkoutMetrics,
@@ -72,40 +70,6 @@ function HomePage() {
     return compareWorkouts(metrics, compareMode, 'intensity')
   }, [metrics, compareMode])
   
-  const durationComparison = useMemo(() => {
-    return compareWorkouts(metrics, compareMode, 'duration')
-  }, [metrics, compareMode])
-  
-  const consistencyComparison = useMemo(() => {
-    // For consistency, we compare workout count
-    const workoutCount = metrics.length
-    if (compareMode === 'week-over-week') {
-      const thisWeekStart = startOfWeek(today, { weekStartsOn: 0 })
-      const thisWeekEnd = endOfWeek(today, { weekStartsOn: 0 })
-      const lastWeekStart = subDays(thisWeekStart, 7)
-      const lastWeekEnd = subDays(thisWeekEnd, 7)
-      
-      const thisWeekCount = metrics.filter(m =>
-        isWithinInterval(m.date, { start: thisWeekStart, end: thisWeekEnd })
-      ).length
-      
-      const lastWeekCount = metrics.filter(m =>
-        isWithinInterval(m.date, { start: lastWeekStart, end: lastWeekEnd })
-      ).length
-      
-      const change = thisWeekCount - lastWeekCount
-      const changePercent = lastWeekCount > 0 ? (change / lastWeekCount) * 100 : 0
-      
-      return {
-        current: thisWeekCount,
-        previous: lastWeekCount,
-        change,
-        changePercent,
-      }
-    }
-    return null
-  }, [metrics, compareMode, today])
-  
   // Format values for display
   const formatVolume = (volume: number) => {
     if (volume >= 1000) return `${(volume / 1000).toFixed(1)}k`
@@ -114,13 +78,6 @@ function HomePage() {
   
   const formatIntensity = (intensity: number) => {
     return `${Math.round(intensity)}kg`
-  }
-  
-  const formatDuration = (duration: number) => {
-    const hours = Math.floor(duration / 60)
-    const minutes = Math.round(duration % 60)
-    if (hours > 0) return `${hours}h ${minutes}m`
-    return `${minutes}m`
   }
 
   // Show loading state if needed
@@ -188,24 +145,6 @@ function HomePage() {
               comparison={intensityComparison}
               isLoading={isLoading}
               chart={<IntensitySetsChart metrics={metrics} compareMode={compareMode} />}
-            />
-            
-            {/* Duration & Density */}
-            <MiniChartCard
-              title="Duration & Density"
-              value={durationComparison ? formatDuration(durationComparison.current) : '--'}
-              comparison={durationComparison}
-              isLoading={isLoading}
-              chart={<DurationDensityChart metrics={metrics} compareMode={compareMode} />}
-            />
-            
-            {/* Consistency Heatmap */}
-            <MiniChartCard
-              title="Consistency"
-              value={consistencyComparison ? `${consistencyComparison.current} workouts` : `${metrics.length} workouts`}
-              comparison={consistencyComparison}
-              isLoading={isLoading}
-              chart={<ConsistencyHeatmap metrics={metrics} dateRange={filters.dateRange} />}
             />
           </div>
         </div>
