@@ -28,10 +28,11 @@ function StatCard({ title, value, delta, children, isLoading }: StatCardProps) {
 
   return (
     <motion.div
-      className="rounded-3xl bg-[var(--surface)] border border-white/5 p-4 md:p-6 shadow-[0_10px_30px_rgba(0,0,0,.25)]"
+      className="rounded-3xl bg-[var(--surface)] border border-white/5 p-4 md:p-6 shadow-[0_10px_30px_rgba(0,0,0,.25)] relative"
       initial={{ y: 6, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.35 }}
+      style={{ zIndex: 1 }}
     >
       <div className="text-sm text-[var(--text-dim)] text-center">{title}</div>
       <div className="mt-2 flex items-baseline justify-center gap-3">
@@ -45,7 +46,11 @@ function StatCard({ title, value, delta, children, isLoading }: StatCardProps) {
           </span>
         )}
       </div>
-      {children && <div className="mt-4">{children}</div>}
+      {children && (
+        <div className="mt-4 relative" style={{ overflow: 'visible', zIndex: 2 }}>
+          {children}
+        </div>
+      )}
     </motion.div>
   )
 }

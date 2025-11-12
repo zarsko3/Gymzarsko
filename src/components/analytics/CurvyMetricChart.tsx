@@ -98,13 +98,14 @@ function CurvyMetricChart({ data, metric, compare, height = 220, unit }: CurvyMe
     const compareValue = payload[1]?.value
     
     return (
-      <div className="relative">
+      <div className="relative" style={{ zIndex: 1000, pointerEvents: 'none' }}>
         <div
           className="rounded-xl px-4 py-2 font-extrabold shadow-lg"
           style={{
             background: theme.tooltipBg,
             color: '#262626',
             borderRadius: 12,
+            zIndex: 1000,
           }}
         >
           {formatValue(value)} {displayUnit}
@@ -126,6 +127,7 @@ function CurvyMetricChart({ data, metric, compare, height = 220, unit }: CurvyMe
             borderLeft: '8px solid transparent',
             borderRight: '8px solid transparent',
             borderTop: `8px solid ${theme.tooltipBg}`,
+            zIndex: 1000,
           }}
         />
       </div>
@@ -148,16 +150,17 @@ function CurvyMetricChart({ data, metric, compare, height = 220, unit }: CurvyMe
   }, [data, compare])
   
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <AreaChart
-        data={chartData}
-        margin={{ top: 12, right: 8, left: 8, bottom: 8 }}
-        onMouseMove={(e: any) => {
-          const idx = e?.activeTooltipIndex
-          setActiveIndex(typeof idx === 'number' ? idx : null)
-        }}
-        onMouseLeave={() => setActiveIndex(null)}
-      >
+    <div style={{ overflow: 'visible', position: 'relative', zIndex: 2 }}>
+      <ResponsiveContainer width="100%" height={height}>
+        <AreaChart
+          data={chartData}
+          margin={{ top: 12, right: 8, left: 8, bottom: 8 }}
+          onMouseMove={(e: any) => {
+            const idx = e?.activeTooltipIndex
+            setActiveIndex(typeof idx === 'number' ? idx : null)
+          }}
+          onMouseLeave={() => setActiveIndex(null)}
+        >
         <defs>
           {/* Area fill gradient */}
           <linearGradient id={ids.fill} x1="0" y1="0" x2="0" y2="1">
@@ -191,7 +194,7 @@ function CurvyMetricChart({ data, metric, compare, height = 220, unit }: CurvyMe
             strokeWidth: 2,
           }}
           content={<PillTooltip />}
-          wrapperStyle={{ outline: 'none' }}
+          wrapperStyle={{ outline: 'none', zIndex: 1000 }}
         />
         {/* Full-height vertical line on hover */}
         {activeIndex !== null && chartData[activeIndex] && (
@@ -248,6 +251,7 @@ function CurvyMetricChart({ data, metric, compare, height = 220, unit }: CurvyMe
         />
       </AreaChart>
     </ResponsiveContainer>
+    </div>
   )
 }
 

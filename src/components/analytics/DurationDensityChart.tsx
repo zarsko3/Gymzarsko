@@ -21,7 +21,7 @@ function DurationDensityChart({ metrics, compareMode }: DurationDensityChartProp
   // Primary: density with compare line
   // Overlay: duration as thin dashed line
   return (
-    <div className="relative w-full" style={{ height: 220 }}>
+    <div className="relative w-full" style={{ height: 220, overflow: 'visible', zIndex: 2 }}>
       <CurvyMetricChart
         data={densityData}
         metric="density"
@@ -31,7 +31,7 @@ function DurationDensityChart({ metrics, compareMode }: DurationDensityChartProp
       />
       {/* Duration overlay */}
       {durationData.length > 0 && (
-        <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 pointer-events-none" style={{ overflow: 'visible', zIndex: 1 }}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={durationData} margin={{ top: 12, right: 8, left: 8, bottom: 8 }}>
               <XAxis hide />
