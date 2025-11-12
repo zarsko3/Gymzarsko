@@ -22,8 +22,8 @@ function AnalyticsFilters({
   }
   
   return (
-    <div className="flex flex-wrap md:flex-nowrap gap-2 justify-center md:justify-start pb-1 items-center">
-      {/* Workout Type */}
+    <div className="flex flex-wrap gap-2 justify-center md:justify-start pb-1 items-center">
+      {/* First Row: Workout Type + Week */}
       <PillButton active={filters.workoutType === 'push'} onClick={() => handleWorkoutTypeChange('push')}>
         Push
       </PillButton>
@@ -36,20 +36,19 @@ function AnalyticsFilters({
       <PillButton active={filters.workoutType === 'all'} onClick={() => handleWorkoutTypeChange('all')}>
         All
       </PillButton>
-      
-      {/* Dot separator */}
-      <span className="text-[var(--text-dim)] mx-1 hidden md:inline">•</span>
-      
-      {/* Compare Mode */}
-      <PillButton active={compareMode === 'none'} onClick={() => onCompareModeChange('none')}>
-        Trend
-      </PillButton>
-      <PillButton active={compareMode === 'last-vs-average'} onClick={() => onCompareModeChange('last-vs-average')}>
-        Avg
-      </PillButton>
       <PillButton active={compareMode === 'week-over-week'} onClick={() => onCompareModeChange('week-over-week')}>
         Week
       </PillButton>
+      
+      {/* Second Row: Trend and Avg */}
+      <div className="w-full flex justify-center gap-2 mt-1">
+        <PillButton active={compareMode === 'none'} onClick={() => onCompareModeChange('none')}>
+          Trend
+        </PillButton>
+        <PillButton active={compareMode === 'last-vs-average'} onClick={() => onCompareModeChange('last-vs-average')}>
+          Avg
+        </PillButton>
+      </div>
     </div>
   )
 }
