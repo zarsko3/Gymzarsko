@@ -128,10 +128,20 @@ button,
 input,
 select,
 textarea,
-svg,
 img,
 video,
 iframe {
   transition-property: background-color, border-color, color, opacity, transform;
+}
+
+/* Exclude SVG and chart elements from transitions to prevent interference */
+svg,
+svg *,
+.recharts-wrapper,
+.recharts-wrapper *,
+.recharts-responsive-container,
+.recharts-responsive-container * {
+  transition: none !important;
+  animation: none !important;
 }
 

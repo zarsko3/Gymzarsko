@@ -50,7 +50,9 @@
   }
 
   /* Prevent horizontal scroll on all containers */
-  div, section, main, article, aside, header, footer {
+  /* Exclude chart containers from max-width constraint */
+  div:not(.recharts-wrapper):not(.recharts-responsive-container):not([class*="recharts"]),
+  section, main, article, aside, header, footer {
     max-width: 100%;
   }
 

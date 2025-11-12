@@ -62,11 +62,12 @@ function Layout({ children }: LayoutProps) {
             initial="initial"
             animate="animate"
             exit="exit"
+            style={{ isolation: 'isolate' }}
           >
             <motion.div
               variants={pageVariants}
               transition={pageTransition}
-              style={{ willChange: 'transform, opacity' }}
+              style={{ willChange: 'transform, opacity', isolation: 'isolate' }}
             >
               {children}
             </motion.div>
