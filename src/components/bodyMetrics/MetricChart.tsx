@@ -1,5 +1,6 @@
 import { useMemo, useEffect, useState } from 'react'
 import { format, subDays, startOfDay } from 'date-fns'
+import { useReducedMotion } from 'framer-motion'
 import {
   LineChart,
   Line,
@@ -23,6 +24,7 @@ interface MetricChartProps {
 function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChartProps) {
   const [accentColor, setAccentColor] = useState<string>('#10B981')
   const { ref: containerRef, width: containerWidth } = useClientWidth()
+  const shouldReduceMotion = useReducedMotion() ?? false
 
   // Get computed CSS variable value for accent color
   useEffect(() => {
@@ -217,7 +219,7 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
         style={{ minWidth: 0 }}
       >
         {containerWidth > 0 ? (
-          <ResponsiveContainer width={containerWidth} height={250} key={`${timeRange}-${containerWidth}`}>
+          <ResponsiveContainer width={containerWidth} height={250} key={timeRange}>
             <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
@@ -268,6 +270,9 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
               activeDot={{ r: 6, stroke: accentColor, strokeWidth: 2 }}
               strokeLinecap="round"
               strokeLinejoin="round"
+              isAnimationActive={!shouldReduceMotion}
+              animationDuration={shouldReduceMotion ? 0 : 1000}
+              animationEasing="ease-out"
             />
           </LineChart>
         </ResponsiveContainer>

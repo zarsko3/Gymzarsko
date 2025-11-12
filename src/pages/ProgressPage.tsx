@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
+import { motion } from 'framer-motion'
+import { useReducedMotion } from 'framer-motion'
 import { ChevronLeft, Plus, Settings, TrendingUp, Target, Edit2 } from 'lucide-react'
 import Card from '../components/ui/Card'
 import AddMetricModal from '../components/bodyMetrics/AddMetricModal'
@@ -20,6 +22,7 @@ type TimeRange = '7d' | '30d' | '90d' | 'all'
 function ProgressPage() {
   const navigate = useNavigate()
   const { currentUser, loading: authLoading } = useAuth()
+  const shouldReduceMotion = useReducedMotion() ?? false
   const [entries, setEntries] = useState<BodyMetricEntry[]>([])
   const [goal, setGoal] = useState<BodyMetricGoal | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -213,50 +216,78 @@ function ProgressPage() {
       <div className="px-4 py-6 space-y-6 flex flex-col flex-1 min-w-0">
         {/* Stats Cards */}
         <div className="grid grid-cols-3 gap-3">
-          <Card className="bg-card text-center p-4">
-            <div className="text-2xl font-bold text-primary-500">
-              {latestEntry ? `${latestEntry.weight.toFixed(1)}` : '--'}
-            </div>
-            <div className="text-[var(--text-secondary)] text-xs mt-1">Current (kg)</div>
-          </Card>
-          <Card className="bg-card text-center p-4">
-            <div className="text-2xl font-bold text-primary-500">
-              {goal ? `${goal.targetWeight.toFixed(1)}` : '--'}
-            </div>
-            <div className="text-[var(--text-secondary)] text-xs mt-1">Goal (kg)</div>
-          </Card>
-          <Card className="bg-card text-center p-4">
-            <div className={`text-2xl font-bold ${
-              progressToGoal !== null
-                ? progressToGoal <= 0
-                  ? 'text-green-500'
-                  : 'text-primary-500'
-                : 'text-[var(--text-inactive)]'
-            }`}>
-              {progressToGoal !== null
-                ? progressToGoal <= 0
-                  ? `${Math.abs(progressToGoal).toFixed(1)}`
-                  : `+${progressToGoal.toFixed(1)}`
-                : '--'}
-            </div>
-            <div className="text-[var(--text-secondary)] text-xs mt-1">
-              {progressToGoal !== null && progressToGoal <= 0 ? 'To Goal' : 'Progress'}
-            </div>
-          </Card>
+          <motion.div
+            initial={shouldReduceMotion ? {} : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <Card className="bg-card text-center p-4">
+              <div className="text-2xl font-bold text-primary-500">
+                {latestEntry ? `${latestEntry.weight.toFixed(1)}` : '--'}
+              </div>
+              <div className="text-[var(--text-secondary)] text-xs mt-1">Current (kg)</div>
+            </Card>
+          </motion.div>
+          <motion.div
+            initial={shouldReduceMotion ? {} : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <Card className="bg-card text-center p-4">
+              <div className="text-2xl font-bold text-primary-500">
+                {goal ? `${goal.targetWeight.toFixed(1)}` : '--'}
+              </div>
+              <div className="text-[var(--text-secondary)] text-xs mt-1">Goal (kg)</div>
+            </Card>
+          </motion.div>
+          <motion.div
+            initial={shouldReduceMotion ? {} : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <Card className="bg-card text-center p-4">
+              <div className={`text-2xl font-bold ${
+                progressToGoal !== null
+                  ? progressToGoal <= 0
+                    ? 'text-green-500'
+                    : 'text-primary-500'
+                  : 'text-[var(--text-inactive)]'
+              }`}>
+                {progressToGoal !== null
+                  ? progressToGoal <= 0
+                    ? `${Math.abs(progressToGoal).toFixed(1)}`
+                    : `+${progressToGoal.toFixed(1)}`
+                  : '--'}
+              </div>
+              <div className="text-[var(--text-secondary)] text-xs mt-1">
+                {progressToGoal !== null && progressToGoal <= 0 ? 'To Goal' : 'Progress'}
+              </div>
+            </Card>
+          </motion.div>
         </div>
 
         {/* Chart */}
-        <div className="w-full min-w-0 flex-1 flex flex-col">
+        <motion.div
+          className="w-full min-w-0 flex-1 flex flex-col"
+          initial={shouldReduceMotion ? {} : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        >
           <MetricChart
             entries={entries}
             goal={goal}
             timeRange={timeRange}
             onTimeRangeChange={setTimeRange}
           />
-        </div>
+        </motion.div>
 
         {/* Recent Entries */}
-        <div className="space-y-3">
+        <motion.div
+          className="space-y-3"
+          initial={shouldReduceMotion ? {} : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        >
           <h3 className="font-semibold text-[var(--text-primary)]">Recent Entries</h3>
           {recentEntries.length === 0 ? (
             <Card className="bg-card text-center py-8">
@@ -265,35 +296,39 @@ function ProgressPage() {
             </Card>
           ) : (
             <div className="space-y-2">
-              {recentEntries.map((entry) => (
-                <Card
+              {recentEntries.map((entry, index) => (
+                <motion.div
                   key={entry.id}
-                  className="bg-card hover:shadow-md transition-shadow"
+                  initial={shouldReduceMotion ? {} : { opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2, delay: 0.35 + index * 0.05, ease: [0.16, 1, 0.3, 1] }}
                 >
-                  <div className="flex items-center justify-between p-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <div className="text-lg font-semibold text-[var(--text-primary)]">
-                          {entry.weight.toFixed(1)} kg
+                  <Card className="bg-card hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between p-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <div className="text-lg font-semibold text-[var(--text-primary)]">
+                            {entry.weight.toFixed(1)} kg
+                          </div>
+                        </div>
+                        <div className="text-xs text-[var(--text-secondary)] mt-1">
+                          {format(entry.date, 'EEEE, MMM d, yyyy')}
                         </div>
                       </div>
-                      <div className="text-xs text-[var(--text-secondary)] mt-1">
-                        {format(entry.date, 'EEEE, MMM d, yyyy')}
-                      </div>
+                      <button
+                        onClick={() => handleEdit(entry)}
+                        className="text-[var(--text-secondary)] hover:text-primary-500 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                        aria-label="Edit entry"
+                      >
+                        <Edit2 size={18} />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => handleEdit(entry)}
-                      className="text-[var(--text-secondary)] hover:text-primary-500 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
-                      aria-label="Edit entry"
-                    >
-                      <Edit2 size={18} />
-                    </button>
-                  </div>
-                </Card>
+                  </Card>
+                </motion.div>
               ))}
             </div>
           )}
-        </div>
+        </motion.div>
       </div>
 
       {/* Modals */}
