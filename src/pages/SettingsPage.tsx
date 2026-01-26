@@ -2,20 +2,17 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ChevronLeft,
-  User,
-  Palette,
-  Lock,
-  Trash2,
-  LogOut,
   AlertCircle,
   CheckCircle,
   Loader2,
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
-import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
+import ProfileSettingsSection from '../components/settings/ProfileSettingsSection'
+import ThemePreferenceSection from '../components/settings/ThemePreferenceSection'
+import AccountManagementSection from '../components/settings/AccountManagementSection'
 import {
   getUserProfile,
   updateDisplayName,
@@ -53,6 +50,9 @@ function SettingsPage() {
   // Delete account form
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteError, setDeleteError] = useState('')
+
+  // Fallback display name derived from email
+  const fallbackDisplayName = currentUser?.email?.split('@')[0] || 'User'
 
   // Load user profile
   useEffect(() => {
@@ -224,140 +224,22 @@ function SettingsPage() {
       )}
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        {/* Profile Settings */}
-        <section>
-          <h2 className="text-lg font-semibold text-text-primary mb-3">Profile Settings</h2>
+        <ProfileSettingsSection
+          displayName={displayName}
+          fallbackName={fallbackDisplayName}
+          onDisplayNameChange={setDisplayName}
+          onSave={handleUpdateDisplayName}
+          saving={saving}
+          disableSave={saving || displayName === profile?.displayName}
+        />
 
-          {/* User Info Card */}
-          <Card className="bg-gradient-to-br from-primary-50 to-primary-100 border-2 border-primary-200 mb-3">
-            <div className="p-6 flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-[var(--bg-primary)]-500 flex items-center justify-center flex-shrink-0">
-                <User className="w-10 h-10 text-white" strokeWidth={2} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-xl font-bold text-text-primary truncate">
-                  {displayName || currentUser?.email?.split('@')[0] || 'User'}
-                </h3>
-              </div>
-            </div>
-          </Card>
+        <ThemePreferenceSection theme={theme} onThemeChange={handleThemeChange} />
 
-          {/* Display Name */}
-          <Card className="bg-card mb-3">
-            <div className="p-4">
-              <label className="block text-sm font-medium text-text-primary mb-2">
-                Display Name
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="flex-1 px-4 py-2.5 border border-border-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Your name"
-                  disabled={saving}
-                />
-                <Button
-                  onClick={handleUpdateDisplayName}
-                  disabled={saving || displayName === profile?.displayName}
-                >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
-                </Button>
-              </div>
-            </div>
-          </Card>
-
-        </section>
-
-        {/* App Preferences */}
-        <section>
-          <h2 className="text-lg font-semibold text-text-primary mb-3">App Preferences</h2>
-
-          {/* Theme Toggle */}
-          <Card className="bg-card mb-3">
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <Palette className="w-5 h-5 text-primary-500" />
-                  <div>
-                    <h3 className="font-medium text-text-primary">Theme</h3>
-                    <p className="text-sm text-text-secondary">Choose your appearance</p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleThemeChange('light')}
-                  className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
-                    theme === 'light'
-                      ? 'border-primary-500 bg-[var(--bg-primary)]-50 text-primary-700'
-                      : 'border-border-primary text-text-secondary hover:border-border-primary'
-                  }`}
-                >
-                  Light
-                </button>
-                <button
-                  onClick={() => handleThemeChange('dark')}
-                  className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
-                    theme === 'dark'
-                      ? 'border-primary-500 bg-[var(--bg-primary)]-50 text-primary-700'
-                      : 'border-border-primary text-text-secondary hover:border-border-primary'
-                  }`}
-                >
-                  Dark
-                </button>
-              </div>
-            </div>
-          </Card>
-
-        </section>
-
-        {/* Account Management */}
-        <section>
-          <h2 className="text-lg font-semibold text-text-primary mb-3">Account Management</h2>
-
-          {/* Change Password */}
-          <Card
-            onClick={() => setShowPasswordModal(true)}
-            className="bg-card mb-3 cursor-pointer hover:shadow-md transition-shadow"
-          >
-            <div className="p-4 flex items-center gap-3">
-              <Lock className="w-5 h-5 text-primary-500" />
-              <div>
-                <h3 className="font-medium text-text-primary">Change Password</h3>
-                <p className="text-sm text-text-secondary">Update your password</p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Logout */}
-          <Card
-            onClick={() => setShowLogoutModal(true)}
-            className="bg-card mb-3 cursor-pointer hover:shadow-md transition-shadow"
-          >
-            <div className="p-4 flex items-center gap-3">
-              <LogOut className="w-5 h-5 text-yellow-600" />
-              <div>
-                <h3 className="font-medium text-yellow-700">Log Out</h3>
-                <p className="text-sm text-text-secondary">Sign out of your account</p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Delete Account */}
-          <Card
-            onClick={() => setShowDeleteModal(true)}
-            className="bg-red-50 border-2 border-red-200 cursor-pointer hover:shadow-md transition-shadow"
-          >
-            <div className="p-4 flex items-center gap-3">
-              <Trash2 className="w-5 h-5 text-red-600" />
-              <div>
-                <h3 className="font-medium text-red-600">Delete Account</h3>
-                <p className="text-sm text-red-500">Permanently delete your account and data</p>
-              </div>
-            </div>
-          </Card>
-        </section>
+        <AccountManagementSection
+          onChangePassword={() => setShowPasswordModal(true)}
+          onLogout={() => setShowLogoutModal(true)}
+          onDeleteAccount={() => setShowDeleteModal(true)}
+        />
 
         {/* App Info */}
         <div className="text-center pt-4 pb-6">

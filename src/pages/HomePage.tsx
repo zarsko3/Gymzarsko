@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format, addDays, subDays, startOfWeek, endOfWeek, isWithinInterval, endOfDay, startOfDay } from 'date-fns'
-import type { Workout, WorkoutType, FilterOptions, CompareMode } from '../types'
+import type { WorkoutType, FilterOptions, CompareMode } from '../types'
 import WeeklyCalendar from '../components/home/WeeklyCalendar'
 import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
 import Banner from '../components/home/Banner'
-import { subscribeToWorkouts } from '../services/workoutServiceFacade'
 import AnalyticsFilters from '../components/analytics/AnalyticsFilters'
 import MiniChartCard from '../components/analytics/MiniChartCard'
 import VolumeTrendChart from '../components/analytics/VolumeTrendChart'
@@ -15,13 +14,15 @@ import {
   getAllWorkoutMetrics,
   compareWorkouts,
 } from '../services/workoutAnalyticsService'
+import { useWorkoutsSubscription } from '../hooks/useWorkoutsSubscription'
+import { useToast } from '../hooks/useToast'
 
 function HomePage() {
   const navigate = useNavigate()
   const today = new Date()
   const [showWorkoutModal, setShowWorkoutModal] = useState(false)
-  const [allWorkouts, setAllWorkouts] = useState<Workout[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { workouts: allWorkouts, isLoading, error } = useWorkoutsSubscription()
+  const { showToast } = useToast()
   
   // Filter and comparison state
   const [filters, setFilters] = useState<FilterOptions>({
@@ -33,19 +34,12 @@ function HomePage() {
   })
   const [compareMode, setCompareMode] = useState<CompareMode>('last-vs-average')
   
-  // Subscribe to workout data for real-time updates
+  // Surface subscription errors
   useEffect(() => {
-    setIsLoading(true)
-    // Use real-time listener
-    const unsubscribe = subscribeToWorkouts((workouts) => {
-      setAllWorkouts(workouts)
-      setIsLoading(false)
-    })
-    
-    return () => {
-      unsubscribe()
+    if (error) {
+      showToast('error', 'Unable to load workouts right now. Please try again.')
     }
-  }, [])
+  }, [error, showToast])
   
   const weekStart = startOfWeek(today, { weekStartsOn: 0 }) // Start on Sunday (U.S. calendar)
   const weekEnd = addDays(weekStart, 6)

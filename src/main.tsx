@@ -21,6 +21,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 )
 
-// Register Service Worker for PWA functionality
-registerSW({ immediate: true })
+// Register Service Worker for PWA functionality (production only)
+if (import.meta.env.PROD) {
+  registerSW({ immediate: true })
+}
 

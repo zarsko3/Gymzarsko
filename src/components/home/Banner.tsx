@@ -26,17 +26,18 @@ export default function Banner({ mode = 'random-banners' }: BannerProps) {
   if (!src) return null
 
   return (
-    <section className="relative left-1/2 right-1/2 w-screen -translate-x-1/2 my-4 bg-[var(--bg-primary)] overflow-hidden">
-      {/* Use <img> to preserve SVG internal text layout */}
-      <img
-        src={src}
-        alt={mode === 'logo-only' ? 'Gymzarsko Logo' : 'Motivational banner'}
-        className="w-full h-auto object-cover"
-        style={{ objectPosition: 'center', display: 'block' }}
-        role="img"
-        aria-label={mode === 'logo-only' ? 'Gymzarsko Logo' : 'Gymzarsko Banner'}
-      />
-    </section>
+    <div className="w-full px-0">
+      <div className="w-full my-4 bg-[var(--bg-primary)] flex justify-center items-center overflow-hidden">
+        {/* Use <img> to preserve SVG internal text layout */}
+        <img
+          src={src}
+          alt={mode === 'logo-only' ? 'Gymzarsko Logo' : 'Motivational banner'}
+          className="block w-full h-auto object-contain"
+          role="img"
+          aria-label={mode === 'logo-only' ? 'Gymzarsko Logo' : 'Gymzarsko Banner'}
+        />
+      </div>
+    </div>
   )
 }
 

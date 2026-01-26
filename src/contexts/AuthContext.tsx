@@ -43,6 +43,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   async function logout() {
+    // Clear any cached/local data before signing out
+    try {
+      // Clear localStorage items that may contain user data
+      const keysToRemove = ['gymzarski-workouts', 'gymzarski-current-workout']
+      keysToRemove.forEach(key => {
+        try {
+          localStorage.removeItem(key)
+        } catch {
+          // Ignore localStorage errors
+        }
+      })
+    } catch {
+      // Continue with logout even if cleanup fails
+    }
+
     await signOut(auth)
   }
 

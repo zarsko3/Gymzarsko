@@ -1,11 +1,6 @@
-import type { ReactNode } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, Outlet } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import BottomNav from './BottomNav'
-
-interface LayoutProps {
-  children: ReactNode
-}
 
 // Container variants for staggered children
 const getContainerVariants = (shouldReduceMotion: boolean) => ({
@@ -19,7 +14,7 @@ const getContainerVariants = (shouldReduceMotion: boolean) => ({
   exit: {},
 })
 
-function Layout({ children }: LayoutProps) {
+function Layout() {
   const location = useLocation()
   const shouldReduceMotion = useReducedMotion() ?? false
 
@@ -69,7 +64,7 @@ function Layout({ children }: LayoutProps) {
               transition={pageTransition}
               style={{ willChange: 'transform, opacity', isolation: 'isolate' }}
             >
-              {children}
+              <Outlet />
             </motion.div>
           </motion.div>
         </AnimatePresence>

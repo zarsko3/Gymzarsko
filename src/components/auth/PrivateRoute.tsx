@@ -1,4 +1,5 @@
 import { Navigate } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
 interface PrivateRouteProps {
@@ -6,7 +7,16 @@ interface PrivateRouteProps {
 }
 
 function PrivateRoute({ children }: PrivateRouteProps) {
-  const { currentUser } = useAuth()
+  const { currentUser, loading } = useAuth()
+
+  // Show loading state while auth is initializing
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
+        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+      </div>
+    )
+  }
 
   if (!currentUser) {
     // Redirect to login if not authenticated

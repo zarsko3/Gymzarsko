@@ -9,11 +9,12 @@
  */
 
 import { USE_FIRESTORE } from './config'
-import type { Workout, WorkoutType } from '../types'
+import type { Exercise, Workout, WorkoutType } from '../types'
 
 // Import both implementations
 import * as localStorageService from './workoutService'
 import * as firestoreService from './firestoreWorkoutService'
+import { mockExercises } from './mockData'
 
 /**
  * Get all workouts
@@ -83,6 +84,22 @@ export async function completeWorkout(workout: Workout): Promise<Workout> {
 }
 
 /**
+ * Cancel workout (delete active workout if needed)
+ */
+export async function cancelWorkout(workoutId?: string): Promise<void> {
+  if (USE_FIRESTORE) {
+    const targetId =
+      workoutId || (await firestoreService.getCurrentWorkout())?.id
+    if (targetId) {
+      await firestoreService.deleteWorkout(targetId)
+    }
+    return
+  }
+  localStorageService.cancelWorkout()
+  return Promise.resolve()
+}
+
+/**
  * Delete workout
  */
 export async function deleteWorkout(id: string): Promise<void> {
@@ -108,15 +125,23 @@ export async function getCurrentWorkout(): Promise<Workout | null> {
  * Returns an unsubscribe function
  */
 export function subscribeToWorkouts(
-  callback: (workouts: Workout[]) => void
+  callback: (workouts: Workout[]) => void,
+  onError?: (error: unknown) => void
 ): (() => void) {
   if (USE_FIRESTORE) {
-    return firestoreService.subscribeToWorkouts(callback)
+    return firestoreService.subscribeToWorkouts(callback, onError)
   }
   // For localStorage, just call the callback once with current data
   const workouts = localStorageService.getWorkouts()
   callback(workouts)
   // Return a no-op unsubscribe function
   return () => {}
+}
+
+/**
+ * Get static exercise catalog used across services
+ */
+export function getExerciseCatalog(): Exercise[] {
+  return mockExercises
 }
 

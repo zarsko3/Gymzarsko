@@ -97,6 +97,7 @@ gymzarski/
 - **Mobile-First**: Optimized for touch interfaces with 44px minimum touch targets
 - **Performance**: Lightweight and fast with code splitting
 - **Accessibility**: Semantic HTML and ARIA labels
+- **Zoom Management**: Pinch-to-zoom stays disabled to protect layout stability in kiosk-style sessions; accessible touch targets and focus styles ensure usability without browser zoom.
 - **User Experience**: Clean, intuitive interface with smooth animations
 
 ## License

@@ -55,13 +55,15 @@ export function getDefaultPlans(): Plan[] {
 }
 
 /**
- * Get user's custom plans from Firestore
+ * Get current user's custom plans from Firestore
+ * Note: Only fetches plans for the authenticated user (no userId parameter for security)
  */
-export async function getUserPlans(userId: string): Promise<Plan[]> {
+export async function getUserPlans(): Promise<Plan[]> {
   try {
+    const userId = getUserId()
     const plansRef = collection(db, 'users', userId, PLANS_COLLECTION)
     const querySnapshot = await getDocs(plansRef)
-    
+
     return querySnapshot.docs.map(doc => {
       const data = doc.data()
       return {
@@ -82,16 +84,15 @@ export async function getUserPlans(userId: string): Promise<Plan[]> {
  */
 export async function getAllPlans(): Promise<Plan[]> {
   const defaultPlans = getDefaultPlans()
-  
+
   try {
     // Check if user is authenticated before trying to get user plans
     if (!auth.currentUser) {
       console.log('User not authenticated, returning default plans only')
       return defaultPlans
     }
-    
-    const userId = getUserId()
-    const userPlans = await getUserPlans(userId)
+
+    const userPlans = await getUserPlans()
     return [...defaultPlans, ...userPlans]
   } catch (error) {
     console.error('Error getting all plans:', error)

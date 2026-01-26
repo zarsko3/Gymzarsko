@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { ChevronLeft, Trash2, Clock, TrendingUp, Calendar, Dumbbell, Search, X, Flame, Activity, Plus, Edit2 } from 'lucide-react'
 import type { Workout, WorkoutType } from '../types'
-import { getWorkouts, deleteWorkout, subscribeToWorkouts, createWorkoutWithDate, updateWorkout } from '../services/workoutServiceFacade'
+import { deleteWorkout, createWorkoutWithDate, updateWorkout } from '../services/workoutServiceFacade'
 import { useToast } from '../hooks/useToast'
+import { useWorkoutsSubscription } from '../hooks/useWorkoutsSubscription'
 import { formatDuration, calculateVolume } from '../utils/formatters'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
@@ -19,22 +20,18 @@ function HistoryPage() {
   const [showAddWorkoutModal, setShowAddWorkoutModal] = useState(false)
   const [showEditWorkoutModal, setShowEditWorkoutModal] = useState(false)
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null)
+  const { workouts: subscribedWorkouts, isLoading, error } = useWorkoutsSubscription()
   const [workouts, setWorkouts] = useState<Workout[]>([])
-  const [isLoading, setIsLoading] = useState(true)
 
-  // Subscribe to workout data for real-time updates
   useEffect(() => {
-    setIsLoading(true)
-    // Use real-time listener
-    const unsubscribe = subscribeToWorkouts((workouts) => {
-      setWorkouts(workouts)
-      setIsLoading(false)
-    })
-    
-    return () => {
-      unsubscribe()
+    setWorkouts(subscribedWorkouts)
+  }, [subscribedWorkouts])
+
+  useEffect(() => {
+    if (error) {
+      showToast('error', 'Unable to load your workout history. Please try again.')
     }
-  }, [])
+  }, [error, showToast])
   const [filter, setFilter] = useState<'all' | 'push' | 'pull' | 'legs'>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -62,16 +59,15 @@ function HistoryPage() {
     if (confirm('Are you sure you want to delete this workout? This cannot be undone.')) {
       try {
         // Optimistic update
-        const previousWorkouts = [...workouts]
         setWorkouts(workouts.filter(w => w.id !== workoutId))
-        
+
         await deleteWorkout(workoutId)
         showToast('success', 'Workout deleted successfully')
       } catch (error) {
         console.error('Error deleting workout:', error)
-        // Revert optimistic update
-        const fetchedWorkouts = await getWorkouts()
-        setWorkouts(fetchedWorkouts)
+        // Don't refetch - let real-time subscription sync the state
+        // Just revert the optimistic update using subscribed data
+        setWorkouts(subscribedWorkouts)
         showToast('error', 'Failed to delete workout. Please try again.')
       }
     }
@@ -85,18 +81,16 @@ function HistoryPage() {
   const handleSaveWorkout = async (editedWorkout: Workout) => {
     try {
       // Optimistic update
-      const previousWorkouts = [...workouts]
       setWorkouts(workouts.map(w => w.id === editedWorkout.id ? editedWorkout : w))
-      
+
       await updateWorkout(editedWorkout)
       showToast('success', 'Workout updated successfully ✅')
       setShowEditWorkoutModal(false)
       setSelectedWorkout(null)
     } catch (error) {
       console.error('Error updating workout:', error)
-      // Revert optimistic update
-      const fetchedWorkouts = await getWorkouts()
-      setWorkouts(fetchedWorkouts)
+      // Don't refetch - let real-time subscription sync the state
+      setWorkouts(subscribedWorkouts)
       showToast('error', 'Failed to update workout. Please try again.')
       throw error
     }

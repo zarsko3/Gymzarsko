@@ -1,18 +1,39 @@
 import type { Workout, Exercise, ProgressEntry } from '../types'
-import { getWorkouts } from './workoutService'
+import { getWorkouts as fetchWorkouts } from './workoutServiceFacade'
 import { calculateVolume } from '../utils/formatters'
 
+export type ExercisePr = {
+  weight: number
+  reps: number
+  date: Date
+  volume: number
+}
+
+const resolveWorkouts = async (workouts?: Workout[]): Promise<Workout[]> => {
+  if (workouts) {
+    return workouts
+  }
+  try {
+    return await fetchWorkouts()
+  } catch (error) {
+    console.error('Error loading workouts for progress calculations:', error)
+    return []
+  }
+}
+
 // Get all PRs (Personal Records) for each exercise
-export const getExercisePRs = () => {
-  const workouts = getWorkouts()
-  const prMap = new Map<string, { weight: number; reps: number; date: Date; volume: number }>()
+export const getExercisePRs = async (
+  workouts?: Workout[],
+): Promise<Map<string, ExercisePr>> => {
+  const workoutList = await resolveWorkouts(workouts)
+  const prMap = new Map<string, ExercisePr>()
 
-  workouts.forEach(workout => {
-    workout.exercises.forEach(exercise => {
+  workoutList.forEach((workout) => {
+    workout.exercises.forEach((exercise) => {
       const exerciseId = exercise.exercise.id
-      const completedSets = exercise.sets.filter(s => s.completed)
+      const completedSets = exercise.sets.filter((s) => s.completed)
 
-      completedSets.forEach(set => {
+      completedSets.forEach((set) => {
         const existing = prMap.get(exerciseId)
         const currentVolume = calculateVolume(set.weight, set.reps)
 
@@ -21,7 +42,7 @@ export const getExercisePRs = () => {
           prMap.set(exerciseId, {
             weight: set.weight,
             reps: set.reps,
-            date: workout.date,
+            date: workout.date instanceof Date ? workout.date : new Date(workout.date),
             volume: currentVolume,
           })
         }
@@ -33,23 +54,28 @@ export const getExercisePRs = () => {
 }
 
 // Get exercise history for a specific exercise
-export const getExerciseHistory = (exerciseId: string): ProgressEntry[] => {
-  const workouts = getWorkouts()
+export const getExerciseHistory = async (
+  exerciseId: string,
+  workouts?: Workout[],
+): Promise<ProgressEntry[]> => {
+  const workoutList = await resolveWorkouts(workouts)
   const history: ProgressEntry[] = []
 
-  workouts.forEach(workout => {
-    const exercise = workout.exercises.find(ex => ex.exercise.id === exerciseId)
+  workoutList.forEach((workout) => {
+    const exercise = workout.exercises.find((ex) => ex.exercise.id === exerciseId)
     if (exercise) {
-      exercise.sets.filter(s => s.completed).forEach(set => {
-        history.push({
-          id: `${workout.id}-${set.id}`,
-          exerciseId,
-          date: workout.date,
-          weight: set.weight,
-          reps: set.reps,
-          volume: calculateVolume(set.weight, set.reps),
+      exercise.sets
+        .filter((s) => s.completed)
+        .forEach((set) => {
+          history.push({
+            id: `${workout.id}-${set.id}`,
+            exerciseId,
+            date: workout.date instanceof Date ? workout.date : new Date(workout.date),
+            weight: set.weight,
+            reps: set.reps,
+            volume: calculateVolume(set.weight, set.reps),
+          })
         })
-      })
     }
   })
 
@@ -57,18 +83,23 @@ export const getExerciseHistory = (exerciseId: string): ProgressEntry[] => {
 }
 
 // Get total volume per exercise over time
-export const getExerciseVolumeHistory = (exerciseId: string) => {
-  const workouts = getWorkouts()
+export const getExerciseVolumeHistory = async (
+  exerciseId: string,
+  workouts?: Workout[],
+): Promise<Array<{ date: Date; volume: number }>> => {
+  const workoutList = await resolveWorkouts(workouts)
   const volumeByDate = new Map<string, number>()
 
-  workouts.forEach(workout => {
-    const exercise = workout.exercises.find(ex => ex.exercise.id === exerciseId)
+  workoutList.forEach((workout) => {
+    const exercise = workout.exercises.find((ex) => ex.exercise.id === exerciseId)
     if (exercise) {
-      const dateKey = workout.date.toISOString().split('T')[0]
+      const dateKey = (workout.date instanceof Date ? workout.date : new Date(workout.date))
+        .toISOString()
+        .split('T')[0]
       const totalVolume = exercise.sets
-        .filter(s => s.completed)
+        .filter((s) => s.completed)
         .reduce((sum, set) => sum + calculateVolume(set.weight, set.reps), 0)
-      
+
       volumeByDate.set(dateKey, (volumeByDate.get(dateKey) || 0) + totalVolume)
     }
   })
@@ -79,12 +110,16 @@ export const getExerciseVolumeHistory = (exerciseId: string) => {
 }
 
 // Get workout frequency stats
-export const getWorkoutFrequency = () => {
-  const workouts = getWorkouts()
+export const getWorkoutFrequency = async (
+  workouts?: Workout[],
+): Promise<Array<{ date: Date; count: number }>> => {
+  const workoutList = await resolveWorkouts(workouts)
   const frequencyMap = new Map<string, number>()
 
-  workouts.forEach(workout => {
-    const dateKey = workout.date.toISOString().split('T')[0]
+  workoutList.forEach((workout) => {
+    const dateKey = (workout.date instanceof Date ? workout.date : new Date(workout.date))
+      .toISOString()
+      .split('T')[0]
     frequencyMap.set(dateKey, (frequencyMap.get(dateKey) || 0) + 1)
   })
 
@@ -94,12 +129,12 @@ export const getWorkoutFrequency = () => {
 }
 
 // Get all unique exercises that have been performed
-export const getPerformedExercises = (): Exercise[] => {
-  const workouts = getWorkouts()
+export const getPerformedExercises = async (workouts?: Workout[]): Promise<Exercise[]> => {
+  const workoutList = await resolveWorkouts(workouts)
   const exerciseMap = new Map<string, Exercise>()
 
-  workouts.forEach(workout => {
-    workout.exercises.forEach(exercise => {
+  workoutList.forEach((workout) => {
+    workout.exercises.forEach((exercise) => {
       if (!exerciseMap.has(exercise.exercise.id)) {
         exerciseMap.set(exercise.exercise.id, exercise.exercise)
       }

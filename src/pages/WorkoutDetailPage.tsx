@@ -167,7 +167,18 @@ function WorkoutDetailPage() {
 
   const handleCancel = () => {
     if (workout) {
-      setEditedWorkout(JSON.parse(JSON.stringify(workout)))
+      // Deep clone workout while preserving Date objects
+      // (JSON.parse/stringify converts dates to strings, corrupting them)
+      setEditedWorkout({
+        ...workout,
+        date: workout.date instanceof Date ? new Date(workout.date) : workout.date,
+        startTime: workout.startTime instanceof Date ? new Date(workout.startTime) : workout.startTime,
+        endTime: workout.endTime instanceof Date ? new Date(workout.endTime) : workout.endTime,
+        exercises: workout.exercises.map(ex => ({
+          ...ex,
+          sets: ex.sets.map(set => ({ ...set })),
+        })),
+      })
       setExpandedExerciseNotes(new Set())
       setShowWorkoutNotes(!!workout.notes)
     }

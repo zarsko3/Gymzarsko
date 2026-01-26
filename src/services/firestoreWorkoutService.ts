@@ -540,7 +540,8 @@ export async function getCurrentWorkout(): Promise<Workout | null> {
  * Returns an unsubscribe function
  */
 export function subscribeToWorkouts(
-  callback: (workouts: Workout[]) => void
+  callback: (workouts: Workout[]) => void,
+  onError?: (error: unknown) => void
 ): Unsubscribe {
   try {
     const userId = getUserId()
@@ -562,11 +563,12 @@ export function subscribeToWorkouts(
       },
       (error) => {
         console.error('Error in workouts subscription:', error)
-        callback([])
+        onError?.(error)
       }
     )
   } catch (error) {
     console.error('Error setting up workouts subscription:', error)
+    onError?.(error)
     // Return a no-op unsubscribe function
     return () => {}
   }

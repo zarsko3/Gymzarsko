@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { startOfDay, endOfDay, subDays } from 'date-fns'
-import type { Workout, FilterOptions, CompareMode } from '../types'
-import { subscribeToWorkouts } from '../services/workoutServiceFacade'
+import type { FilterOptions, CompareMode } from '../types'
 import {
   filterWorkouts,
   getAllWorkoutMetrics,
@@ -14,11 +13,13 @@ import VolumeTrendChart from '../components/analytics/VolumeTrendChart'
 import IntensitySetsChart from '../components/analytics/IntensitySetsChart'
 import DurationDensityChart from '../components/analytics/DurationDensityChart'
 import WeekdayConsistency from '../components/analytics/WeekdayConsistency'
+import { useWorkoutsSubscription } from '../hooks/useWorkoutsSubscription'
+import { useToast } from '../hooks/useToast'
 
 function AnalyticsPage() {
   const today = new Date()
-  const [allWorkouts, setAllWorkouts] = useState<Workout[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { workouts: allWorkouts, isLoading, error } = useWorkoutsSubscription()
+  const { showToast } = useToast()
   
   // Filter and comparison state
   const [filters, setFilters] = useState<FilterOptions>({
@@ -30,18 +31,11 @@ function AnalyticsPage() {
   })
   const [compareMode, setCompareMode] = useState<CompareMode>('last-vs-average')
   
-  // Subscribe to workout data for real-time updates
   useEffect(() => {
-    setIsLoading(true)
-    const unsubscribe = subscribeToWorkouts((workouts) => {
-      setAllWorkouts(workouts)
-      setIsLoading(false)
-    })
-    
-    return () => {
-      unsubscribe()
+    if (error) {
+      showToast('error', 'Unable to load analytics data. Please try again.')
     }
-  }, [])
+  }, [error, showToast])
 
   // Filter and compute metrics
   const filteredWorkouts = useMemo(() => {

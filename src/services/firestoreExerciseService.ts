@@ -5,12 +5,14 @@ import {
   updateDoc,
   deleteDoc,
   getDocs,
+  getDoc,
   Timestamp,
   serverTimestamp,
 } from 'firebase/firestore'
 import { db, auth } from '../lib/firebase'
 
 const EXERCISES_SUBCOLLECTION = 'exercises'
+const WORKOUTS_COLLECTION = 'workouts'
 
 /**
  * Get current user ID
@@ -24,6 +26,25 @@ function getUserId(): string {
 }
 
 /**
+ * Verify that the current user owns the specified workout
+ * @throws Error if workout doesn't exist or user doesn't own it
+ */
+async function verifyWorkoutOwnership(workoutId: string): Promise<void> {
+  const userId = getUserId()
+  const workoutRef = doc(db, WORKOUTS_COLLECTION, workoutId)
+  const workoutDoc = await getDoc(workoutRef)
+
+  if (!workoutDoc.exists()) {
+    throw new Error('Workout not found')
+  }
+
+  const workoutData = workoutDoc.data()
+  if (workoutData?.userId !== userId) {
+    throw new Error('Unauthorized: You do not own this workout')
+  }
+}
+
+/**
  * Update exercise name in Firestore
  */
 export async function updateExerciseName(
@@ -32,6 +53,7 @@ export async function updateExerciseName(
   name: string
 ): Promise<void> {
   try {
+    await verifyWorkoutOwnership(workoutId)
     const exerciseRef = doc(db, 'workouts', workoutId, EXERCISES_SUBCOLLECTION, exerciseId)
     await updateDoc(exerciseRef, {
       name: name.trim(),
@@ -57,6 +79,7 @@ export async function addExerciseToWorkout(
   }
 ): Promise<string> {
   try {
+    await verifyWorkoutOwnership(workoutId)
     const userId = getUserId()
     const exercisesRef = collection(db, 'workouts', workoutId, EXERCISES_SUBCOLLECTION)
     
@@ -93,6 +116,7 @@ export async function updateExercise(
   }
 ): Promise<void> {
   try {
+    await verifyWorkoutOwnership(workoutId)
     const exerciseRef = doc(db, 'workouts', workoutId, EXERCISES_SUBCOLLECTION, exerciseId)
     const updateData: any = {
       updatedAt: serverTimestamp(),
@@ -116,6 +140,7 @@ export async function updateExercise(
  */
 export async function deleteExercise(workoutId: string, exerciseId: string): Promise<void> {
   try {
+    await verifyWorkoutOwnership(workoutId)
     const exerciseRef = doc(db, 'workouts', workoutId, EXERCISES_SUBCOLLECTION, exerciseId)
     await deleteDoc(exerciseRef)
   } catch (error) {

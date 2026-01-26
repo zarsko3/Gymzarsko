@@ -43,26 +43,15 @@ function ProgressPage() {
   useEffect(() => {
     if (!authLoading && currentUser) {
       let alive = true
-      let hasReceivedData = false
       setIsLoading(true)
-      
+
       const unsubscribe = subscribeToBodyMetrics((metrics) => {
-        // Guard against stale updates
+        // Guard against stale updates after unmount
         if (!alive) return
-        
-        // Only update if:
-        // 1. We have actual data (metrics.length > 0), OR
-        // 2. This is the first callback and metrics is empty (genuine empty state)
-        // Never clear to [] if we've already received data (prevents 0/2 flip)
-        if (metrics.length > 0) {
-          hasReceivedData = true
-          setEntries(metrics)
-        } else if (!hasReceivedData) {
-          // First callback with empty data - genuine empty state
-          setEntries(metrics)
-        }
-        // If hasReceivedData is true and metrics is empty, ignore it (prevents race condition)
-        
+
+        // Always update with the latest data from subscription
+        // The real-time subscription is the source of truth
+        setEntries(metrics)
         setIsLoading(false)
       })
 

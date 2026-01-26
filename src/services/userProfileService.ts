@@ -5,6 +5,11 @@ import {
   updateDoc,
   deleteDoc,
   Timestamp,
+  collection,
+  query,
+  where,
+  getDocs,
+  writeBatch,
 } from 'firebase/firestore'
 import {
   updateProfile,
@@ -223,7 +228,40 @@ export async function changeEmail(
 }
 
 /**
+ * Delete all user data from Firestore (workouts, body metrics, plans)
+ */
+async function deleteAllUserData(userId: string): Promise<void> {
+  const batch = writeBatch(db)
+
+  // Delete all workouts belonging to the user
+  const workoutsRef = collection(db, 'workouts')
+  const workoutsQuery = query(workoutsRef, where('userId', '==', userId))
+  const workoutsSnapshot = await getDocs(workoutsQuery)
+  workoutsSnapshot.forEach((doc) => {
+    batch.delete(doc.ref)
+  })
+
+  // Delete user subcollections: bodyMetrics, bodyMetricGoals, plans
+  const userSubcollections = ['bodyMetrics', 'bodyMetricGoals', 'plans']
+  for (const subcollection of userSubcollections) {
+    const subcollectionRef = collection(db, USERS_COLLECTION, userId, subcollection)
+    const subcollectionSnapshot = await getDocs(subcollectionRef)
+    subcollectionSnapshot.forEach((doc) => {
+      batch.delete(doc.ref)
+    })
+  }
+
+  // Delete user profile document
+  const userRef = doc(db, USERS_COLLECTION, userId)
+  batch.delete(userRef)
+
+  // Commit all deletions
+  await batch.commit()
+}
+
+/**
  * Delete user account (requires re-authentication)
+ * Deletes all user data: workouts, body metrics, plans, and profile
  */
 export async function deleteUserAccount(password: string): Promise<void> {
   try {
@@ -240,13 +278,8 @@ export async function deleteUserAccount(password: string): Promise<void> {
     )
     await reauthenticateWithCredential(auth.currentUser, credential)
 
-    // Delete Firestore profile
-    const userRef = doc(db, USERS_COLLECTION, userId)
-    await deleteDoc(userRef)
-
-    // Delete all user's workouts
-    // Note: In production, you might want to use a Cloud Function for this
-    // to ensure all user data is deleted properly
+    // Delete all user data from Firestore (workouts, metrics, plans, profile)
+    await deleteAllUserData(userId)
 
     // Delete Auth account (must be last)
     await deleteUser(auth.currentUser)

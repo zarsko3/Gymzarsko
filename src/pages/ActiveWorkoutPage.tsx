@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronLeft, Clock, Plus, Trash2, Check, MessageSquare, FileText, Edit2, X } from 'lucide-react'
+import { ChevronLeft, Plus, Trash2, Check, MessageSquare, FileText, Edit2, X } from 'lucide-react'
 import type { Workout, WorkoutType, WorkoutExercise, WorkoutSet, Exercise } from '../types'
 import { startWorkout, updateWorkout, completeWorkout, getCurrentWorkout, getWorkoutById } from '../services/workoutServiceFacade'
 import { updateExerciseName, addExerciseToWorkout } from '../services/firestoreExerciseService'
@@ -11,6 +11,8 @@ import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
+import { useWorkoutTimer } from '../hooks/useWorkoutTimer'
+import WorkoutHeader from '../components/workout/WorkoutHeader'
 
 function ActiveWorkoutPage() {
   const navigate = useNavigate()
@@ -22,7 +24,6 @@ function ActiveWorkoutPage() {
   const [workout, setWorkout] = useState<Workout | null>(null)
   const [isLoadingWorkout, setIsLoadingWorkout] = useState(true)
   
-  const [elapsedTime, setElapsedTime] = useState(0)
   const [expandedNotes, setExpandedNotes] = useState<Set<number>>(new Set())
   const [showWorkoutNotes, setShowWorkoutNotes] = useState(false)
   const [editingExerciseIndex, setEditingExerciseIndex] = useState<number | null>(null)
@@ -32,6 +33,7 @@ function ActiveWorkoutPage() {
   const [showAddExercise, setShowAddExercise] = useState(false)
   const [isAddingExercise, setIsAddingExercise] = useState(false)
   const [prefilledSets, setPrefilledSets] = useState<Map<string, { weight: number; reps: number }>>(new Map())
+  const elapsedTime = useWorkoutTimer(workout?.startTime ?? null)
   
   // Refs to prevent duplicate operations
   const isCreatingWorkoutRef = useRef(false)
@@ -45,6 +47,29 @@ function ActiveWorkoutPage() {
     targetWeight: 0,
     targetReps: 10,
   })
+
+  const persistWorkoutChange = async (
+    nextWorkout: Workout,
+    options?: { successMessage?: string; suppressErrorToast?: boolean }
+  ): Promise<boolean> => {
+    // Update state optimistically
+    setWorkout(nextWorkout)
+    try {
+      await updateWorkout(nextWorkout)
+      if (options?.successMessage) {
+        showToast('success', options.successMessage)
+      }
+      return true
+    } catch (error) {
+      console.error('Error saving workout changes:', error)
+      if (!options?.suppressErrorToast) {
+        // Don't revert state - user's current input is preserved
+        // They can retry or the state will sync on next successful save
+        showToast('error', 'Failed to save. Your changes are preserved locally - please try again.')
+      }
+      return false
+    }
+  }
 
   // Helper function to auto-populate sets with latest data
   const autoPopulateWorkoutSets = async (workout: Workout): Promise<Workout> => {
@@ -85,8 +110,7 @@ function ActiveWorkoutPage() {
 
     if (hasUpdates) {
       setPrefilledSets(newPrefilledSets)
-      setWorkout(updatedWorkout)
-      await updateWorkout(updatedWorkout)
+      await persistWorkoutChange(updatedWorkout)
     }
     
     return updatedWorkout
@@ -109,8 +133,7 @@ function ActiveWorkoutPage() {
         }
       })
       
-      setWorkout(newWorkout)
-      updateWorkout(newWorkout)
+      void persistWorkoutChange(newWorkout)
       
       // Remove from prefilled sets
       const newPrefilledSets = new Map(prefilledSets)
@@ -260,17 +283,6 @@ function ActiveWorkoutPage() {
     handleTypeChange()
   }, [workoutType, workout, workoutId])
 
-  // Timer effect
-  useEffect(() => {
-    if (!workout) return
-
-    const interval = setInterval(() => {
-      setElapsedTime(Math.floor((Date.now() - workout.startTime!.getTime()) / 1000))
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [workout])
-
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600)
     const mins = Math.floor((seconds % 3600) / 60)
@@ -285,8 +297,7 @@ function ActiveWorkoutPage() {
     const numValue = parseFloat(value) || 0
     newWorkout.exercises[exerciseIndex].sets[setIndex][field] = numValue
     
-    setWorkout(newWorkout)
-    updateWorkout(newWorkout)
+    void persistWorkoutChange(newWorkout)
   }
 
   const handleToggleSet = (exerciseIndex: number, setIndex: number) => {
@@ -296,8 +307,7 @@ function ActiveWorkoutPage() {
     const set = newWorkout.exercises[exerciseIndex].sets[setIndex]
     set.completed = !set.completed
     
-    setWorkout(newWorkout)
-    updateWorkout(newWorkout)
+    void persistWorkoutChange(newWorkout)
   }
 
   const handleAddSet = (exerciseIndex: number) => {
@@ -313,8 +323,7 @@ function ActiveWorkoutPage() {
       completed: false,
     })
     
-    setWorkout(newWorkout)
-    updateWorkout(newWorkout)
+    void persistWorkoutChange(newWorkout)
   }
 
   const handleRemoveSet = (exerciseIndex: number, setIndex: number) => {
@@ -323,8 +332,7 @@ function ActiveWorkoutPage() {
     const newWorkout = { ...workout }
     newWorkout.exercises[exerciseIndex].sets.splice(setIndex, 1)
     
-    setWorkout(newWorkout)
-    updateWorkout(newWorkout)
+    void persistWorkoutChange(newWorkout)
   }
 
   const handleExerciseNoteChange = (exerciseIndex: number, notes: string) => {
@@ -333,8 +341,7 @@ function ActiveWorkoutPage() {
     const newWorkout = { ...workout }
     newWorkout.exercises[exerciseIndex].notes = notes
     
-    setWorkout(newWorkout)
-    updateWorkout(newWorkout)
+    void persistWorkoutChange(newWorkout)
   }
 
   const handleWorkoutNoteChange = (notes: string) => {
@@ -343,8 +350,7 @@ function ActiveWorkoutPage() {
     const newWorkout = { ...workout }
     newWorkout.notes = notes
     
-    setWorkout(newWorkout)
-    updateWorkout(newWorkout)
+    void persistWorkoutChange(newWorkout)
   }
 
   const toggleExerciseNotes = (exerciseIndex: number) => {
@@ -407,23 +413,23 @@ function ActiveWorkoutPage() {
     setEditingExerciseIndex(exerciseIndex)
   }
 
-  const handleSaveExerciseEdit = () => {
+  const handleSaveExerciseEdit = async () => {
     if (!workout || editingExerciseIndex === null) return
 
     const newWorkout = { ...workout }
     const exercise = newWorkout.exercises[editingExerciseIndex]
-    
+
     // Update exercise name and muscle group
     exercise.exercise = {
       ...exercise.exercise,
       name: exerciseForm.name,
       muscleGroup: exerciseForm.muscleGroup,
     }
-    
+
     // Adjust sets count
     const currentSetsCount = exercise.sets.length
     const targetSetsCount = Math.max(1, Math.floor(exerciseForm.sets))
-    
+
     if (targetSetsCount > currentSetsCount) {
       // Add new sets
       const lastSet = exercise.sets[exercise.sets.length - 1]
@@ -439,9 +445,9 @@ function ActiveWorkoutPage() {
       // Remove excess sets (only if not completed)
       exercise.sets = exercise.sets.slice(0, targetSetsCount)
     }
-    
+
     // Update weight and reps for all incomplete sets
-    exercise.sets.forEach((set: WorkoutSet, index: number) => {
+    exercise.sets.forEach((set: WorkoutSet) => {
       if (!set.completed) {
         if (exerciseForm.targetWeight > 0) {
           set.weight = exerciseForm.targetWeight
@@ -451,11 +457,12 @@ function ActiveWorkoutPage() {
         }
       }
     })
-    
-    setWorkout(newWorkout)
-    updateWorkout(newWorkout)
-    setEditingExerciseIndex(null)
-    setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
+
+    const saved = await persistWorkoutChange(newWorkout)
+    if (saved) {
+      setEditingExerciseIndex(null)
+      setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
+    }
   }
 
   const handleAddCustomExercise = async () => {
@@ -521,12 +528,12 @@ function ActiveWorkoutPage() {
         exercises: [...workout.exercises, newWorkoutExercise],
       }
 
-      setWorkout(newWorkout)
-      await updateWorkout(newWorkout)
-      showToast('success', 'Exercise added successfully 💪')
+      const saved = await persistWorkoutChange(newWorkout, { successMessage: 'Exercise added successfully 💪' })
 
-      setShowAddExercise(false)
-      setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
+      if (saved) {
+        setShowAddExercise(false)
+        setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
+      }
     } catch (error) {
       console.error('Error adding exercise:', error)
       const errorInfo = handleFirestoreError(error)
@@ -545,8 +552,7 @@ function ActiveWorkoutPage() {
     if (window.confirm('Are you sure you want to remove this exercise?')) {
       const newWorkout = { ...workout }
       newWorkout.exercises.splice(exerciseIndex, 1)
-      setWorkout(newWorkout)
-      updateWorkout(newWorkout)
+      void persistWorkoutChange(newWorkout)
     }
   }
 
@@ -599,8 +605,10 @@ function ActiveWorkoutPage() {
         name: trimmedValue,
       },
     }
-    setWorkout(newWorkout)
-    await updateWorkout(newWorkout)
+    const saved = await persistWorkoutChange(newWorkout)
+    if (!saved) {
+      return
+    }
     setEditingExerciseNameIndex(null)
     setEditingExerciseNameValue('')
 
@@ -622,7 +630,7 @@ function ActiveWorkoutPage() {
         },
       }
       setWorkout(revertedWorkout)
-      await updateWorkout(revertedWorkout)
+      await persistWorkoutChange(revertedWorkout, { suppressErrorToast: true })
       showToast('error', 'Failed to save exercise name. Please try again.')
     }
   }
@@ -655,31 +663,12 @@ function ActiveWorkoutPage() {
 
   return (
     <div className="min-h-full bg-[var(--bg-primary)]">
-      {/* Header */}
-      <div className="sticky top-0 bg-card border-b border-[var(--border-primary)] z-10 shadow-sm">
-        <div className="flex items-center justify-between px-4 py-4">
-          <button 
-            onClick={handleBack}
-            className="flex items-center gap-1 text-primary-500 font-medium min-h-[44px] min-w-[44px] justify-center"
-          >
-            <ChevronLeft size={20} />
-            <span>Exit</span>
-          </button>
-          <div className="text-center">
-            <h1 className="text-lg font-semibold text-[var(--text-primary)]">{workoutTypeNames[workout.type]}</h1>
-            <div className="flex items-center gap-1 text-primary-500 text-sm font-medium">
-              <Clock size={14} />
-              <span>{formatTime(elapsedTime)}</span>
-            </div>
-          </div>
-          <button 
-            onClick={handleCompleteWorkout}
-            className="text-primary-500 hover:text-primary-600 min-h-[44px] min-w-[44px] flex items-center justify-center font-semibold"
-          >
-            Finish
-          </button>
-        </div>
-      </div>
+      <WorkoutHeader
+        title={workoutTypeNames[workout.type]}
+        elapsedTime={formatTime(elapsedTime)}
+        onExit={handleBack}
+        onComplete={handleCompleteWorkout}
+      />
 
       <div className="px-4 py-6 space-y-4">
         {/* Action Buttons */}
