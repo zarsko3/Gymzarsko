@@ -9,6 +9,8 @@ import { useWorkoutsSubscription } from '../hooks/useWorkoutsSubscription'
 import { formatDuration, calculateVolume } from '../utils/formatters'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
+import Modal from '../components/ui/Modal'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
 import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
 import AddWorkoutModal from '../components/history/AddWorkoutModal'
 import EditWorkoutModal from '../components/history/EditWorkoutModal'
@@ -20,6 +22,7 @@ function HistoryPage() {
   const [showAddWorkoutModal, setShowAddWorkoutModal] = useState(false)
   const [showEditWorkoutModal, setShowEditWorkoutModal] = useState(false)
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
   const { workouts: subscribedWorkouts, isLoading, error } = useWorkoutsSubscription()
   const [workouts, setWorkouts] = useState<Workout[]>([])
 
@@ -55,21 +58,28 @@ function HistoryPage() {
     legs: { name: 'Legs', Icon: Activity, color: 'bg-purple-50 text-purple-600 border-purple-200' },
   }
 
-  const handleDeleteWorkout = async (workoutId: string) => {
-    if (confirm('Are you sure you want to delete this workout? This cannot be undone.')) {
-      try {
-        // Optimistic update
-        setWorkouts(workouts.filter(w => w.id !== workoutId))
+  const handleDeleteWorkout = (workoutId: string) => {
+    setShowDeleteConfirm(workoutId)
+  }
 
-        await deleteWorkout(workoutId)
-        showToast('success', 'Workout deleted successfully')
-      } catch (error) {
-        console.error('Error deleting workout:', error)
-        // Don't refetch - let real-time subscription sync the state
-        // Just revert the optimistic update using subscribed data
-        setWorkouts(subscribedWorkouts)
-        showToast('error', 'Failed to delete workout. Please try again.')
-      }
+  const handleConfirmDelete = async () => {
+    if (!showDeleteConfirm) return
+
+    const workoutId = showDeleteConfirm
+    setShowDeleteConfirm(null)
+
+    try {
+      // Optimistic update
+      setWorkouts(workouts.filter(w => w.id !== workoutId))
+
+      await deleteWorkout(workoutId)
+      showToast('success', 'Workout deleted successfully')
+    } catch (error) {
+      console.error('Error deleting workout:', error)
+      // Don't refetch - let real-time subscription sync the state
+      // Just revert the optimistic update using subscribed data
+      setWorkouts(subscribedWorkouts)
+      showToast('error', 'Failed to delete workout. Please try again.')
     }
   }
 
@@ -468,6 +478,24 @@ function HistoryPage() {
         onSave={handleSaveWorkout}
       />
 
+      {/* Delete Workout Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteConfirm !== null}
+        onClose={() => setShowDeleteConfirm(null)}
+        title="Delete Workout?"
+        size="sm"
+      >
+        <ConfirmDialog
+          title="Delete Workout?"
+          message="Are you sure you want to delete this workout? This action cannot be undone."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          variant="destructive"
+          icon="delete"
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setShowDeleteConfirm(null)}
+        />
+      </Modal>
     </div>
   )
 }

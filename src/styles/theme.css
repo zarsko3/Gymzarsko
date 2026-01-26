@@ -5,12 +5,12 @@
   --bg-primary: #F8FAFC;
   --bg-card: #FFFFFF;
   --bg-secondary: #F1F5F9;
-  
+
   /* Text Colors */
   --text-primary: #0F172A;
   --text-secondary: #64748B;
   --text-inactive: #94A3B8;
-  
+
   /* Primary Brand Colors */
   --primary-50: #f0fdf4;
   --primary-100: #dcfce7;
@@ -22,29 +22,45 @@
   --primary-700: #047857;
   --primary-800: #065f46;
   --primary-900: #064e3b;
-  
+
   /* Accent Colors */
   --accent: #10B981;
   --accent-mint: #D1E7DD;
   --accent-soft-blue: #EFF6FF;
   --accent-soft-green: #ECFDF5;
   --accent-soft-purple: #F5F3FF;
-  
+
   /* Border Colors */
   --border: #E2E8F0;
   --border-primary: #E2E8F0;
   --border-secondary: #CBD5E1;
-  
+
   /* Input Colors */
   --input-bg: #FFFFFF;
-  
+
   /* Shadow Colors */
   --shadow-sm: rgba(0, 0, 0, 0.05);
   --shadow-md: rgba(0, 0, 0, 0.1);
   --shadow-lg: rgba(0, 0, 0, 0.15);
-  
+
   /* Overlay Colors */
   --overlay: rgba(0, 0, 0, 0.4);
+
+  /* Semantic Colors */
+  --color-success: #10B981;
+  --color-error: #EF4444;
+  --color-warning: #F59E0B;
+  --color-info: #3B82F6;
+
+  /* Metric Colors (for charts and progress indicators) */
+  --metric-volume: #F59E0B;
+  --metric-intensity: #3B82F6;
+  --metric-duration: #8B5CF6;
+  --metric-density: #10B981;
+
+  /* Delta Colors (for showing changes) */
+  --up: #10B981;
+  --down: #EF4444;
 }
 
 /* Dark Theme */
@@ -79,7 +95,7 @@
   /* Text Colors (backward compatibility) */
   --text-primary: var(--text);
   --text-secondary: var(--text-dim);
-  --text-inactive: #94A3B8;
+  --text-inactive: #B0B8C8; /* Improved contrast from #94A3B8 */
   
   /* Primary Brand Colors (slightly adjusted for dark mode) */
   --primary-50: #064e3b;
@@ -114,6 +130,12 @@
   
   /* Overlay Colors */
   --overlay: rgba(0, 0, 0, 0.6);
+
+  /* Semantic Colors (adjusted for dark mode) */
+  --color-success: #34D399;
+  --color-error: #F87171;
+  --color-warning: #FBBF24;
+  --color-info: #60A5FA;
 }
 
 /* Smooth transitions for theme switching */

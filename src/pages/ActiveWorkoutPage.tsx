@@ -11,6 +11,7 @@ import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
 import { useWorkoutTimer } from '../hooks/useWorkoutTimer'
 import WorkoutHeader from '../components/workout/WorkoutHeader'
 
@@ -34,6 +35,10 @@ function ActiveWorkoutPage() {
   const [isAddingExercise, setIsAddingExercise] = useState(false)
   const [prefilledSets, setPrefilledSets] = useState<Map<string, { weight: number; reps: number }>>(new Map())
   const elapsedTime = useWorkoutTimer(workout?.startTime ?? null)
+
+  // Confirmation dialog states
+  const [showExitConfirm, setShowExitConfirm] = useState(false)
+  const [showRemoveExerciseConfirm, setShowRemoveExerciseConfirm] = useState<number | null>(null)
   
   // Refs to prevent duplicate operations
   const isCreatingWorkoutRef = useRef(false)
@@ -370,20 +375,20 @@ function ActiveWorkoutPage() {
     }
 
     // Check if any sets have been completed
-    const hasProgress = workout.exercises.some((ex: WorkoutExercise) => 
+    const hasProgress = workout.exercises.some((ex: WorkoutExercise) =>
       ex.sets.some((set: WorkoutSet) => set.completed || set.weight > 0 || set.reps > 0)
     )
 
     if (hasProgress) {
-      const confirmed = window.confirm(
-        "Are you sure you want to exit? Your workout progress will be lost."
-      )
-      if (confirmed) {
-        navigate('/')
-      }
+      setShowExitConfirm(true)
     } else {
       navigate('/')
     }
+  }
+
+  const handleConfirmExit = () => {
+    setShowExitConfirm(false)
+    navigate('/')
   }
 
   const handleCompleteWorkout = async () => {
@@ -548,12 +553,16 @@ function ActiveWorkoutPage() {
 
   const handleRemoveExercise = (exerciseIndex: number) => {
     if (!workout) return
-    
-    if (window.confirm('Are you sure you want to remove this exercise?')) {
-      const newWorkout = { ...workout }
-      newWorkout.exercises.splice(exerciseIndex, 1)
-      void persistWorkoutChange(newWorkout)
-    }
+    setShowRemoveExerciseConfirm(exerciseIndex)
+  }
+
+  const handleConfirmRemoveExercise = () => {
+    if (!workout || showRemoveExerciseConfirm === null) return
+
+    const newWorkout = { ...workout }
+    newWorkout.exercises.splice(showRemoveExerciseConfirm, 1)
+    void persistWorkoutChange(newWorkout)
+    setShowRemoveExerciseConfirm(null)
   }
 
   const handleStartEditingExerciseName = (exerciseIndex: number) => {
@@ -814,19 +823,56 @@ function ActiveWorkoutPage() {
                     <input
                       type="number"
                       inputMode="decimal"
+                      min="0"
+                      max="500"
+                      step="0.5"
                       value={set.weight || ''}
                       onChange={(e) => handleSetChange(exerciseIndex, setIndex, 'weight', e.target.value)}
-                      className="flex-1 px-2 py-2.5 border border-[var(--border)] rounded-lg text-center text-sm bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] min-w-0"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          // Focus reps input of the same set
+                          const repsInput = document.querySelector<HTMLInputElement>(
+                            `[data-exercise="${exerciseIndex}"][data-set="${setIndex}"][data-field="reps"]`
+                          )
+                          repsInput?.focus()
+                        }
+                      }}
+                      data-exercise={exerciseIndex}
+                      data-set={setIndex}
+                      data-field="weight"
+                      className="flex-1 px-2 py-3 border border-[var(--border)] rounded-lg text-center text-base bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] min-w-[80px]"
                       placeholder="0"
                       disabled={set.completed}
                     />
-                    
+
                     <input
                       type="number"
                       inputMode="numeric"
+                      min="0"
+                      max="100"
+                      step="1"
                       value={set.reps || ''}
                       onChange={(e) => handleSetChange(exerciseIndex, setIndex, 'reps', e.target.value)}
-                      className="flex-1 px-2 py-2.5 border border-[var(--border)] rounded-lg text-center text-sm bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] min-w-0"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          // Try to focus weight input of next set
+                          const nextWeightInput = document.querySelector<HTMLInputElement>(
+                            `[data-exercise="${exerciseIndex}"][data-set="${setIndex + 1}"][data-field="weight"]`
+                          )
+                          if (nextWeightInput) {
+                            nextWeightInput.focus()
+                          } else {
+                            // No more sets, blur to close keyboard
+                            ;(e.target as HTMLInputElement).blur()
+                          }
+                        }
+                      }}
+                      data-exercise={exerciseIndex}
+                      data-set={setIndex}
+                      data-field="reps"
+                      className="flex-1 px-2 py-3 border border-[var(--border)] rounded-lg text-center text-base bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] min-w-[80px]"
                       placeholder="0"
                       disabled={set.completed}
                     />
@@ -1069,6 +1115,44 @@ function ActiveWorkoutPage() {
             />
           </div>
         </div>
+      </Modal>
+
+      {/* Exit Workout Confirmation Modal */}
+      <Modal
+        isOpen={showExitConfirm}
+        onClose={() => setShowExitConfirm(false)}
+        title="Exit Workout?"
+        size="sm"
+      >
+        <ConfirmDialog
+          title="Exit Workout?"
+          message="You have unsaved progress. Are you sure you want to exit? Your workout data will be lost."
+          confirmLabel="Exit"
+          cancelLabel="Keep Working"
+          variant="destructive"
+          icon="warning"
+          onConfirm={handleConfirmExit}
+          onCancel={() => setShowExitConfirm(false)}
+        />
+      </Modal>
+
+      {/* Remove Exercise Confirmation Modal */}
+      <Modal
+        isOpen={showRemoveExerciseConfirm !== null}
+        onClose={() => setShowRemoveExerciseConfirm(null)}
+        title="Remove Exercise?"
+        size="sm"
+      >
+        <ConfirmDialog
+          title="Remove Exercise?"
+          message="Are you sure you want to remove this exercise from your workout?"
+          confirmLabel="Remove"
+          cancelLabel="Cancel"
+          variant="destructive"
+          icon="delete"
+          onConfirm={handleConfirmRemoveExercise}
+          onCancel={() => setShowRemoveExerciseConfirm(null)}
+        />
       </Modal>
     </div>
   )
