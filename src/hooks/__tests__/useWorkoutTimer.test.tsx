@@ -14,7 +14,7 @@ describe('useWorkoutTimer', () => {
 
   it('tracks elapsed seconds from the provided start time', () => {
     const startTime = new Date('2023-01-01T00:00:00Z')
-    const { result, rerender } = renderHook(
+    const { result, rerender } = renderHook<number, { start: Date | null }>(
       ({ start }) => useWorkoutTimer(start),
       { initialProps: { start: startTime } }
     )
