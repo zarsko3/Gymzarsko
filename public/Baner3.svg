@@ -1503,7 +1503,7 @@
   </defs>
   <g>
     <rect class="cls-103" width="415.33" height="188.19" rx="12.76" ry="12.76"/>
-    <text class="cls-96" transform="translate(85.57 167.93)"><tspan x="0" y="0">Beast mode: ON.</tspan></text>
+    <text class="cls-96" transform="translate(207.5 167.93)" text-anchor="middle"><tspan x="0" y="0">Beast mode: ON.</tspan></text>
   </g>
   <g>
     <path class="cls-63" d="M207.99,46.65c.58,1.25,1.91,1.15,2.05,1.28.37.38-1.07.86-1.53,1.28-.12.11-.47.18-.51.26.03-.21-.07-.24-.26-.26.22-.67.13-1.24-.29-1.71l.29-.59c-.36-.35-.2-.5.26-.26Z"/>
