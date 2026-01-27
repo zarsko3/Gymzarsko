@@ -33,6 +33,7 @@ function ActiveWorkoutPage() {
   const [exerciseNameError, setExerciseNameError] = useState('')
   const [showAddExercise, setShowAddExercise] = useState(false)
   const [isAddingExercise, setIsAddingExercise] = useState(false)
+  const [isCompletingWorkout, setIsCompletingWorkout] = useState(false)
   const [prefilledSets, setPrefilledSets] = useState<Map<string, { weight: number; reps: number }>>(new Map())
   const elapsedTime = useWorkoutTimer(workout?.startTime ?? null)
 
@@ -392,8 +393,9 @@ function ActiveWorkoutPage() {
   }
 
   const handleCompleteWorkout = async () => {
-    if (!workout) return
-    
+    if (!workout || isCompletingWorkout) return
+
+    setIsCompletingWorkout(true)
     try {
       await completeWorkout(workout)
       showToast('success', 'Workout saved 💪')
@@ -401,6 +403,7 @@ function ActiveWorkoutPage() {
     } catch (error) {
       console.error('Error completing workout:', error)
       showToast('error', 'Failed to complete workout. Please try again.')
+      setIsCompletingWorkout(false)
     }
   }
 
@@ -677,6 +680,7 @@ function ActiveWorkoutPage() {
         elapsedTime={formatTime(elapsedTime)}
         onExit={handleBack}
         onComplete={handleCompleteWorkout}
+        isCompleting={isCompletingWorkout}
       />
 
       <div className="px-4 py-6 space-y-4">
@@ -965,9 +969,10 @@ function ActiveWorkoutPage() {
           fullWidth
           size="lg"
           onClick={handleCompleteWorkout}
+          disabled={isCompletingWorkout}
           className="mt-6"
         >
-          Complete Workout
+          {isCompletingWorkout ? 'Saving...' : 'Complete Workout'}
         </Button>
       </div>
 

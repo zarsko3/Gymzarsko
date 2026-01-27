@@ -32,8 +32,9 @@ function WorkoutSummaryPage() {
     async function loadWorkout() {
       try {
         const workouts = await getWorkouts()
-        const lastWorkout = workouts[workouts.length - 1]
-        
+        // Workouts are already sorted by date desc (most recent first)
+        const lastWorkout = workouts[0]
+
         if (lastWorkout) {
           // Get full workout details if needed
           const fullWorkout = await getWorkoutById(lastWorkout.id)
@@ -45,7 +46,7 @@ function WorkoutSummaryPage() {
         setIsLoading(false)
       }
     }
-    
+
     loadWorkout()
   }, [])
 

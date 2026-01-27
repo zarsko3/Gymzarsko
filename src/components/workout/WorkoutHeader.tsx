@@ -5,15 +5,17 @@ interface WorkoutHeaderProps {
   elapsedTime: string
   onExit: () => void
   onComplete: () => void
+  isCompleting?: boolean
 }
 
-function WorkoutHeader({ title, elapsedTime, onExit, onComplete }: WorkoutHeaderProps) {
+function WorkoutHeader({ title, elapsedTime, onExit, onComplete, isCompleting = false }: WorkoutHeaderProps) {
   return (
     <div className="sticky top-0 bg-card border-b border-[var(--border-primary)] z-10 shadow-sm">
       <div className="flex items-center justify-between px-4 py-4">
         <button
           onClick={onExit}
-          className="flex items-center gap-1 text-primary-500 font-medium min-h-[44px] min-w-[44px] justify-center"
+          disabled={isCompleting}
+          className="flex items-center gap-1 text-primary-500 font-medium min-h-[44px] min-w-[44px] justify-center disabled:opacity-50"
         >
           <ChevronLeft size={20} />
           <span>Exit</span>
@@ -27,9 +29,10 @@ function WorkoutHeader({ title, elapsedTime, onExit, onComplete }: WorkoutHeader
         </div>
         <button
           onClick={onComplete}
-          className="text-primary-500 hover:text-primary-600 min-h-[44px] min-w-[44px] flex items-center justify-center font-semibold"
+          disabled={isCompleting}
+          className="text-primary-500 hover:text-primary-600 min-h-[44px] min-w-[44px] flex items-center justify-center font-semibold disabled:opacity-50"
         >
-          Finish
+          {isCompleting ? 'Saving...' : 'Finish'}
         </button>
       </div>
     </div>
