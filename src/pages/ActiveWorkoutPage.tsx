@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronLeft, Plus, Trash2, Check, MessageSquare, FileText, Edit2, X } from 'lucide-react'
+import { ChevronLeft, Plus, Trash2, Check, MessageSquare, FileText, Edit2, X, Camera, Image } from 'lucide-react'
 import type { Workout, WorkoutType, WorkoutExercise, WorkoutSet, Exercise } from '../types'
 import { startWorkout, updateWorkout, completeWorkout, getCurrentWorkout, getWorkoutById } from '../services/workoutServiceFacade'
 import { updateExerciseName, addExerciseToWorkout } from '../services/firestoreExerciseService'
 import { getLatestExerciseData } from '../services/firestoreProgressService'
+import { saveCustomExercise } from '../services/firestorePlanService'
+import { uploadExercisePhoto, getExercisePhotos, deleteExercisePhoto } from '../services/exercisePhotoService'
 import { useToast } from '../hooks/useToast'
 import { handleFirestoreError } from '../utils/firestoreErrorHandler'
 import Button from '../components/ui/Button'
@@ -13,6 +15,7 @@ import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 import { useWorkoutTimer } from '../hooks/useWorkoutTimer'
+import { useInactivityTimer } from '../hooks/useInactivityTimer'
 import WorkoutHeader from '../components/workout/WorkoutHeader'
 
 function ActiveWorkoutPage() {
@@ -37,14 +40,45 @@ function ActiveWorkoutPage() {
   const [prefilledSets, setPrefilledSets] = useState<Map<string, { weight: number; reps: number }>>(new Map())
   const elapsedTime = useWorkoutTimer(workout?.startTime ?? null)
 
+  // Auto-end workout after 60 minutes of inactivity
+  useInactivityTimer(
+    () => {
+      // Only auto-complete if we have a workout and aren't already completing
+      if (workout && !isCompletingWorkout && !isWorkoutDoneRef.current) {
+        handleCompleteWorkout()
+      }
+    },
+    workout !== null && !isCompletingWorkout
+  )
+
   // Confirmation dialog states
   const [showExitConfirm, setShowExitConfirm] = useState(false)
   const [showRemoveExerciseConfirm, setShowRemoveExerciseConfirm] = useState<number | null>(null)
+  const [showSaveToTemplate, setShowSaveToTemplate] = useState<{
+    name: string
+    muscleGroup: string
+    sets: number
+    reps: number
+  } | null>(null)
   
+  // Equipment photo state
+  const [exercisePhotos, setExercisePhotos] = useState<Map<string, string>>(new Map())
+  const [expandedPhoto, setExpandedPhoto] = useState<string | null>(null)
+  const photoInputRef = useRef<HTMLInputElement>(null)
+  const [photoTargetExercise, setPhotoTargetExercise] = useState<string | null>(null)
+
   // Refs to prevent duplicate operations
   const isCreatingWorkoutRef = useRef(false)
   const workoutLoadErrorRef = useRef(false)
-  
+
+  // Layer 1: Completion guard — prevents any saves after workout is marked done
+  const isWorkoutDoneRef = useRef(false)
+
+  // Layer 2: Debounced save — batches rapid Firestore writes
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingSaveRef = useRef<Workout | null>(null)
+  const inFlightSaveRef = useRef<Promise<boolean> | null>(null)
+
   // Form state for editing/adding exercises
   const [exerciseForm, setExerciseForm] = useState({
     name: '',
@@ -58,6 +92,9 @@ function ActiveWorkoutPage() {
     nextWorkout: Workout,
     options?: { successMessage?: string; suppressErrorToast?: boolean }
   ): Promise<boolean> => {
+    // Guard: skip if workout has been completed
+    if (isWorkoutDoneRef.current) return false
+
     // Update state optimistically
     setWorkout(nextWorkout)
     try {
@@ -69,11 +106,69 @@ function ActiveWorkoutPage() {
     } catch (error) {
       console.error('Error saving workout changes:', error)
       if (!options?.suppressErrorToast) {
-        // Don't revert state - user's current input is preserved
-        // They can retry or the state will sync on next successful save
         showToast('error', 'Failed to save. Your changes are preserved locally - please try again.')
       }
       return false
+    }
+  }
+
+  /** Debounced save: batches rapid changes into a single Firestore write */
+  const debouncedSave = (nextWorkout: Workout) => {
+    // Guard: skip if workout has been completed
+    if (isWorkoutDoneRef.current) return
+
+    // Update state immediately for responsiveness
+    setWorkout(nextWorkout)
+
+    // Store the latest workout to save
+    pendingSaveRef.current = nextWorkout
+
+    // Clear previous timer
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current)
+    }
+
+    // Start new debounce timer (500ms)
+    saveTimerRef.current = setTimeout(() => {
+      const workoutToSave = pendingSaveRef.current
+      if (workoutToSave && !isWorkoutDoneRef.current) {
+        pendingSaveRef.current = null
+        inFlightSaveRef.current = updateWorkout(workoutToSave)
+          .then(() => true)
+          .catch((error) => {
+            console.error('Error saving workout changes:', error)
+            showToast('error', 'Failed to save. Your changes are preserved locally - please try again.')
+            return false
+          })
+          .finally(() => {
+            inFlightSaveRef.current = null
+          })
+      }
+    }, 500)
+  }
+
+  /** Flush any pending debounced save immediately and wait for completion */
+  const flushPendingSave = async (): Promise<void> => {
+    // Cancel the debounce timer
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current)
+      saveTimerRef.current = null
+    }
+
+    // If there's a pending save, execute it immediately
+    if (pendingSaveRef.current && !isWorkoutDoneRef.current) {
+      const workoutToSave = pendingSaveRef.current
+      pendingSaveRef.current = null
+      try {
+        await updateWorkout(workoutToSave)
+      } catch (error) {
+        console.error('Error flushing pending save:', error)
+      }
+    }
+
+    // Wait for any in-flight save to complete
+    if (inFlightSaveRef.current) {
+      await inFlightSaveRef.current
     }
   }
 
@@ -139,7 +234,7 @@ function ActiveWorkoutPage() {
         }
       })
       
-      void persistWorkoutChange(newWorkout)
+      debouncedSave(newWorkout)
       
       // Remove from prefilled sets
       const newPrefilledSets = new Map(prefilledSets)
@@ -289,6 +384,55 @@ function ActiveWorkoutPage() {
     handleTypeChange()
   }, [workoutType, workout, workoutId])
 
+  // Load exercise photos when workout loads
+  useEffect(() => {
+    if (!workout) return
+    getExercisePhotos().then(setExercisePhotos).catch(() => {})
+  }, [workout?.id])
+
+  const handlePhotoButtonClick = (exerciseName: string) => {
+    setPhotoTargetExercise(exerciseName)
+    photoInputRef.current?.click()
+  }
+
+  const handlePhotoSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !photoTargetExercise) return
+
+    try {
+      const url = await uploadExercisePhoto(photoTargetExercise, file)
+      setExercisePhotos(prev => {
+        const next = new Map(prev)
+        next.set(photoTargetExercise, url)
+        return next
+      })
+      showToast('success', 'Photo saved')
+    } catch (error) {
+      console.error('Error uploading photo:', error)
+      showToast('error', error instanceof Error ? error.message : 'Failed to upload photo')
+    } finally {
+      setPhotoTargetExercise(null)
+      // Reset file input so the same file can be selected again
+      if (photoInputRef.current) photoInputRef.current.value = ''
+    }
+  }
+
+  const handleDeletePhoto = async (exerciseName: string) => {
+    try {
+      await deleteExercisePhoto(exerciseName)
+      setExercisePhotos(prev => {
+        const next = new Map(prev)
+        next.delete(exerciseName)
+        return next
+      })
+      setExpandedPhoto(null)
+      showToast('success', 'Photo removed')
+    } catch (error) {
+      console.error('Error deleting photo:', error)
+      showToast('error', 'Failed to remove photo')
+    }
+  }
+
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600)
     const mins = Math.floor((seconds % 3600) / 60)
@@ -303,7 +447,7 @@ function ActiveWorkoutPage() {
     const numValue = parseFloat(value) || 0
     newWorkout.exercises[exerciseIndex].sets[setIndex][field] = numValue
     
-    void persistWorkoutChange(newWorkout)
+    debouncedSave(newWorkout)
   }
 
   const handleToggleSet = (exerciseIndex: number, setIndex: number) => {
@@ -313,7 +457,7 @@ function ActiveWorkoutPage() {
     const set = newWorkout.exercises[exerciseIndex].sets[setIndex]
     set.completed = !set.completed
     
-    void persistWorkoutChange(newWorkout)
+    debouncedSave(newWorkout)
   }
 
   const handleAddSet = (exerciseIndex: number) => {
@@ -329,7 +473,7 @@ function ActiveWorkoutPage() {
       completed: false,
     })
     
-    void persistWorkoutChange(newWorkout)
+    debouncedSave(newWorkout)
   }
 
   const handleRemoveSet = (exerciseIndex: number, setIndex: number) => {
@@ -338,7 +482,7 @@ function ActiveWorkoutPage() {
     const newWorkout = { ...workout }
     newWorkout.exercises[exerciseIndex].sets.splice(setIndex, 1)
     
-    void persistWorkoutChange(newWorkout)
+    debouncedSave(newWorkout)
   }
 
   const handleExerciseNoteChange = (exerciseIndex: number, notes: string) => {
@@ -347,7 +491,7 @@ function ActiveWorkoutPage() {
     const newWorkout = { ...workout }
     newWorkout.exercises[exerciseIndex].notes = notes
     
-    void persistWorkoutChange(newWorkout)
+    debouncedSave(newWorkout)
   }
 
   const handleWorkoutNoteChange = (notes: string) => {
@@ -356,7 +500,7 @@ function ActiveWorkoutPage() {
     const newWorkout = { ...workout }
     newWorkout.notes = notes
     
-    void persistWorkoutChange(newWorkout)
+    debouncedSave(newWorkout)
   }
 
   const toggleExerciseNotes = (exerciseIndex: number) => {
@@ -395,14 +539,22 @@ function ActiveWorkoutPage() {
   const handleCompleteWorkout = async () => {
     if (!workout || isCompletingWorkout) return
 
+    // Layer 1: Guard — prevent any further saves immediately
+    isWorkoutDoneRef.current = true
     setIsCompletingWorkout(true)
+
     try {
+      // Layer 2: Flush any pending debounced save before completing
+      await flushPendingSave()
+
       await completeWorkout(workout)
       showToast('success', 'Workout saved 💪')
       navigate('/workout/summary')
     } catch (error) {
       console.error('Error completing workout:', error)
       showToast('error', 'Failed to complete workout. Please try again.')
+      // Reset guards so user can retry
+      isWorkoutDoneRef.current = false
       setIsCompletingWorkout(false)
     }
   }
@@ -536,11 +688,25 @@ function ActiveWorkoutPage() {
         exercises: [...workout.exercises, newWorkoutExercise],
       }
 
-      const saved = await persistWorkoutChange(newWorkout, { successMessage: 'Exercise added successfully 💪' })
+      const saved = await persistWorkoutChange(newWorkout, { successMessage: 'Exercise added successfully' })
 
       if (saved) {
+        // Capture form values before clearing
+        const addedName = exerciseForm.name.trim()
+        const addedMuscleGroup = exerciseForm.muscleGroup.trim()
+        const addedSets = numSets
+        const addedReps = avgReps
+
         setShowAddExercise(false)
         setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
+
+        // Ask user if they want to save this exercise to their template
+        setShowSaveToTemplate({
+          name: addedName,
+          muscleGroup: addedMuscleGroup,
+          sets: addedSets,
+          reps: addedReps,
+        })
       }
     } catch (error) {
       console.error('Error adding exercise:', error)
@@ -554,6 +720,26 @@ function ActiveWorkoutPage() {
     }
   }
 
+  const handleConfirmSaveToTemplate = async () => {
+    if (!showSaveToTemplate || !workout) return
+
+    try {
+      await saveCustomExercise({
+        name: showSaveToTemplate.name,
+        muscleGroup: showSaveToTemplate.muscleGroup,
+        category: workout.type,
+        defaultSets: showSaveToTemplate.sets,
+        defaultReps: showSaveToTemplate.reps,
+      })
+      showToast('success', `"${showSaveToTemplate.name}" saved to your ${workout.type} template`)
+    } catch (error) {
+      console.error('Error saving exercise to template:', error)
+      showToast('error', 'Failed to save to template. You can try again later from settings.')
+    } finally {
+      setShowSaveToTemplate(null)
+    }
+  }
+
   const handleRemoveExercise = (exerciseIndex: number) => {
     if (!workout) return
     setShowRemoveExerciseConfirm(exerciseIndex)
@@ -564,7 +750,7 @@ function ActiveWorkoutPage() {
 
     const newWorkout = { ...workout }
     newWorkout.exercises.splice(showRemoveExerciseConfirm, 1)
-    void persistWorkoutChange(newWorkout)
+    debouncedSave(newWorkout)
     setShowRemoveExerciseConfirm(null)
   }
 
@@ -675,6 +861,16 @@ function ActiveWorkoutPage() {
 
   return (
     <div className="min-h-full bg-[var(--bg-primary)]">
+      {/* Hidden file input for equipment photos */}
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handlePhotoSelected}
+      />
+
       <WorkoutHeader
         title={workoutTypeNames[workout.type]}
         elapsedTime={formatTime(elapsedTime)}
@@ -787,6 +983,15 @@ function ActiveWorkoutPage() {
                 {editingExerciseNameIndex !== exerciseIndex && (
                   <div className="flex gap-2">
                     <button
+                      onClick={() => handlePhotoButtonClick(exercise.exercise.name)}
+                      className={`p-2 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors ${
+                        exercisePhotos.has(exercise.exercise.name) ? 'text-primary-500' : 'text-[var(--text-secondary)]'
+                      }`}
+                      aria-label={exercisePhotos.has(exercise.exercise.name) ? 'Update equipment photo' : 'Add equipment photo'}
+                    >
+                      <Camera size={18} />
+                    </button>
+                    <button
                       onClick={() => handleEditExercise(exerciseIndex)}
                       className="p-2 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors text-primary-500"
                       aria-label="Edit exercise"
@@ -803,6 +1008,37 @@ function ActiveWorkoutPage() {
                   </div>
                 )}
               </div>
+
+              {/* Equipment Photo */}
+              {exercisePhotos.has(exercise.exercise.name) && (
+                <div className="relative">
+                  <button
+                    onClick={() => setExpandedPhoto(
+                      expandedPhoto === exercise.exercise.name ? null : exercise.exercise.name
+                    )}
+                    className="flex items-center gap-2 text-sm text-primary-500 hover:text-primary-600 transition-colors"
+                  >
+                    <Image size={14} />
+                    <span>{expandedPhoto === exercise.exercise.name ? 'Hide photo' : 'View equipment photo'}</span>
+                  </button>
+                  {expandedPhoto === exercise.exercise.name && (
+                    <div className="mt-2 relative rounded-lg overflow-hidden">
+                      <img
+                        src={exercisePhotos.get(exercise.exercise.name)}
+                        alt={`Equipment for ${exercise.exercise.name}`}
+                        className="w-full max-h-48 object-cover rounded-lg"
+                      />
+                      <button
+                        onClick={() => handleDeletePhoto(exercise.exercise.name)}
+                        className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+                        aria-label="Remove photo"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Sets Table */}
               <div className="space-y-2">
@@ -1157,6 +1393,25 @@ function ActiveWorkoutPage() {
           icon="delete"
           onConfirm={handleConfirmRemoveExercise}
           onCancel={() => setShowRemoveExerciseConfirm(null)}
+        />
+      </Modal>
+
+      {/* Save to Template Confirmation Modal */}
+      <Modal
+        isOpen={showSaveToTemplate !== null}
+        onClose={() => setShowSaveToTemplate(null)}
+        title="Save to Template?"
+        size="sm"
+      >
+        <ConfirmDialog
+          title="Save to Template?"
+          message={`Would you like "${showSaveToTemplate?.name}" to appear automatically in future ${workout?.type} workouts?`}
+          confirmLabel="Save to Template"
+          cancelLabel="No Thanks"
+          variant="default"
+          icon="none"
+          onConfirm={handleConfirmSaveToTemplate}
+          onCancel={() => setShowSaveToTemplate(null)}
         />
       </Modal>
     </div>

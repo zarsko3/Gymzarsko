@@ -43,8 +43,8 @@ function MiniChartCard({ title, value, chart, comparison, isLoading }: MiniChart
   
   if (isLoading) {
     return (
-      <div className="bg-card rounded-xl p-4 shadow-sm relative" style={{ zIndex: 0, isolation: 'isolate' }}>
-        <div className="text-[var(--text-secondary)] text-xs font-medium text-center">{title}</div>
+      <div className="bg-card rounded-xl p-5 shadow-sm relative" style={{ zIndex: 0, isolation: 'isolate' }}>
+        <div className="text-[var(--text-primary)] text-sm font-semibold text-center">{title}</div>
         <div className="mt-1 flex flex-col items-center justify-center gap-2">
           <div className="text-3xl font-extrabold text-[var(--text-primary)] leading-none text-center">
             --
@@ -57,7 +57,7 @@ function MiniChartCard({ title, value, chart, comparison, isLoading }: MiniChart
   
   return (
     <motion.div 
-      className="bg-card rounded-xl p-4 shadow-sm relative"
+      className="bg-card rounded-xl p-5 shadow-sm relative"
       initial={shouldReduceMotion ? {} : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
@@ -67,14 +67,14 @@ function MiniChartCard({ title, value, chart, comparison, isLoading }: MiniChart
       }}
       style={{ willChange: 'transform, opacity', zIndex: 0, isolation: 'isolate' }}
     >
-      <div className="text-[var(--text-secondary)] text-xs font-medium text-center">{title}</div>
+      <div className="text-[var(--text-primary)] text-sm font-semibold text-center">{title}</div>
       <div className="mt-1 flex flex-col items-center justify-center gap-2">
         <div className="flex items-center gap-2">
           <div className="text-3xl font-extrabold text-[var(--text-primary)] leading-none text-center">
             {value}
           </div>
           {comparison && (
-            <div className={`flex items-center gap-1 text-xs font-medium ${getTrendColor()}`}>
+            <div className={`flex items-center gap-1 text-sm font-semibold ${getTrendColor()}`}>
               {getTrendIcon()}
               <span>{formatComparison()}</span>
             </div>

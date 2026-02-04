@@ -1,9 +1,20 @@
-import { collection, getDocs, addDoc, query, where, Timestamp } from 'firebase/firestore'
+import { collection, getDocs, addDoc, deleteDoc, doc, query, where, Timestamp, serverTimestamp } from 'firebase/firestore'
 import { db, auth } from '../lib/firebase'
 import type { Plan, WorkoutType } from '../types'
 import { mockExercises } from './mockData'
 
 const PLANS_COLLECTION = 'plans'
+const CUSTOM_EXERCISES_COLLECTION = 'customExercises'
+
+export interface CustomExercise {
+  id: string
+  name: string
+  muscleGroup: string
+  category: WorkoutType
+  defaultSets: number
+  defaultReps: number
+  createdAt?: Date
+}
 
 /**
  * Get current user ID
@@ -106,7 +117,7 @@ export async function getAllPlans(): Promise<Plan[]> {
  */
 export async function createPlan(plan: Omit<Plan, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<Plan> {
   const userId = getUserId()
-  
+
   try {
     const plansRef = collection(db, 'users', userId, PLANS_COLLECTION)
     const docRef = await addDoc(plansRef, {
@@ -115,7 +126,7 @@ export async function createPlan(plan: Omit<Plan, 'id' | 'userId' | 'createdAt' 
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     })
-    
+
     return {
       ...plan,
       id: docRef.id,
@@ -125,6 +136,83 @@ export async function createPlan(plan: Omit<Plan, 'id' | 'userId' | 'createdAt' 
     }
   } catch (error) {
     console.error('Error creating plan:', error)
+    throw error
+  }
+}
+
+/**
+ * Save a custom exercise to the user's template for a specific workout type.
+ * Prevents duplicates by checking if an exercise with the same name already exists.
+ */
+export async function saveCustomExercise(
+  exercise: Omit<CustomExercise, 'id' | 'createdAt'>,
+): Promise<CustomExercise> {
+  const userId = getUserId()
+
+  try {
+    const exercisesRef = collection(db, 'users', userId, CUSTOM_EXERCISES_COLLECTION)
+
+    // Check for duplicate name+category
+    const q = query(
+      exercisesRef,
+      where('category', '==', exercise.category),
+      where('name', '==', exercise.name),
+    )
+    const existing = await getDocs(q)
+    if (!existing.empty) {
+      // Already saved — return the existing one
+      const existingDoc = existing.docs[0]
+      return { id: existingDoc.id, ...existingDoc.data(), createdAt: existingDoc.data().createdAt?.toDate?.() } as CustomExercise
+    }
+
+    const docRef = await addDoc(exercisesRef, {
+      ...exercise,
+      createdAt: serverTimestamp(),
+    })
+
+    return {
+      ...exercise,
+      id: docRef.id,
+      createdAt: new Date(),
+    }
+  } catch (error) {
+    console.error('Error saving custom exercise:', error)
+    throw error
+  }
+}
+
+/**
+ * Get all custom exercises for a specific workout type.
+ */
+export async function getCustomExercises(workoutType: WorkoutType): Promise<CustomExercise[]> {
+  try {
+    const userId = getUserId()
+    const exercisesRef = collection(db, 'users', userId, CUSTOM_EXERCISES_COLLECTION)
+    const q = query(exercisesRef, where('category', '==', workoutType))
+    const snapshot = await getDocs(q)
+
+    return snapshot.docs.map(d => ({
+      id: d.id,
+      ...d.data(),
+      createdAt: d.data().createdAt?.toDate?.(),
+    })) as CustomExercise[]
+  } catch (error) {
+    console.error('Error getting custom exercises:', error)
+    return []
+  }
+}
+
+/**
+ * Remove a custom exercise from the user's template.
+ */
+export async function removeCustomExercise(exerciseId: string): Promise<void> {
+  const userId = getUserId()
+
+  try {
+    const exerciseRef = doc(db, 'users', userId, CUSTOM_EXERCISES_COLLECTION, exerciseId)
+    await deleteDoc(exerciseRef)
+  } catch (error) {
+    console.error('Error removing custom exercise:', error)
     throw error
   }
 }

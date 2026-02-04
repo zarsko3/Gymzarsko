@@ -98,7 +98,7 @@ function HomePage() {
         <Banner mode="random-banners" />
 
         {/* Date */}
-        <p className="text-[var(--text-secondary)] text-base text-center">
+        <p className="text-[var(--text-primary)] text-lg font-medium text-center">
           {format(today, 'EEEE, MMMM do')}
         </p>
 
@@ -111,7 +111,7 @@ function HomePage() {
 
         {/* Analytics Dashboard */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-[var(--text-primary)]">Workout Analytics</h3>
+          <h3 className="text-xl font-bold text-[var(--text-primary)]">Workout Analytics</h3>
           
           {/* Filters */}
           <AnalyticsFilters

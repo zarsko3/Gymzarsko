@@ -36,7 +36,7 @@ function WeeklyCalendar({ workoutDays = [], currentDate = new Date(), onTodayCli
 
   const getDayClasses = (day: Date) => {
     const today = isToday(day)
-    const baseClasses = "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors flex-shrink-0"
+    const baseClasses = "w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold transition-colors flex-shrink-0"
     const clickableClass = today && onTodayClick ? "cursor-pointer hover:scale-110" : ""
     
     const hasWorkout = isWorkoutDay(day)
@@ -52,7 +52,7 @@ function WeeklyCalendar({ workoutDays = [], currentDate = new Date(), onTodayCli
     }
     
     // Rest day (no workout) - gray
-    return `${baseClasses} bg-secondary text-text-inactive`
+    return `${baseClasses} bg-secondary text-text-secondary`
   }
 
   const handleDayClick = (day: Date) => {
@@ -63,7 +63,7 @@ function WeeklyCalendar({ workoutDays = [], currentDate = new Date(), onTodayCli
 
   return (
     <div className="w-full max-w-full space-y-3">
-      <h3 className="text-lg font-semibold text-text-primary">Your Week</h3>
+      <h3 className="text-xl font-bold text-[var(--text-primary)]">Your Week</h3>
       <motion.div 
         className="flex justify-between items-center gap-1.5 py-1.5 px-0.5 overflow-visible"
         variants={getContainerVariants(shouldReduceMotion)}

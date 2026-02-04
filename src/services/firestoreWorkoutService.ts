@@ -17,6 +17,7 @@ import type { Unsubscribe } from 'firebase/firestore'
 import { db, auth } from '../lib/firebase'
 import type { Workout, WorkoutType } from '../types'
 import { mockExercises } from './mockData'
+import { getCustomExercises } from './firestorePlanService'
 
 const WORKOUTS_COLLECTION = 'workouts'
 
@@ -293,8 +294,8 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
     'legs-1': 3, 'legs-2': 4, 'legs-3': 4, 'legs-4': 3, 'legs-5': 3, 'legs-6': 3,
   }
   
-  // Get all exercises for this workout type (not limited)
-  const exercises = mockExercises
+  // Get default exercises for this workout type
+  const defaultExercises = mockExercises
     .filter(ex => ex.category === type)
     .map(exercise => ({
       id: `we-${exercise.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -307,6 +308,37 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
         completed: false,
       })),
     }))
+
+  // Fetch user's saved custom exercises for this workout type and append them
+  let customExerciseEntries: typeof defaultExercises = []
+  try {
+    const customExercises = await getCustomExercises(type)
+    // Exclude any that share a name with a default exercise (case-insensitive)
+    const defaultNames = new Set(mockExercises.filter(ex => ex.category === type).map(ex => ex.name.toLowerCase()))
+    customExerciseEntries = customExercises
+      .filter(ce => !defaultNames.has(ce.name.toLowerCase()))
+      .map(ce => ({
+        id: `we-custom-${ce.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        exerciseId: ce.id,
+        exercise: {
+          id: ce.id,
+          name: ce.name,
+          muscleGroup: ce.muscleGroup,
+          category: ce.category,
+        },
+        sets: Array(ce.defaultSets || 3).fill(null).map((_, i) => ({
+          id: `set-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          weight: 0,
+          reps: 0,
+          completed: false,
+        })),
+      }))
+  } catch (error) {
+    // Non-blocking: if custom exercises fail to load, proceed with defaults
+    console.warn('Could not load custom exercises:', error)
+  }
+
+  const exercises = [...defaultExercises, ...customExerciseEntries]
 
   const newWorkout = {
     type,
@@ -357,8 +389,8 @@ export async function createWorkoutWithDate(type: WorkoutType, date: Date): Prom
     'legs-1': 3, 'legs-2': 4, 'legs-3': 4, 'legs-4': 3, 'legs-5': 3, 'legs-6': 3,
   }
   
-  // Get all exercises for this workout type
-  const exercises = mockExercises
+  // Get default exercises for this workout type
+  const defaultExercises = mockExercises
     .filter(ex => ex.category === type)
     .map(exercise => ({
       id: `we-${exercise.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -371,6 +403,35 @@ export async function createWorkoutWithDate(type: WorkoutType, date: Date): Prom
         completed: false,
       })),
     }))
+
+  // Fetch user's saved custom exercises for this workout type and append them
+  let customExerciseEntries: typeof defaultExercises = []
+  try {
+    const customExercises = await getCustomExercises(type)
+    const defaultNames = new Set(mockExercises.filter(ex => ex.category === type).map(ex => ex.name.toLowerCase()))
+    customExerciseEntries = customExercises
+      .filter(ce => !defaultNames.has(ce.name.toLowerCase()))
+      .map(ce => ({
+        id: `we-custom-${ce.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        exerciseId: ce.id,
+        exercise: {
+          id: ce.id,
+          name: ce.name,
+          muscleGroup: ce.muscleGroup,
+          category: ce.category,
+        },
+        sets: Array(ce.defaultSets || 3).fill(null).map((_, i) => ({
+          id: `set-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          weight: 0,
+          reps: 0,
+          completed: false,
+        })),
+      }))
+  } catch (error) {
+    console.warn('Could not load custom exercises:', error)
+  }
+
+  const exercises = [...defaultExercises, ...customExerciseEntries]
 
   // Set the date to start of day for consistency
   const workoutDate = new Date(date)
@@ -412,33 +473,7 @@ export async function updateWorkout(workout: Workout): Promise<void> {
       ...workoutToFirestore(workout),
       updatedAt: serverTimestamp(),
     }
-    
-    // Debug: Check for undefined values before sending
-    const undefinedFields: string[] = []
-    const checkUndefined = (obj: any, path = ''): void => {
-      if (obj === null || typeof obj !== 'object') return
-      for (const [key, value] of Object.entries(obj)) {
-        const currentPath = path ? `${path}.${key}` : key
-        if (value === undefined) {
-          undefinedFields.push(currentPath)
-        } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-          checkUndefined(value, currentPath)
-        } else if (Array.isArray(value)) {
-          value.forEach((item, index) => {
-            if (typeof item === 'object' && item !== null) {
-              checkUndefined(item, `${currentPath}[${index}]`)
-            }
-          })
-        }
-      }
-    }
-    checkUndefined(payload)
-    
-    if (undefinedFields.length > 0) {
-      console.warn('Found undefined fields in workout payload:', undefinedFields)
-    }
-    
-    console.log('Updating workout with payload:', JSON.stringify(payload, null, 2))
+
     await updateDoc(workoutRef, payload)
   } catch (error) {
     console.error('Error updating workout:', error)
@@ -448,27 +483,33 @@ export async function updateWorkout(workout: Workout): Promise<void> {
 
 /**
  * Complete a workout
+ * Uses a targeted update — only writes completion fields so that
+ * stale in-flight updateWorkout() calls cannot overwrite them.
  */
 export async function completeWorkout(workout: Workout): Promise<Workout> {
-  const completedWorkout = {
-    ...workout,
-    endTime: new Date(),
-    completed: true,
-  }
+  const endTime = new Date()
 
   try {
     const workoutRef = doc(db, WORKOUTS_COLLECTION, workout.id)
-    await updateDoc(workoutRef, workoutToFirestore(completedWorkout))
-    
+    await updateDoc(workoutRef, {
+      completed: true,
+      endTime: Timestamp.fromDate(endTime),
+      updatedAt: serverTimestamp(),
+    })
+
     // Track this completed workout to prevent immediate duplicates
     recentlyCompletedWorkouts.set(workout.type, Date.now())
-    
+
     // Clean up old entries after window expires
     setTimeout(() => {
       recentlyCompletedWorkouts.delete(workout.type)
     }, RECENTLY_COMPLETED_WINDOW_MS)
-    
-    return completedWorkout
+
+    return {
+      ...workout,
+      endTime,
+      completed: true,
+    }
   } catch (error) {
     console.error('Error completing workout:', error)
     throw error
