@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { format, addDays, subDays, startOfWeek, endOfWeek, isWithinInterval, endOfDay, startOfDay } from 'date-fns'
+import { format, subDays, endOfDay, startOfDay } from 'date-fns'
 import type { WorkoutType, FilterOptions, CompareMode } from '../types'
 import WeeklyCalendar from '../components/home/WeeklyCalendar'
 import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
@@ -15,6 +15,9 @@ import {
   compareWorkouts,
 } from '../services/workoutAnalyticsService'
 import { useWorkoutsSubscription } from '../hooks/useWorkoutsSubscription'
+import { cleanUpAbandonedWorkouts } from '../services/workoutServiceFacade'
+import { findActiveWorkout } from '../utils/workoutStatus'
+import ResumeWorkoutCard from '../components/workout/ResumeWorkoutCard'
 import { useToast } from '../hooks/useToast'
 
 function HomePage() {
@@ -34,6 +37,16 @@ function HomePage() {
   })
   const [compareMode, setCompareMode] = useState<CompareMode>('last-vs-average')
   
+  // Close workouts left open from earlier sessions (once per visit)
+  const hasCleanedUpRef = useRef(false)
+  useEffect(() => {
+    if (isLoading || error || hasCleanedUpRef.current) return
+    hasCleanedUpRef.current = true
+    cleanUpAbandonedWorkouts(allWorkouts)
+  }, [isLoading, error, allWorkouts])
+
+  const activeWorkout = useMemo(() => findActiveWorkout(allWorkouts), [allWorkouts])
+
   // Surface subscription errors
   useEffect(() => {
     if (error) {
@@ -41,10 +54,8 @@ function HomePage() {
     }
   }, [error, showToast])
   
-  const weekStart = startOfWeek(today, { weekStartsOn: 0 }) // Start on Sunday (U.S. calendar)
-  const weekEnd = addDays(weekStart, 6)
   
-  const workoutDays = allWorkouts.map(w => w.date)
+  const workoutDays = allWorkouts.filter(w => w.completed).map(w => w.date)
 
   // Filter and compute metrics
   const filteredWorkouts = useMemo(() => {
@@ -96,6 +107,8 @@ function HomePage() {
       <div className="w-full max-w-full px-4 py-6 space-y-6">
         {/* Banner - Always shows rotating banners */}
         <Banner mode="random-banners" />
+
+        {activeWorkout && <ResumeWorkoutCard workout={activeWorkout} />}
 
         {/* Date */}
         <p className="text-[var(--text-primary)] text-lg font-medium text-center">

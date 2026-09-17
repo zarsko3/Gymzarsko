@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { ChevronLeft, Trash2, Clock, TrendingUp, Calendar, Dumbbell, Search, X, Flame, Activity, Plus, Edit2 } from 'lucide-react'
 import type { Workout, WorkoutType } from '../types'
-import { deleteWorkout, createWorkoutWithDate, updateWorkout } from '../services/workoutServiceFacade'
+import { deleteWorkout, updateWorkout } from '../services/workoutServiceFacade'
 import { useToast } from '../hooks/useToast'
 import { useWorkoutsSubscription } from '../hooks/useWorkoutsSubscription'
 import { formatDuration, calculateVolume } from '../utils/formatters'
@@ -14,6 +14,7 @@ import ConfirmDialog from '../components/ui/ConfirmDialog'
 import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
 import AddWorkoutModal from '../components/history/AddWorkoutModal'
 import EditWorkoutModal from '../components/history/EditWorkoutModal'
+import { findWorkoutsWithoutDuration, hasCompletedSets } from '../utils/workoutStatus'
 
 function HistoryPage() {
   const navigate = useNavigate()
@@ -23,6 +24,8 @@ function HistoryPage() {
   const [showEditWorkoutModal, setShowEditWorkoutModal] = useState(false)
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
+  const [showCleanupConfirm, setShowCleanupConfirm] = useState(false)
+  const [isCleaningUp, setIsCleaningUp] = useState(false)
   const { workouts: subscribedWorkouts, isLoading, error } = useWorkoutsSubscription()
   const [workouts, setWorkouts] = useState<Workout[]>([])
 
@@ -83,6 +86,24 @@ function HistoryPage() {
     }
   }
 
+  const workoutsWithoutDuration = useMemo(() => findWorkoutsWithoutDuration(workouts), [workouts])
+  const withoutDurationWithSets = workoutsWithoutDuration.filter(hasCompletedSets).length
+
+  const handleConfirmCleanup = async () => {
+    const targets = workoutsWithoutDuration
+    setIsCleaningUp(true)
+    const results = await Promise.allSettled(targets.map((w) => deleteWorkout(w.id)))
+    const failed = results.filter((r) => r.status === 'rejected').length
+    setIsCleaningUp(false)
+    setShowCleanupConfirm(false)
+
+    if (failed > 0) {
+      showToast('error', `Deleted ${targets.length - failed} workouts, ${failed} failed. Please try again.`)
+    } else {
+      showToast('success', `Deleted ${targets.length} workouts without duration`)
+    }
+  }
+
   const handleEditWorkout = (workout: Workout) => {
     setSelectedWorkout(workout)
     setShowEditWorkoutModal(true)
@@ -102,40 +123,6 @@ function HistoryPage() {
       // Don't refetch - let real-time subscription sync the state
       setWorkouts(subscribedWorkouts)
       showToast('error', 'Failed to update workout. Please try again.')
-      throw error
-    }
-  }
-
-  const handleAddWorkout = async (type: WorkoutType, date: Date) => {
-    const tempId = `temp-${Date.now()}`
-    try {
-      // Optimistic update - add placeholder workout
-      const placeholderWorkout: Workout = {
-        id: tempId,
-        type,
-        date,
-        startTime: date,
-        exercises: [],
-        completed: true,
-        userId: '',
-      }
-      setWorkouts([placeholderWorkout, ...workouts].sort((a, b) => b.date.getTime() - a.date.getTime()))
-
-      // Create workout in Firestore
-      const newWorkout = await createWorkoutWithDate(type, date)
-      
-      // Replace placeholder with real workout
-      setWorkouts(prev => 
-        prev.map(w => w.id === tempId ? newWorkout : w)
-          .sort((a, b) => b.date.getTime() - a.date.getTime())
-      )
-      
-      showToast('success', 'Workout added successfully ✅')
-    } catch (error) {
-      console.error('Error adding workout:', error)
-      // Revert optimistic update
-      setWorkouts(prev => prev.filter(w => w.id !== tempId))
-      showToast('error', 'Failed to add workout. Please try again.')
       throw error
     }
   }
@@ -233,24 +220,49 @@ function HistoryPage() {
 
       <div className="px-4 py-6 space-y-6">
         {/* Stats Summary */}
-        <div className="grid grid-cols-3 gap-3">
-          <Card className="bg-card text-center p-4">
+        <div className="grid grid-cols-4 gap-2">
+          <Card className="bg-card text-center p-3">
             <div className="text-2xl font-bold text-primary-500">{workouts.length}</div>
             <div className="text-[var(--text-secondary)] text-xs mt-1">Total</div>
           </Card>
-          <Card className="bg-card text-center p-4">
+          <Card className="bg-card text-center p-3">
             <div className="text-2xl font-bold text-primary-500">
               {workouts.filter(w => w.type === 'push').length}
             </div>
             <div className="text-[var(--text-secondary)] text-xs mt-1">Push</div>
           </Card>
-          <Card className="bg-card text-center p-4">
+          <Card className="bg-card text-center p-3">
             <div className="text-2xl font-bold text-primary-500">
               {workouts.filter(w => w.type === 'pull').length}
             </div>
             <div className="text-[var(--text-secondary)] text-xs mt-1">Pull</div>
           </Card>
+          <Card className="bg-card text-center p-3">
+            <div className="text-2xl font-bold text-primary-500">
+              {workouts.filter(w => w.type === 'legs').length}
+            </div>
+            <div className="text-[var(--text-secondary)] text-xs mt-1">Legs</div>
+          </Card>
         </div>
+
+        {workoutsWithoutDuration.length > 0 && (
+          <Card className="bg-card border border-amber-300 dark:border-amber-700">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-[var(--text-primary)]">
+                {workoutsWithoutDuration.length} {workoutsWithoutDuration.length === 1 ? 'workout has' : 'workouts have'} no duration (N/A)
+              </p>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="text-red-600 dark:text-red-400 flex-shrink-0"
+                onClick={() => setShowCleanupConfirm(true)}
+              >
+                <Trash2 size={16} />
+                Delete
+              </Button>
+            </div>
+          </Card>
+        )}
 
         {/* Search Bar */}
         <div className="relative">
@@ -464,7 +476,6 @@ function HistoryPage() {
       <AddWorkoutModal
         isOpen={showAddWorkoutModal}
         onClose={() => setShowAddWorkoutModal(false)}
-        onSave={handleAddWorkout}
       />
 
       {/* Edit Workout Modal */}
@@ -482,7 +493,6 @@ function HistoryPage() {
       <Modal
         isOpen={showDeleteConfirm !== null}
         onClose={() => setShowDeleteConfirm(null)}
-        title="Delete Workout?"
         size="sm"
       >
         <ConfirmDialog
@@ -494,6 +504,29 @@ function HistoryPage() {
           icon="delete"
           onConfirm={handleConfirmDelete}
           onCancel={() => setShowDeleteConfirm(null)}
+        />
+      </Modal>
+
+      {/* Delete workouts without duration */}
+      <Modal
+        isOpen={showCleanupConfirm}
+        onClose={() => !isCleaningUp && setShowCleanupConfirm(false)}
+        size="sm"
+      >
+        <ConfirmDialog
+          title={`Delete ${workoutsWithoutDuration.length} workouts?`}
+          message={
+            withoutDurationWithSets > 0
+              ? `All workouts showing N/A duration will be deleted. ${withoutDurationWithSets} of them have completed sets. This cannot be undone.`
+              : 'All workouts showing N/A duration will be deleted. None of them have completed sets. This cannot be undone.'
+          }
+          confirmLabel="Delete All"
+          cancelLabel="Cancel"
+          variant="destructive"
+          icon="delete"
+          isLoading={isCleaningUp}
+          onConfirm={handleConfirmCleanup}
+          onCancel={() => setShowCleanupConfirm(false)}
         />
       </Modal>
     </div>

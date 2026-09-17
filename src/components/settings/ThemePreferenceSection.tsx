@@ -29,7 +29,7 @@ function ThemePreferenceSection({ theme, onThemeChange }: ThemePreferenceSection
               onClick={() => onThemeChange('light')}
               className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
                 theme === 'light'
-                  ? 'border-primary-500 bg-[var(--bg-primary)]-50 text-primary-700'
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
                   : 'border-border-primary text-text-secondary hover:border-border-primary'
               }`}
             >
@@ -39,7 +39,7 @@ function ThemePreferenceSection({ theme, onThemeChange }: ThemePreferenceSection
               onClick={() => onThemeChange('dark')}
               className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
                 theme === 'dark'
-                  ? 'border-primary-500 bg-[var(--bg-primary)]-50 text-primary-700'
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
                   : 'border-border-primary text-text-secondary hover:border-border-primary'
               }`}
             >

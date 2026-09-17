@@ -3,23 +3,24 @@ import {
   getDoc,
   setDoc,
   updateDoc,
-  deleteDoc,
   Timestamp,
   collection,
   query,
   where,
   getDocs,
   writeBatch,
+  type DocumentReference,
 } from 'firebase/firestore'
+import { ref, deleteObject } from 'firebase/storage'
 import {
   updateProfile,
   updatePassword,
-  updateEmail,
+  verifyBeforeUpdateEmail,
   EmailAuthProvider,
   reauthenticateWithCredential,
   deleteUser,
 } from 'firebase/auth'
-import { db, auth } from '../lib/firebase'
+import { db, auth, storage } from '../lib/firebase'
 import type { UserProfile } from '../types'
 
 const USERS_COLLECTION = 'users'
@@ -46,6 +47,16 @@ export async function getUserProfile(): Promise<UserProfile | null> {
 
     if (userDoc.exists()) {
       const data = userDoc.data()
+
+      // Email changes are confirmed out of band; keep the profile in sync with Auth
+      const authEmail = auth.currentUser?.email
+      if (authEmail && data.email !== authEmail) {
+        data.email = authEmail
+        updateUserProfile({ email: authEmail }).catch((error) =>
+          console.error('Error syncing profile email:', error)
+        )
+      }
+
       return {
         ...data,
         createdAt: data.createdAt?.toDate() || new Date(),
@@ -185,7 +196,7 @@ export async function changePassword(
     await updatePassword(auth.currentUser, newPassword)
   } catch (error: any) {
     console.error('Error changing password:', error)
-    if (error.code === 'auth/wrong-password') {
+    if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
       throw new Error('Current password is incorrect')
     }
     throw error
@@ -193,7 +204,9 @@ export async function changePassword(
 }
 
 /**
- * Update email (requires re-authentication)
+ * Request an email change (requires re-authentication).
+ * Firebase sends a verification link to the new address; the change takes
+ * effect only after it is clicked, and the profile syncs on next load.
  */
 export async function changeEmail(
   currentPassword: string,
@@ -211,14 +224,10 @@ export async function changeEmail(
     )
     await reauthenticateWithCredential(auth.currentUser, credential)
 
-    // Update email in Auth
-    await updateEmail(auth.currentUser, newEmail)
-
-    // Update email in Firestore
-    await updateUserProfile({ email: newEmail })
+    await verifyBeforeUpdateEmail(auth.currentUser, newEmail)
   } catch (error: any) {
     console.error('Error changing email:', error)
-    if (error.code === 'auth/wrong-password') {
+    if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
       throw new Error('Password is incorrect')
     } else if (error.code === 'auth/email-already-in-use') {
       throw new Error('Email is already in use')
@@ -227,36 +236,58 @@ export async function changeEmail(
   }
 }
 
+const BATCH_LIMIT = 450
+
+async function deleteRefsInBatches(refs: DocumentReference[]): Promise<void> {
+  for (let i = 0; i < refs.length; i += BATCH_LIMIT) {
+    const batch = writeBatch(db)
+    refs.slice(i, i + BATCH_LIMIT).forEach((ref) => batch.delete(ref))
+    await batch.commit()
+  }
+}
+
 /**
- * Delete all user data from Firestore (workouts, body metrics, plans)
+ * Delete all user data: workouts (and their exercise subcollections),
+ * user subcollections, uploaded exercise photos, and the profile document
  */
 async function deleteAllUserData(userId: string): Promise<void> {
-  const batch = writeBatch(db)
+  const workoutRefs: DocumentReference[] = []
+  const exerciseRefs: DocumentReference[] = []
 
-  // Delete all workouts belonging to the user
-  const workoutsRef = collection(db, 'workouts')
-  const workoutsQuery = query(workoutsRef, where('userId', '==', userId))
-  const workoutsSnapshot = await getDocs(workoutsQuery)
-  workoutsSnapshot.forEach((doc) => {
-    batch.delete(doc.ref)
-  })
-
-  // Delete user subcollections: bodyMetrics, bodyMetricGoals, plans
-  const userSubcollections = ['bodyMetrics', 'bodyMetricGoals', 'plans']
-  for (const subcollection of userSubcollections) {
-    const subcollectionRef = collection(db, USERS_COLLECTION, userId, subcollection)
-    const subcollectionSnapshot = await getDocs(subcollectionRef)
-    subcollectionSnapshot.forEach((doc) => {
-      batch.delete(doc.ref)
-    })
+  const workoutsSnapshot = await getDocs(
+    query(collection(db, 'workouts'), where('userId', '==', userId))
+  )
+  for (const workoutDoc of workoutsSnapshot.docs) {
+    workoutRefs.push(workoutDoc.ref)
+    const exercisesSnapshot = await getDocs(collection(workoutDoc.ref, 'exercises'))
+    exercisesSnapshot.forEach((exerciseDoc) => exerciseRefs.push(exerciseDoc.ref))
   }
 
-  // Delete user profile document
-  const userRef = doc(db, USERS_COLLECTION, userId)
-  batch.delete(userRef)
+  // Remove uploaded photo files before their Firestore references disappear
+  const photosSnapshot = await getDocs(collection(db, USERS_COLLECTION, userId, 'exercisePhotos'))
+  await Promise.all(
+    photosSnapshot.docs.map(async (photoDoc) => {
+      const storagePath = photoDoc.data().storagePath
+      if (!storagePath) return
+      try {
+        await deleteObject(ref(storage, storagePath))
+      } catch (error) {
+        console.warn('Could not delete photo file:', error)
+      }
+    })
+  )
 
-  // Commit all deletions
-  await batch.commit()
+  const userSubcollections = ['bodyMetrics', 'bodyMetricGoals', 'plans', 'customExercises', 'exercisePhotos']
+  const subcollectionRefs: DocumentReference[] = []
+  for (const subcollection of userSubcollections) {
+    const snapshot = await getDocs(collection(db, USERS_COLLECTION, userId, subcollection))
+    snapshot.forEach((d) => subcollectionRefs.push(d.ref))
+  }
+
+  // Children before parents so workout ownership checks still pass
+  await deleteRefsInBatches(exerciseRefs)
+  await deleteRefsInBatches([...workoutRefs, ...subcollectionRefs])
+  await deleteRefsInBatches([doc(db, USERS_COLLECTION, userId)])
 }
 
 /**
@@ -285,7 +316,7 @@ export async function deleteUserAccount(password: string): Promise<void> {
     await deleteUser(auth.currentUser)
   } catch (error: any) {
     console.error('Error deleting account:', error)
-    if (error.code === 'auth/wrong-password') {
+    if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
       throw new Error('Password is incorrect')
     }
     throw error

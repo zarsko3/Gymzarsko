@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import type { FilterOptions, CompareMode, WorkoutType } from '../../types'
 import PillButton from './PillButton'
 

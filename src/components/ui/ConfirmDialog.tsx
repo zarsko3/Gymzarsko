@@ -1,4 +1,4 @@
-import { AlertTriangle, Trash2, LogOut, X } from 'lucide-react'
+import { AlertTriangle, Trash2, LogOut } from 'lucide-react'
 import Button from './Button'
 
 interface ConfirmDialogProps {

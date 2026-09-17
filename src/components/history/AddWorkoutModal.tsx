@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
-import { Calendar, Plus, X, Trash2 } from 'lucide-react'
+import { Calendar, Plus, Trash2 } from 'lucide-react'
 import type { WorkoutType, WorkoutExercise, WorkoutSet, Plan } from '../../types'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../hooks/useToast'
@@ -16,7 +16,6 @@ import WorkoutTypeModal from '../home/WorkoutTypeModal'
 interface AddWorkoutModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (type: WorkoutType, date: Date) => Promise<void>
 }
 
 interface ExerciseForm {
@@ -27,7 +26,7 @@ interface ExerciseForm {
   notes: string
 }
 
-function AddWorkoutModal({ isOpen, onClose, onSave }: AddWorkoutModalProps) {
+function AddWorkoutModal({ isOpen, onClose }: AddWorkoutModalProps) {
   const navigate = useNavigate()
   const { currentUser } = useAuth()
   const { showToast } = useToast()

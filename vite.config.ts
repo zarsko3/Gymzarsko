@@ -26,22 +26,36 @@ export default defineConfig({
       workbox: {
         navigateFallback: '/index.html',
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // Local QA screenshots are not part of the app
+        globIgnores: ['screenshots/**'],
       },
     }),
   ],
   base: '/',
   server: {
     port: 3000,
-    open: true,
+    open: !process.env.PLAYWRIGHT && !process.env.CI,
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
-    chunkSizeWarningLimit: 1000, // Increase limit to 1000 KB to reduce warnings
+    // Don't publish source maps (they expose the original source)
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        // Split large, rarely-changing libraries so app updates don't re-download them
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+          charts: ['recharts'],
+          motion: ['framer-motion'],
+        },
+      },
+    },
   },
   test: {
     environment: 'jsdom',
     setupFiles: './vitest.setup.ts',
+    include: ['src/**/*.test.{ts,tsx}'],
   },
 })
 

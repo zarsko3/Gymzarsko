@@ -26,7 +26,7 @@ function ProfileSettingsSection({
 
       <Card className="bg-gradient-to-br from-primary-50 to-primary-100 border-2 border-primary-200 mb-3">
         <div className="p-6 flex items-center gap-4">
-          <div className="w-20 h-20 rounded-full bg-[var(--bg-primary)]-500 flex items-center justify-center flex-shrink-0">
+          <div className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center flex-shrink-0">
             <User className="w-10 h-10 text-white" strokeWidth={2} />
           </div>
           <div className="flex-1 min-w-0">

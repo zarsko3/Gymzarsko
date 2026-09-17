@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { AreaChart, Area, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine } from 'recharts'
 
 export type MetricType = 'volume' | 'intensity' | 'duration' | 'density'
 
@@ -57,13 +57,6 @@ const METRIC = {
 function CurvyMetricChart({ data, metric, compare, height = 220, unit }: CurvyMetricChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   
-  if (data.length === 0) {
-    return (
-      <div className="w-full h-full flex items-center justify-center text-[var(--text-dim)] text-xs">
-        No data
-      </div>
-    )
-  }
   
   const theme = METRIC[metric]
   const ids = useMemo(() => {
@@ -148,6 +141,15 @@ function CurvyMetricChart({ data, metric, compare, height = 220, unit }: CurvyMe
       }
     })
   }, [data, compare])
+
+  // Early return must come after all hooks so hook order stays stable when data arrives
+  if (data.length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-[var(--text-dim)] text-xs">
+        No data
+      </div>
+    )
+  }
   
   return (
     <div style={{ overflow: 'visible', position: 'relative', zIndex: 2 }}>

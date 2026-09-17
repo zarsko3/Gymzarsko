@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { motion } from 'framer-motion'
 import { useReducedMotion } from 'framer-motion'
-import { ChevronLeft, Plus, Settings, TrendingUp, Target, Edit2 } from 'lucide-react'
+import { ChevronLeft, Plus, TrendingUp, Target, Edit2 } from 'lucide-react'
 import Card from '../components/ui/Card'
 import AddMetricModal from '../components/bodyMetrics/AddMetricModal'
 import EditMetricModal from '../components/bodyMetrics/EditMetricModal'
@@ -13,7 +13,6 @@ import { useAuth } from '../contexts/AuthContext'
 import {
   subscribeToBodyMetrics,
   getBodyMetricGoal,
-  getLatestBodyMetric,
 } from '../services/firestoreBodyMetricsService'
 import type { BodyMetricEntry, BodyMetricGoal } from '../types'
 

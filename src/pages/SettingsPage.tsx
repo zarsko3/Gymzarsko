@@ -16,7 +16,6 @@ import AccountManagementSection from '../components/settings/AccountManagementSe
 import {
   getUserProfile,
   updateDisplayName,
-  updateUserProfile,
   changePassword,
   deleteUserAccount,
 } from '../services/userProfileService'

@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronLeft, Plus, Trash2, Check, MessageSquare, FileText, Edit2, X, Camera, Image } from 'lucide-react'
+import { Plus, Trash2, Check, MessageSquare, FileText, Edit2, X } from 'lucide-react'
 import type { Workout, WorkoutType, WorkoutExercise, WorkoutSet, Exercise } from '../types'
 import { startWorkout, updateWorkout, completeWorkout, getCurrentWorkout, getWorkoutById } from '../services/workoutServiceFacade'
-import { updateExerciseName, addExerciseToWorkout } from '../services/firestoreExerciseService'
-import { getLatestExerciseData } from '../services/firestoreProgressService'
+import { getLatestExerciseData, getLatestExerciseDataByName } from '../services/firestoreProgressService'
 import { saveCustomExercise } from '../services/firestorePlanService'
-import { uploadExercisePhoto, getExercisePhotos, deleteExercisePhoto } from '../services/exercisePhotoService'
 import { useToast } from '../hooks/useToast'
 import { handleFirestoreError } from '../utils/firestoreErrorHandler'
 import Button from '../components/ui/Button'
@@ -17,6 +15,36 @@ import ConfirmDialog from '../components/ui/ConfirmDialog'
 import { useWorkoutTimer } from '../hooks/useWorkoutTimer'
 import { useInactivityTimer } from '../hooks/useInactivityTimer'
 import WorkoutHeader from '../components/workout/WorkoutHeader'
+import SetNumberInput from '../components/workout/SetNumberInput'
+
+const EMPTY_EXERCISE_FORM = { name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 }
+
+function randomId(prefix: string) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+}
+
+function updateExerciseAt(
+  workout: Workout,
+  exerciseIndex: number,
+  update: (exercise: WorkoutExercise) => WorkoutExercise
+): Workout {
+  return {
+    ...workout,
+    exercises: workout.exercises.map((exercise, i) => (i === exerciseIndex ? update(exercise) : exercise)),
+  }
+}
+
+function updateSetAt(
+  workout: Workout,
+  exerciseIndex: number,
+  setIndex: number,
+  update: (set: WorkoutSet) => WorkoutSet
+): Workout {
+  return updateExerciseAt(workout, exerciseIndex, (exercise) => ({
+    ...exercise,
+    sets: exercise.sets.map((set, i) => (i === setIndex ? update(set) : set)),
+  }))
+}
 
 function ActiveWorkoutPage() {
   const navigate = useNavigate()
@@ -24,10 +52,10 @@ function ActiveWorkoutPage() {
   const { showToast } = useToast()
   const workoutType = searchParams.get('type') as WorkoutType
   const workoutId = searchParams.get('id') // Support opening existing workout by ID
-  
+
   const [workout, setWorkout] = useState<Workout | null>(null)
   const [isLoadingWorkout, setIsLoadingWorkout] = useState(true)
-  
+
   const [expandedNotes, setExpandedNotes] = useState<Set<number>>(new Set())
   const [showWorkoutNotes, setShowWorkoutNotes] = useState(false)
   const [editingExerciseIndex, setEditingExerciseIndex] = useState<number | null>(null)
@@ -44,7 +72,8 @@ function ActiveWorkoutPage() {
   useInactivityTimer(
     () => {
       // Only auto-complete if we have a workout and aren't already completing
-      if (workout && !isCompletingWorkout && !isWorkoutDoneRef.current) {
+      const hasCompletedSets = workout?.exercises.some((ex) => ex.sets.some((set) => set.completed))
+      if (workout && hasCompletedSets && !isCompletingWorkout && !isWorkoutDoneRef.current) {
         handleCompleteWorkout()
       }
     },
@@ -60,16 +89,10 @@ function ActiveWorkoutPage() {
     sets: number
     reps: number
   } | null>(null)
-  
-  // Equipment photo state
-  const [exercisePhotos, setExercisePhotos] = useState<Map<string, string>>(new Map())
-  const [expandedPhoto, setExpandedPhoto] = useState<string | null>(null)
-  const photoInputRef = useRef<HTMLInputElement>(null)
-  const [photoTargetExercise, setPhotoTargetExercise] = useState<string | null>(null)
 
   // Refs to prevent duplicate operations
-  const isCreatingWorkoutRef = useRef(false)
-  const workoutLoadErrorRef = useRef(false)
+  const pendingStartRef = useRef<{ type: WorkoutType; promise: Promise<Workout> } | null>(null)
+  const isSavingExerciseNameRef = useRef(false)
 
   // Layer 1: Completion guard — prevents any saves after workout is marked done
   const isWorkoutDoneRef = useRef(false)
@@ -172,70 +195,72 @@ function ActiveWorkoutPage() {
     }
   }
 
-  // Helper function to auto-populate sets with latest data
-  const autoPopulateWorkoutSets = async (workout: Workout): Promise<Workout> => {
-    // Create a deep copy of the workout to avoid mutating the original
-    const updatedWorkout: Workout = {
+  // Fill empty sets with the last session's numbers (does not save or touch state)
+  const autoPopulateWorkoutSets = async (
+    workout: Workout
+  ): Promise<{ workout: Workout; prefilled: Map<string, { weight: number; reps: number }> }> => {
+    const prefilled = new Map<string, { weight: number; reps: number }>()
+    const needsData = (set: WorkoutSet) => !set.completed && set.weight === 0 && set.reps === 0
+    if (!workout.exercises.some(ex => ex.sets.some(needsData))) {
+      return { workout, prefilled }
+    }
+
+    // One history fetch for all exercises instead of one per exercise
+    const latestByName = await getLatestExerciseDataByName()
+
+    const populated: Workout = {
       ...workout,
-      exercises: workout.exercises.map(exercise => ({
-        ...exercise,
-        sets: exercise.sets.map(set => ({ ...set }))
-      }))
-    }
-    
-    let hasUpdates = false
-    const newPrefilledSets = new Map<string, { weight: number; reps: number }>()
+      exercises: workout.exercises.map(exercise => {
+        const latestData = latestByName.get(exercise.exercise.name.toLowerCase())
+        if (!latestData || !exercise.sets.some(needsData)) return exercise
 
-    for (const exercise of updatedWorkout.exercises) {
-      // Only populate if sets are empty (weight/reps are 0)
-      const hasEmptySets = exercise.sets.some(set => set.weight === 0 && set.reps === 0 && !set.completed)
-      
-      if (hasEmptySets) {
-        const latestData = await getLatestExerciseData(exercise.exercise.name)
-        
-        if (latestData && latestData.weight > 0 && latestData.reps > 0) {
-          // Track that this exercise was prefilled
-          newPrefilledSets.set(exercise.id, { weight: latestData.weight, reps: latestData.reps })
-          
-          // Populate all incomplete sets with latest data
-          exercise.sets.forEach(set => {
-            if (!set.completed && set.weight === 0 && set.reps === 0) {
-              set.weight = latestData.weight
-              set.reps = latestData.reps
-              hasUpdates = true
-            }
-          })
+        prefilled.set(exercise.id, latestData)
+        return {
+          ...exercise,
+          sets: exercise.sets.map(set =>
+            needsData(set) ? { ...set, weight: latestData.weight, reps: latestData.reps } : set
+          ),
         }
-      }
+      }),
     }
 
-    if (hasUpdates) {
-      setPrefilledSets(newPrefilledSets)
-      await persistWorkoutChange(updatedWorkout)
-    }
-    
-    return updatedWorkout
+    return { workout: populated, prefilled }
+  }
+
+  /** Start a workout, sharing the in-flight request if the same type is already being created */
+  const startWorkoutOnce = (type: WorkoutType): Promise<Workout> => {
+    const pending = pendingStartRef.current
+    if (pending && pending.type === type) return pending.promise
+
+    const promise = startWorkout(type).finally(() => {
+      if (pendingStartRef.current?.promise === promise) {
+        pendingStartRef.current = null
+      }
+    })
+    pendingStartRef.current = { type, promise }
+    return promise
   }
 
   // Clear prefilled data for a specific exercise
   const clearPrefilledData = (exerciseIndex: number) => {
     if (!workout) return
-    
+
     const exercise = workout.exercises[exerciseIndex]
     const prefilledData = prefilledSets.get(exercise.id)
-    
+
     if (prefilledData) {
-      const newWorkout = { ...workout }
       // Clear all sets that match the prefilled values
-      newWorkout.exercises[exerciseIndex].sets.forEach(set => {
-        if (!set.completed && set.weight === prefilledData.weight && set.reps === prefilledData.reps) {
-          set.weight = 0
-          set.reps = 0
-        }
-      })
-      
+      const newWorkout = updateExerciseAt(workout, exerciseIndex, (ex) => ({
+        ...ex,
+        sets: ex.sets.map(set =>
+          !set.completed && set.weight === prefilledData.weight && set.reps === prefilledData.reps
+            ? { ...set, weight: 0, reps: 0 }
+            : set
+        ),
+      }))
+
       debouncedSave(newWorkout)
-      
+
       // Remove from prefilled sets
       const newPrefilledSets = new Map(prefilledSets)
       newPrefilledSets.delete(exercise.id)
@@ -243,195 +268,90 @@ function ActiveWorkoutPage() {
     }
   }
 
-  // Load workout based on URL type parameter or ID
+  // Load workout based on URL type parameter or ID. Re-runs when the URL changes;
+  // results from a superseded run are ignored so two loads can never race.
   useEffect(() => {
-    async function loadWorkout() {
-      setIsLoadingWorkout(true)
-      workoutLoadErrorRef.current = false
-      
-      try {
-        // If workoutId is provided, load that specific workout
-        if (workoutId) {
-          try {
-            const existingWorkout = await getWorkoutById(workoutId)
-            if (existingWorkout) {
-              // Auto-populate sets with latest data
-              const populatedWorkout = await autoPopulateWorkoutSets(existingWorkout)
-              setWorkout(populatedWorkout)
-              setIsLoadingWorkout(false)
-              return
-            } else {
-              showToast('error', 'Workout not found')
-              navigate('/')
-              return
-            }
-          } catch (error) {
-            const errorInfo = handleFirestoreError(error)
-            showToast('error', errorInfo.message)
-            navigate('/')
-            return
-          }
+    let cancelled = false
+
+    const fail = (error: unknown) => {
+      if (cancelled) return
+      const errorInfo = handleFirestoreError(error)
+      showToast('error', errorInfo.message)
+      if (errorInfo.indexLink) {
+        console.error('Index creation link:', errorInfo.indexLink)
+      }
+      navigate('/')
+    }
+
+    const resolveWorkout = async (): Promise<Workout | null> => {
+      if (workoutId) {
+        const existingWorkout = await getWorkoutById(workoutId)
+        if (!existingWorkout) {
+          showToast('error', 'Workout not found')
+          return null
         }
-        
-        if (workoutType) {
-          // Check if there's a current workout that matches the requested type
-          try {
-            const currentWorkout = await getCurrentWorkout()
-            if (currentWorkout && currentWorkout.type === workoutType) {
-              // Auto-populate sets with latest data
-              const populatedWorkout = await autoPopulateWorkoutSets(currentWorkout)
-              setWorkout(populatedWorkout)
-              setIsLoadingWorkout(false)
-              return
-            }
-          } catch (error) {
-            // If getCurrentWorkout fails, log but continue to create new workout
-            const errorInfo = handleFirestoreError(error)
-            console.warn('Could not check for existing workout:', errorInfo.message)
-            workoutLoadErrorRef.current = true
-            // Show error but don't block - allow user to continue
-            if (errorInfo.isIndexError) {
-              showToast('error', 'Index required. Creating new workout anyway. Please create the index to prevent this.')
-            }
-          }
-          
-          // Otherwise, start a new workout with the requested type
-          // Prevent duplicate creation
-          if (isCreatingWorkoutRef.current) {
-            console.log('Workout creation already in progress, skipping...')
-            setIsLoadingWorkout(false)
-            return
-          }
-          
-          isCreatingWorkoutRef.current = true
-          try {
-            const newWorkout = await startWorkout(workoutType)
-            // Auto-populate sets with latest data
-            const populatedWorkout = await autoPopulateWorkoutSets(newWorkout)
-            setWorkout(populatedWorkout)
-          } finally {
-            isCreatingWorkoutRef.current = false
-          }
-          setIsLoadingWorkout(false)
-          return
-        }
-        
-        // If no type in URL, check for existing workout
+        return existingWorkout
+      }
+
+      if (workoutType) {
         try {
           const currentWorkout = await getCurrentWorkout()
-          if (currentWorkout) {
-            // Auto-populate sets with latest data
-            const populatedWorkout = await autoPopulateWorkoutSets(currentWorkout)
-            setWorkout(populatedWorkout)
-          } else {
-            // No workout and no type specified - navigate away
-            navigate('/')
+          if (currentWorkout && currentWorkout.type === workoutType) {
+            return currentWorkout
           }
         } catch (error) {
-          // If getCurrentWorkout fails, show error but don't navigate away
-          // User might want to add exercises even without a workout loaded
+          // Don't block starting a workout if the lookup fails (e.g. index still building)
           const errorInfo = handleFirestoreError(error)
-          showToast('error', errorInfo.message)
-          if (errorInfo.indexLink) {
-            console.error('Index creation link:', errorInfo.indexLink)
-          }
-          workoutLoadErrorRef.current = true
-          // Don't navigate away - allow user to see error and potentially continue
+          console.warn('Could not check for existing workout:', errorInfo.message)
+        }
+        return startWorkoutOnce(workoutType)
+      }
+
+      // No type or id in URL: resume whatever is active
+      return getCurrentWorkout()
+    }
+
+    async function loadWorkout() {
+      setIsLoadingWorkout(true)
+      try {
+        const loaded = await resolveWorkout()
+        if (cancelled) return
+
+        if (!loaded) {
+          navigate('/')
+          return
+        }
+
+        // Finished workouts are edited on the detail page, not re-opened as active
+        if (loaded.completed) {
+          navigate(`/workout/detail/${loaded.id}`, { replace: true })
+          return
+        }
+
+        const { workout: populated, prefilled } = await autoPopulateWorkoutSets(loaded)
+        if (cancelled) return
+
+        setPrefilledSets(prefilled)
+        if (prefilled.size > 0) {
+          await persistWorkoutChange(populated)
+        } else {
+          setWorkout(populated)
         }
       } catch (error) {
-        const errorInfo = handleFirestoreError(error)
-        showToast('error', errorInfo.message)
-        if (errorInfo.indexLink) {
-          console.error('Index creation link:', errorInfo.indexLink)
-        }
-        workoutLoadErrorRef.current = true
-        // Don't navigate away on error - show error and allow user to continue
+        fail(error)
       } finally {
-        setIsLoadingWorkout(false)
-      }
-    }
-    
-    loadWorkout()
-  }, [workoutType, workoutId, navigate, showToast])
-
-  // Handle workout type changes in URL - if type changes, start new workout
-  useEffect(() => {
-    async function handleTypeChange() {
-      if (workoutType && workout && !workoutId) {
-        // If URL type doesn't match current workout type, start new workout
-        // But only if we're not loading a specific workout by ID
-        if (workout.type !== workoutType) {
-          // Prevent duplicate creation
-          if (isCreatingWorkoutRef.current) {
-            return
-          }
-          
-          setIsLoadingWorkout(true)
-          isCreatingWorkoutRef.current = true
-          try {
-            const newWorkout = await startWorkout(workoutType)
-            // Auto-populate sets with latest data
-            const populatedWorkout = await autoPopulateWorkoutSets(newWorkout)
-            setWorkout(populatedWorkout)
-          } finally {
-            isCreatingWorkoutRef.current = false
-            setIsLoadingWorkout(false)
-          }
+        if (!cancelled) {
+          setIsLoadingWorkout(false)
         }
       }
     }
-    
-    handleTypeChange()
-  }, [workoutType, workout, workoutId])
 
-  // Load exercise photos when workout loads
-  useEffect(() => {
-    if (!workout) return
-    getExercisePhotos().then(setExercisePhotos).catch(() => {})
-  }, [workout?.id])
+    loadWorkout()
 
-  const handlePhotoButtonClick = (exerciseName: string) => {
-    setPhotoTargetExercise(exerciseName)
-    photoInputRef.current?.click()
-  }
-
-  const handlePhotoSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !photoTargetExercise) return
-
-    try {
-      const url = await uploadExercisePhoto(photoTargetExercise, file)
-      setExercisePhotos(prev => {
-        const next = new Map(prev)
-        next.set(photoTargetExercise, url)
-        return next
-      })
-      showToast('success', 'Photo saved')
-    } catch (error) {
-      console.error('Error uploading photo:', error)
-      showToast('error', error instanceof Error ? error.message : 'Failed to upload photo')
-    } finally {
-      setPhotoTargetExercise(null)
-      // Reset file input so the same file can be selected again
-      if (photoInputRef.current) photoInputRef.current.value = ''
+    return () => {
+      cancelled = true
     }
-  }
-
-  const handleDeletePhoto = async (exerciseName: string) => {
-    try {
-      await deleteExercisePhoto(exerciseName)
-      setExercisePhotos(prev => {
-        const next = new Map(prev)
-        next.delete(exerciseName)
-        return next
-      })
-      setExpandedPhoto(null)
-      showToast('success', 'Photo removed')
-    } catch (error) {
-      console.error('Error deleting photo:', error)
-      showToast('error', 'Failed to remove photo')
-    }
-  }
+  }, [workoutType, workoutId, navigate, showToast])
 
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600)
@@ -443,64 +363,50 @@ function ActiveWorkoutPage() {
   const handleSetChange = (exerciseIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => {
     if (!workout) return
 
-    const newWorkout = { ...workout }
-    const numValue = parseFloat(value) || 0
-    newWorkout.exercises[exerciseIndex].sets[setIndex][field] = numValue
-    
-    debouncedSave(newWorkout)
+    const numValue = Math.max(0, parseFloat(value) || 0)
+    debouncedSave(updateSetAt(workout, exerciseIndex, setIndex, (set) => ({ ...set, [field]: numValue })))
   }
 
   const handleToggleSet = (exerciseIndex: number, setIndex: number) => {
     if (!workout) return
 
-    const newWorkout = { ...workout }
-    const set = newWorkout.exercises[exerciseIndex].sets[setIndex]
-    set.completed = !set.completed
-    
-    debouncedSave(newWorkout)
+    debouncedSave(updateSetAt(workout, exerciseIndex, setIndex, (set) => ({ ...set, completed: !set.completed })))
   }
 
   const handleAddSet = (exerciseIndex: number) => {
     if (!workout) return
 
-    const newWorkout = { ...workout }
-    const lastSet = newWorkout.exercises[exerciseIndex].sets[newWorkout.exercises[exerciseIndex].sets.length - 1]
-    
-    newWorkout.exercises[exerciseIndex].sets.push({
-      id: `set-${Date.now()}`,
-      weight: lastSet?.weight || 0,
-      reps: lastSet?.reps || 0,
-      completed: false,
-    })
-    
-    debouncedSave(newWorkout)
+    debouncedSave(updateExerciseAt(workout, exerciseIndex, (ex) => {
+      const lastSet = ex.sets[ex.sets.length - 1]
+      return {
+        ...ex,
+        sets: [
+          ...ex.sets,
+          { id: randomId('set'), weight: lastSet?.weight || 0, reps: lastSet?.reps || 0, completed: false },
+        ],
+      }
+    }))
   }
 
   const handleRemoveSet = (exerciseIndex: number, setIndex: number) => {
     if (!workout) return
 
-    const newWorkout = { ...workout }
-    newWorkout.exercises[exerciseIndex].sets.splice(setIndex, 1)
-    
-    debouncedSave(newWorkout)
+    debouncedSave(updateExerciseAt(workout, exerciseIndex, (ex) => ({
+      ...ex,
+      sets: ex.sets.filter((_, i) => i !== setIndex),
+    })))
   }
 
   const handleExerciseNoteChange = (exerciseIndex: number, notes: string) => {
     if (!workout) return
 
-    const newWorkout = { ...workout }
-    newWorkout.exercises[exerciseIndex].notes = notes
-    
-    debouncedSave(newWorkout)
+    debouncedSave(updateExerciseAt(workout, exerciseIndex, (ex) => ({ ...ex, notes })))
   }
 
   const handleWorkoutNoteChange = (notes: string) => {
     if (!workout) return
 
-    const newWorkout = { ...workout }
-    newWorkout.notes = notes
-    
-    debouncedSave(newWorkout)
+    debouncedSave({ ...workout, notes })
   }
 
   const toggleExerciseNotes = (exerciseIndex: number) => {
@@ -549,7 +455,7 @@ function ActiveWorkoutPage() {
 
       await completeWorkout(workout)
       showToast('success', 'Workout saved 💪')
-      navigate('/workout/summary')
+      navigate(`/workout/summary?id=${workout.id}`)
     } catch (error) {
       console.error('Error completing workout:', error)
       showToast('error', 'Failed to complete workout. Please try again.')
@@ -561,7 +467,7 @@ function ActiveWorkoutPage() {
 
   const handleEditExercise = (exerciseIndex: number) => {
     if (!workout) return
-    
+
     const exercise = workout.exercises[exerciseIndex]
     setExerciseForm({
       name: exercise.exercise.name,
@@ -576,52 +482,52 @@ function ActiveWorkoutPage() {
   const handleSaveExerciseEdit = async () => {
     if (!workout || editingExerciseIndex === null) return
 
-    const newWorkout = { ...workout }
-    const exercise = newWorkout.exercises[editingExerciseIndex]
+    const newWorkout = updateExerciseAt(workout, editingExerciseIndex, (exercise) => {
+      const targetSetsCount = Math.max(1, Math.floor(exerciseForm.sets))
+      let sets = [...exercise.sets]
 
-    // Update exercise name and muscle group
-    exercise.exercise = {
-      ...exercise.exercise,
-      name: exerciseForm.name,
-      muscleGroup: exerciseForm.muscleGroup,
-    }
-
-    // Adjust sets count
-    const currentSetsCount = exercise.sets.length
-    const targetSetsCount = Math.max(1, Math.floor(exerciseForm.sets))
-
-    if (targetSetsCount > currentSetsCount) {
-      // Add new sets
-      const lastSet = exercise.sets[exercise.sets.length - 1]
-      for (let i = currentSetsCount; i < targetSetsCount; i++) {
-        exercise.sets.push({
-          id: `set-${Date.now()}-${i}`,
-          weight: exerciseForm.targetWeight || lastSet?.weight || 0,
-          reps: exerciseForm.targetReps || lastSet?.reps || 10,
-          completed: false,
-        })
+      if (targetSetsCount > sets.length) {
+        const lastSet = sets[sets.length - 1]
+        while (sets.length < targetSetsCount) {
+          sets.push({
+            id: randomId('set'),
+            weight: exerciseForm.targetWeight || lastSet?.weight || 0,
+            reps: exerciseForm.targetReps || lastSet?.reps || 10,
+            completed: false,
+          })
+        }
+      } else if (targetSetsCount < sets.length) {
+        // Drop incomplete sets from the end; completed sets are never removed
+        let toRemove = sets.length - targetSetsCount
+        for (let i = sets.length - 1; i >= 0 && toRemove > 0; i--) {
+          if (!sets[i].completed) {
+            sets.splice(i, 1)
+            toRemove--
+          }
+        }
       }
-    } else if (targetSetsCount < currentSetsCount) {
-      // Remove excess sets (only if not completed)
-      exercise.sets = exercise.sets.slice(0, targetSetsCount)
-    }
 
-    // Update weight and reps for all incomplete sets
-    exercise.sets.forEach((set: WorkoutSet) => {
-      if (!set.completed) {
-        if (exerciseForm.targetWeight > 0) {
-          set.weight = exerciseForm.targetWeight
+      // Update weight and reps for all incomplete sets
+      sets = sets.map((set) => {
+        if (set.completed) return set
+        return {
+          ...set,
+          weight: exerciseForm.targetWeight > 0 ? exerciseForm.targetWeight : set.weight,
+          reps: exerciseForm.targetReps > 0 ? exerciseForm.targetReps : set.reps,
         }
-        if (exerciseForm.targetReps > 0) {
-          set.reps = exerciseForm.targetReps
-        }
+      })
+
+      return {
+        ...exercise,
+        exercise: { ...exercise.exercise, name: exerciseForm.name, muscleGroup: exerciseForm.muscleGroup },
+        sets,
       }
     })
 
     const saved = await persistWorkoutChange(newWorkout)
     if (saved) {
       setEditingExerciseIndex(null)
-      setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
+      setExerciseForm(EMPTY_EXERCISE_FORM)
     }
   }
 
@@ -640,30 +546,19 @@ function ActiveWorkoutPage() {
 
     setIsAddingExercise(true)
     try {
-      // Try to get latest data for this exercise if weight/reps are not set
+      // Fill in weight from the last session only when the user left it empty
+      const avgReps = exerciseForm.targetReps || 10
       let avgWeight = exerciseForm.targetWeight || 0
-      let avgReps = exerciseForm.targetReps || 10
-      
-      if (avgWeight === 0 || avgReps === 10) {
+      if (avgWeight === 0) {
         const latestData = await getLatestExerciseData(exerciseForm.name.trim())
         if (latestData) {
-          avgWeight = avgWeight || latestData.weight
-          avgReps = avgReps === 10 ? latestData.reps : avgReps
+          avgWeight = latestData.weight
         }
       }
 
       const numSets = Math.max(1, Math.floor(exerciseForm.sets))
+      const exerciseId = randomId('we-custom')
 
-      // Save exercise to Firestore subcollection and get the exercise ID
-      const exerciseId = await addExerciseToWorkout(workout.id, {
-        name: exerciseForm.name.trim(),
-        sets: numSets,
-        reps: avgReps,
-        weight: avgWeight,
-        notes: '',
-      })
-
-      // Also update the workout document with the new exercise
       const newExercise: Exercise = {
         id: exerciseId,
         name: exerciseForm.name.trim(),
@@ -675,8 +570,8 @@ function ActiveWorkoutPage() {
         id: exerciseId,
         exerciseId: exerciseId,
         exercise: newExercise,
-        sets: Array.from({ length: numSets }, (_, i) => ({
-          id: `set-${Date.now()}-${i}`,
+        sets: Array.from({ length: numSets }, () => ({
+          id: randomId('set'),
           weight: avgWeight,
           reps: avgReps,
           completed: false,
@@ -698,7 +593,7 @@ function ActiveWorkoutPage() {
         const addedReps = avgReps
 
         setShowAddExercise(false)
-        setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
+        setExerciseForm(EMPTY_EXERCISE_FORM)
 
         // Ask user if they want to save this exercise to their template
         setShowSaveToTemplate({
@@ -748,9 +643,12 @@ function ActiveWorkoutPage() {
   const handleConfirmRemoveExercise = () => {
     if (!workout || showRemoveExerciseConfirm === null) return
 
-    const newWorkout = { ...workout }
-    newWorkout.exercises.splice(showRemoveExerciseConfirm, 1)
-    debouncedSave(newWorkout)
+    const removedIndex = showRemoveExerciseConfirm
+    debouncedSave({ ...workout, exercises: workout.exercises.filter((_, i) => i !== removedIndex) })
+    // Note panels are tracked by index, so shift the ones after the removed exercise
+    setExpandedNotes((prev) => new Set(
+      [...prev].filter((i) => i !== removedIndex).map((i) => (i > removedIndex ? i - 1 : i))
+    ))
     setShowRemoveExerciseConfirm(null)
   }
 
@@ -783,53 +681,27 @@ function ActiveWorkoutPage() {
   }
 
   const handleSaveExerciseName = async (exerciseIndex: number) => {
-    if (!workout) return
-    
+    // Enter saves and unmounts the input, which then fires blur — only save once
+    if (!workout || isSavingExerciseNameRef.current) return
+
     const trimmedValue = editingExerciseNameValue.trim()
-    
     if (!validateExerciseName(trimmedValue)) {
       return
     }
 
-    const exercise = workout.exercises[exerciseIndex]
-    const oldName = exercise.exercise.name
-
-    // Optimistic update
-    const newWorkout = { ...workout }
-    newWorkout.exercises[exerciseIndex] = {
-      ...exercise,
-      exercise: {
-        ...exercise.exercise,
-        name: trimmedValue,
-      },
-    }
-    const saved = await persistWorkoutChange(newWorkout)
-    if (!saved) {
-      return
-    }
-    setEditingExerciseNameIndex(null)
-    setEditingExerciseNameValue('')
-
-    // Persist to Firestore
+    isSavingExerciseNameRef.current = true
     try {
-      if (workout.id && exercise.id) {
-        await updateExerciseName(workout.id, exercise.id, trimmedValue)
-        showToast('success', 'Exercise name updated ✅')
-      }
-    } catch (error) {
-      console.error('Error updating exercise name:', error)
-      // Revert optimistic update
-      const revertedWorkout = { ...workout }
-      revertedWorkout.exercises[exerciseIndex] = {
+      const newWorkout = updateExerciseAt(workout, exerciseIndex, (exercise) => ({
         ...exercise,
-        exercise: {
-          ...exercise.exercise,
-          name: oldName,
-        },
+        exercise: { ...exercise.exercise, name: trimmedValue },
+      }))
+      const saved = await persistWorkoutChange(newWorkout, { successMessage: 'Exercise name updated ✅' })
+      if (saved) {
+        setEditingExerciseNameIndex(null)
+        setEditingExerciseNameValue('')
       }
-      setWorkout(revertedWorkout)
-      await persistWorkoutChange(revertedWorkout, { suppressErrorToast: true })
-      showToast('error', 'Failed to save exercise name. Please try again.')
+    } finally {
+      isSavingExerciseNameRef.current = false
     }
   }
 
@@ -861,16 +733,6 @@ function ActiveWorkoutPage() {
 
   return (
     <div className="min-h-full bg-[var(--bg-primary)]">
-      {/* Hidden file input for equipment photos */}
-      <input
-        ref={photoInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={handlePhotoSelected}
-      />
-
       <WorkoutHeader
         title={workoutTypeNames[workout.type]}
         elapsedTime={formatTime(elapsedTime)}
@@ -887,18 +749,7 @@ function ActiveWorkoutPage() {
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              // Ensure modal can open even if workout load failed
-              if (!workout && !workoutLoadErrorRef.current) {
-                // If workout is still loading, wait a bit
-                if (isLoadingWorkout) {
-                  showToast('info', 'Please wait for workout to load...')
-                  return
-                }
-                // If no workout and no error, can't add exercise
-                showToast('error', 'No workout available. Please start a workout first.')
-                return
-              }
-              setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
+              setExerciseForm(EMPTY_EXERCISE_FORM)
               setShowAddExercise(true)
             }}
             type="button"
@@ -927,7 +778,9 @@ function ActiveWorkoutPage() {
                           if (exerciseNameError) validateExerciseName(e.target.value)
                         }}
                         onKeyDown={(e) => handleExerciseNameKeyDown(e, exerciseIndex)}
-                        onBlur={() => {
+                        onBlur={(e) => {
+                          // Skip blur caused by the input unmounting after an Enter save
+                          if (isSavingExerciseNameRef.current || !e.currentTarget.isConnected) return
                           // Only save on blur if valid, otherwise cancel
                           if (validateExerciseName(editingExerciseNameValue)) {
                             handleSaveExerciseName(exerciseIndex)
@@ -983,15 +836,6 @@ function ActiveWorkoutPage() {
                 {editingExerciseNameIndex !== exerciseIndex && (
                   <div className="flex gap-2">
                     <button
-                      onClick={() => handlePhotoButtonClick(exercise.exercise.name)}
-                      className={`p-2 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors ${
-                        exercisePhotos.has(exercise.exercise.name) ? 'text-primary-500' : 'text-[var(--text-secondary)]'
-                      }`}
-                      aria-label={exercisePhotos.has(exercise.exercise.name) ? 'Update equipment photo' : 'Add equipment photo'}
-                    >
-                      <Camera size={18} />
-                    </button>
-                    <button
                       onClick={() => handleEditExercise(exerciseIndex)}
                       className="p-2 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors text-primary-500"
                       aria-label="Edit exercise"
@@ -1009,37 +853,6 @@ function ActiveWorkoutPage() {
                 )}
               </div>
 
-              {/* Equipment Photo */}
-              {exercisePhotos.has(exercise.exercise.name) && (
-                <div className="relative">
-                  <button
-                    onClick={() => setExpandedPhoto(
-                      expandedPhoto === exercise.exercise.name ? null : exercise.exercise.name
-                    )}
-                    className="flex items-center gap-2 text-sm text-primary-500 hover:text-primary-600 transition-colors"
-                  >
-                    <Image size={14} />
-                    <span>{expandedPhoto === exercise.exercise.name ? 'Hide photo' : 'View equipment photo'}</span>
-                  </button>
-                  {expandedPhoto === exercise.exercise.name && (
-                    <div className="mt-2 relative rounded-lg overflow-hidden">
-                      <img
-                        src={exercisePhotos.get(exercise.exercise.name)}
-                        alt={`Equipment for ${exercise.exercise.name}`}
-                        className="w-full max-h-48 object-cover rounded-lg"
-                      />
-                      <button
-                        onClick={() => handleDeletePhoto(exercise.exercise.name)}
-                        className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
-                        aria-label="Remove photo"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
               {/* Sets Table */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)] pb-2 border-b border-[var(--border-primary)]">
@@ -1050,7 +863,7 @@ function ActiveWorkoutPage() {
                 </div>
 
                 {exercise.sets.map((set: WorkoutSet, setIndex: number) => (
-                  <div 
+                  <div
                     key={set.id}
                     className={`flex items-center gap-2 ${
                       set.completed ? 'opacity-60' : ''
@@ -1059,15 +872,14 @@ function ActiveWorkoutPage() {
                     <div className="w-8 text-center text-[var(--text-primary)] font-medium text-sm">
                       {setIndex + 1}
                     </div>
-                    
-                    <input
-                      type="number"
+
+                    <SetNumberInput
                       inputMode="decimal"
                       min="0"
                       max="500"
                       step="0.5"
-                      value={set.weight || ''}
-                      onChange={(e) => handleSetChange(exerciseIndex, setIndex, 'weight', e.target.value)}
+                      value={set.weight}
+                      onValueChange={(value) => handleSetChange(exerciseIndex, setIndex, 'weight', value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault()
@@ -1086,14 +898,13 @@ function ActiveWorkoutPage() {
                       disabled={set.completed}
                     />
 
-                    <input
-                      type="number"
+                    <SetNumberInput
                       inputMode="numeric"
                       min="0"
                       max="100"
                       step="1"
-                      value={set.reps || ''}
-                      onChange={(e) => handleSetChange(exerciseIndex, setIndex, 'reps', e.target.value)}
+                      value={set.reps}
+                      onValueChange={(value) => handleSetChange(exerciseIndex, setIndex, 'reps', value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault()
@@ -1116,7 +927,7 @@ function ActiveWorkoutPage() {
                       placeholder="0"
                       disabled={set.completed}
                     />
-                    
+
                     <div className="flex gap-1 w-20">
                       <button
                         onClick={() => handleToggleSet(exerciseIndex, setIndex)}
@@ -1128,7 +939,7 @@ function ActiveWorkoutPage() {
                       >
                         <Check size={16} />
                       </button>
-                      
+
                       {exercise.sets.length > 1 && (
                         <button
                           onClick={() => handleRemoveSet(exerciseIndex, setIndex)}
@@ -1217,7 +1028,7 @@ function ActiveWorkoutPage() {
         isOpen={editingExerciseIndex !== null}
         onClose={() => {
           setEditingExerciseIndex(null)
-          setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
+          setExerciseForm(EMPTY_EXERCISE_FORM)
         }}
         title="Edit Exercise"
         size="md"
@@ -1228,7 +1039,7 @@ function ActiveWorkoutPage() {
               fullWidth
               onClick={() => {
                 setEditingExerciseIndex(null)
-                setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
+                setExerciseForm(EMPTY_EXERCISE_FORM)
               }}
             >
               Cancel
@@ -1287,9 +1098,7 @@ function ActiveWorkoutPage() {
         isOpen={showAddExercise}
         onClose={() => {
           setShowAddExercise(false)
-          setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
-          // Reset any error state
-          workoutLoadErrorRef.current = false
+          setExerciseForm(EMPTY_EXERCISE_FORM)
         }}
         title="Add Custom Exercise"
         size="md"
@@ -1300,7 +1109,7 @@ function ActiveWorkoutPage() {
               fullWidth
               onClick={() => {
                 setShowAddExercise(false)
-                setExerciseForm({ name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 })
+                setExerciseForm(EMPTY_EXERCISE_FORM)
               }}
             >
               Cancel
@@ -1362,12 +1171,11 @@ function ActiveWorkoutPage() {
       <Modal
         isOpen={showExitConfirm}
         onClose={() => setShowExitConfirm(false)}
-        title="Exit Workout?"
         size="sm"
       >
         <ConfirmDialog
           title="Exit Workout?"
-          message="You have unsaved progress. Are you sure you want to exit? Your workout data will be lost."
+          message="Your progress is saved. You can continue this workout from the Home screen."
           confirmLabel="Exit"
           cancelLabel="Keep Working"
           variant="destructive"
@@ -1381,7 +1189,6 @@ function ActiveWorkoutPage() {
       <Modal
         isOpen={showRemoveExerciseConfirm !== null}
         onClose={() => setShowRemoveExerciseConfirm(null)}
-        title="Remove Exercise?"
         size="sm"
       >
         <ConfirmDialog
@@ -1400,7 +1207,6 @@ function ActiveWorkoutPage() {
       <Modal
         isOpen={showSaveToTemplate !== null}
         onClose={() => setShowSaveToTemplate(null)}
-        title="Save to Template?"
         size="sm"
       >
         <ConfirmDialog

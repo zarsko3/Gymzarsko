@@ -59,9 +59,6 @@ function AnalyticsPage() {
     return compareWorkouts(metrics, compareMode, 'duration')
   }, [metrics, compareMode])
   
-  const densityComparison = useMemo(() => {
-    return compareWorkouts(metrics, compareMode, 'volumePerMinute')
-  }, [metrics, compareMode])
   
   // Format values and deltas
   const volumeValue = volumeComparison ? fmtKg(volumeComparison.current) : '--'

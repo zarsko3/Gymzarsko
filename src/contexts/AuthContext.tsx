@@ -46,7 +46,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Clear any cached/local data before signing out
     try {
       // Clear localStorage items that may contain user data
-      const keysToRemove = ['gymzarski-workouts', 'gymzarski-current-workout']
+      const keysToRemove = ['gymzarski_workouts', 'gymzarski_current_workout']
       keysToRemove.forEach(key => {
         try {
           localStorage.removeItem(key)
@@ -62,6 +62,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   useEffect(() => {
+    // Firebase not configured (local storage mode) — no auth backend to listen to
+    if (!auth) {
+      setLoading(false)
+      return
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user)
       setLoading(false)

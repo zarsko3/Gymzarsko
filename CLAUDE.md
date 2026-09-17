@@ -16,10 +16,16 @@ npm run dev          # Start dev server on port 3000
 npm run build        # TypeScript check + Vite production build
 npm run preview      # Preview production build locally
 
+# Lint
+npm run lint         # ESLint (errors fail CI)
+
 # Testing
 npm run test         # Run Vitest unit tests (watch mode)
 npx vitest run       # Run unit tests once
-npx playwright test  # Run e2e tests (requires dev server or build)
+npx playwright test  # Run e2e smoke tests (starts its own dev server)
+
+# Security rules (source of truth: firestore.rules, storage.rules)
+firebase deploy --only firestore:rules,storage --project gymzarsko
 ```
 
 ## Architecture
@@ -54,6 +60,11 @@ Uses React Context for global state:
 - TailwindCSS with CSS variables for theming ([tailwind.config.js](tailwind.config.js))
 - Theme colors defined in [index.css](src/index.css) with `--primary-*`, `--bg-*`, `--text-*` variables
 - Dark mode via `darkMode: 'class'` strategy
+
+### Workout Lifecycle
+- The workout document's `exercises` array is the single source of truth (no `exercises` subcollection)
+- Active workout = `completed: false`; workouts open longer than 6h are "abandoned" (see [workoutStatus.ts](src/utils/workoutStatus.ts))
+- HomePage closes abandoned workouts on load: kept as completed if any set was logged, otherwise deleted
 
 ### Key Types
 Core domain types in [types/index.ts](src/types/index.ts):

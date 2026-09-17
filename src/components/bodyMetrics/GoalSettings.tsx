@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
-import { Calendar, Target } from 'lucide-react'
+import { Calendar } from 'lucide-react'
 import { setBodyMetricGoal, getBodyMetricGoal, deleteBodyMetricGoal } from '../../services/firestoreBodyMetricsService'
 import { useToast } from '../../hooks/useToast'
-import type { BodyMetricGoal } from '../../types'
 import Modal from '../ui/Modal'
 import Button from '../ui/Button'
 

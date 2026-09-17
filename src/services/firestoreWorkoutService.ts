@@ -18,6 +18,7 @@ import { db, auth } from '../lib/firebase'
 import type { Workout, WorkoutType } from '../types'
 import { mockExercises } from './mockData'
 import { getCustomExercises } from './firestorePlanService'
+import { ABANDONED_WORKOUT_AFTER_MS, getWorkoutStart, hasCompletedSets, isAbandonedWorkout } from '../utils/workoutStatus'
 
 const WORKOUTS_COLLECTION = 'workouts'
 
@@ -200,7 +201,7 @@ let lastWorkoutCreationTime = 0
 const WORKOUT_CREATION_DEBOUNCE_MS = 2000 // 2 second debounce
 
 // Track recently completed workouts to prevent immediate duplicates
-let recentlyCompletedWorkouts: Map<string, number> = new Map() // type -> timestamp
+const recentlyCompletedWorkouts: Map<string, number> = new Map() // type -> timestamp
 const RECENTLY_COMPLETED_WINDOW_MS = 5000 // 5 second window to prevent duplicates after completion
 
 /**
@@ -222,7 +223,7 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
         console.log('Returning existing active workout')
         return existingWorkout
       }
-    } catch (error) {
+    } catch {
       // If check fails, wait a bit and try again
       await new Promise(resolve => setTimeout(resolve, 500))
       try {
@@ -530,6 +531,34 @@ export async function deleteWorkout(id: string): Promise<void> {
 }
 
 /**
+ * Close a workout that was left open: keep it (marked completed) if any set was
+ * logged, otherwise delete the empty shell.
+ */
+export async function closeAbandonedWorkout(workout: Workout): Promise<void> {
+  const workoutRef = doc(db, WORKOUTS_COLLECTION, workout.id)
+
+  if (!hasCompletedSets(workout)) {
+    await deleteDoc(workoutRef)
+    return
+  }
+
+  // Best guess for when the session ended: the last save, capped to a sane length
+  const start = getWorkoutStart(workout) ?? new Date()
+  const lastSave = (workout as { updatedAt?: unknown }).updatedAt
+  const lastSaveDate = lastSave instanceof Timestamp ? lastSave.toDate() : null
+  const maxEnd = new Date(start.getTime() + ABANDONED_WORKOUT_AFTER_MS)
+  const endTime = lastSaveDate && lastSaveDate > start && lastSaveDate < maxEnd
+    ? lastSaveDate
+    : new Date(start.getTime() + 60 * 60 * 1000)
+
+  await updateDoc(workoutRef, {
+    completed: true,
+    endTime: Timestamp.fromDate(endTime),
+    updatedAt: serverTimestamp(),
+  })
+}
+
+/**
  * Get current active workout (if any)
  * In Firestore, we'll query for workouts without an endTime and not completed
  * Note: This query requires a composite index: userId (Ascending), endTime (Ascending), startTime (Descending)
@@ -548,17 +577,12 @@ export async function getCurrentWorkout(): Promise<Workout | null> {
     )
     const querySnapshot = await getDocs(q)
     
-    if (!querySnapshot.empty) {
-      const firstDoc = querySnapshot.docs[0]
-      const workout = firestoreToWorkout(firstDoc.id, firstDoc.data())
-      // Double-check that the workout is not completed (safety check)
-      if (workout.completed || workout.endTime) {
-        console.warn('Found workout with endTime or completed flag set, ignoring it')
-        return null
-      }
-      return workout
-    }
-    return null
+    // Skip past workouts added from History (no endTime but completed) and
+    // workouts left open long ago — those get closed by cleanUpAbandonedWorkouts
+    const active = querySnapshot.docs
+      .map((d) => firestoreToWorkout(d.id, d.data()))
+      .find((workout) => !workout.completed && !isAbandonedWorkout(workout))
+    return active ?? null
   } catch (error: any) {
     // Check if it's an index error
     if (error?.code === 'failed-precondition' && error?.message?.includes('index')) {

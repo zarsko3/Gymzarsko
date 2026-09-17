@@ -15,6 +15,7 @@ import type { Exercise, Workout, WorkoutType } from '../types'
 import * as localStorageService from './workoutService'
 import * as firestoreService from './firestoreWorkoutService'
 import { mockExercises } from './mockData'
+import { isAbandonedWorkout } from '../utils/workoutStatus'
 
 /**
  * Get all workouts
@@ -118,6 +119,23 @@ export async function getCurrentWorkout(): Promise<Workout | null> {
     return await firestoreService.getCurrentWorkout()
   }
   return Promise.resolve(localStorageService.getCurrentWorkout())
+}
+
+/**
+ * Close workouts that were started but never finished.
+ * Local storage keeps only one current workout, so there is nothing to clean there.
+ */
+export async function cleanUpAbandonedWorkouts(workouts: Workout[]): Promise<number> {
+  if (!USE_FIRESTORE) return 0
+
+  const abandoned = workouts.filter((workout) => isAbandonedWorkout(workout))
+  const results = await Promise.allSettled(abandoned.map((workout) => firestoreService.closeAbandonedWorkout(workout)))
+  results.forEach((result) => {
+    if (result.status === 'rejected') {
+      console.error('Error closing abandoned workout:', result.reason)
+    }
+  })
+  return results.filter((result) => result.status === 'fulfilled').length
 }
 
 /**

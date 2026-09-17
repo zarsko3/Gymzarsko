@@ -1,7 +1,6 @@
 import { Dumbbell, Flame, Activity } from 'lucide-react'
 import type { WorkoutType } from '../../types'
 import Modal from '../ui/Modal'
-import Card from '../ui/Card'
 
 interface WorkoutTypeModalProps {
   isOpen: boolean

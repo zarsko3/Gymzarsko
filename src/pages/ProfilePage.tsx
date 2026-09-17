@@ -54,7 +54,7 @@ function ProfilePage() {
         {/* User Profile Card */}
         <Card className="bg-gradient-to-br from-primary-50 to-primary-100 border-2 border-primary-200">
           <div className="flex items-center gap-4 p-2">
-            <div className="w-20 h-20 bg-[var(--bg-primary)]-500 rounded-full flex items-center justify-center">
+            <div className="w-20 h-20 bg-primary-500 rounded-full flex items-center justify-center">
               <User size={40} className="text-white" strokeWidth={2} />
             </div>
             <div className="flex-1">

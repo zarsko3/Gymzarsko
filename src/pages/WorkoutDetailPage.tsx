@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { format } from 'date-fns'
 import { Timestamp } from 'firebase/firestore'
-import { ChevronLeft, Clock, Calendar, TrendingUp, Trash2, CheckCircle, FileText, MessageSquare, Save, X } from 'lucide-react'
+import { ChevronLeft, Clock, Calendar, Trash2, CheckCircle, FileText, MessageSquare, Save, X } from 'lucide-react'
 import type { Workout } from '../types'
 import { getWorkoutById, deleteWorkout, updateWorkout } from '../services/workoutServiceFacade'
 import { formatDuration, calculateVolume, formatDateCustom } from '../utils/formatters'
 import { useToast } from '../hooks/useToast'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
+import Modal from '../components/ui/Modal'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
 
 function WorkoutDetailPage() {
   const navigate = useNavigate()
@@ -20,14 +21,15 @@ function WorkoutDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [expandedExerciseNotes, setExpandedExerciseNotes] = useState<Set<number>>(new Set())
   const [showWorkoutNotes, setShowWorkoutNotes] = useState(false)
-  
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
   useEffect(() => {
     async function loadWorkout() {
       if (!workoutId) {
         setIsLoading(false)
         return
       }
-      
+
       setIsLoading(true)
       try {
         const fetchedWorkout = await getWorkoutById(workoutId)
@@ -40,7 +42,7 @@ function WorkoutDetailPage() {
               : fetchedWorkout.date instanceof Date
                 ? fetchedWorkout.date
                 : new Date()
-          
+
           const normalizedStartTime = fetchedWorkout.startTime instanceof Timestamp
             ? fetchedWorkout.startTime.toDate()
             : typeof fetchedWorkout.startTime === 'string'
@@ -48,7 +50,7 @@ function WorkoutDetailPage() {
               : fetchedWorkout.startTime instanceof Date
                 ? fetchedWorkout.startTime
                 : undefined
-          
+
           const normalizedEndTime = fetchedWorkout.endTime instanceof Timestamp
             ? fetchedWorkout.endTime.toDate()
             : typeof fetchedWorkout.endTime === 'string'
@@ -56,14 +58,14 @@ function WorkoutDetailPage() {
               : fetchedWorkout.endTime instanceof Date
                 ? fetchedWorkout.endTime
                 : undefined
-          
+
           const normalizedWorkout = {
             ...fetchedWorkout,
             date: normalizedDate,
             startTime: normalizedStartTime,
             endTime: normalizedEndTime,
           }
-          
+
           setWorkout(normalizedWorkout)
           // Deep clone while preserving Date objects (JSON.stringify converts dates to strings)
           setEditedWorkout({
@@ -73,7 +75,7 @@ function WorkoutDetailPage() {
             endTime: normalizedEndTime instanceof Date ? new Date(normalizedEndTime) : normalizedEndTime,
             exercises: normalizedWorkout.exercises.map(ex => ({
               ...ex,
-              // Clone exercise if needed
+              sets: ex.sets.map(set => ({ ...set })),
             })),
           })
           setShowWorkoutNotes(!!normalizedWorkout.notes)
@@ -87,7 +89,7 @@ function WorkoutDetailPage() {
         setIsLoading(false)
       }
     }
-    
+
     loadWorkout()
   }, [workoutId])
 
@@ -111,24 +113,22 @@ function WorkoutDetailPage() {
   ) => {
     if (!editedWorkout) return
 
-    const newWorkout = { ...editedWorkout }
-    const set = newWorkout.exercises[exerciseIndex].sets[setIndex]
-    
-    if (field === 'weight') {
-      set.weight = Math.max(0, value)
-    } else {
-      set.reps = Math.max(0, value)
-    }
-
-    setEditedWorkout(newWorkout)
+    setEditedWorkout({
+      ...editedWorkout,
+      exercises: editedWorkout.exercises.map((ex, i) => i !== exerciseIndex ? ex : {
+        ...ex,
+        sets: ex.sets.map((set, j) => j !== setIndex ? set : { ...set, [field]: Math.max(0, value) }),
+      }),
+    })
   }
 
   const handleExerciseNotesChange = (exerciseIndex: number, notes: string) => {
     if (!editedWorkout) return
 
-    const newWorkout = { ...editedWorkout }
-    newWorkout.exercises[exerciseIndex].notes = notes
-    setEditedWorkout(newWorkout)
+    setEditedWorkout({
+      ...editedWorkout,
+      exercises: editedWorkout.exercises.map((ex, i) => (i === exerciseIndex ? { ...ex, notes } : ex)),
+    })
   }
 
   const handleWorkoutNotesChange = (notes: string) => {
@@ -155,7 +155,10 @@ function WorkoutDetailPage() {
     setIsSubmitting(true)
     try {
       await updateWorkout(editedWorkout)
-      setWorkout(editedWorkout)
+      setWorkout({
+        ...editedWorkout,
+        exercises: editedWorkout.exercises.map(ex => ({ ...ex, sets: ex.sets.map(set => ({ ...set })) })),
+      })
       showToast('success', 'Workout updated ✅')
     } catch (error) {
       console.error('Error saving workout:', error)
@@ -186,16 +189,15 @@ function WorkoutDetailPage() {
 
   const handleDelete = async () => {
     if (!workout) return
-    
-    if (confirm('Are you sure you want to delete this workout? This cannot be undone.')) {
-      try {
-        await deleteWorkout(workout.id)
-        showToast('success', 'Workout deleted')
-        navigate('/history')
-      } catch (error) {
-        console.error('Error deleting workout:', error)
-        showToast('error', 'Failed to delete workout. Please try again.')
-      }
+
+    setShowDeleteConfirm(false)
+    try {
+      await deleteWorkout(workout.id)
+      showToast('success', 'Workout deleted')
+      navigate('/history')
+    } catch (error) {
+      console.error('Error deleting workout:', error)
+      showToast('error', 'Failed to delete workout. Please try again.')
     }
   }
 
@@ -205,21 +207,21 @@ function WorkoutDetailPage() {
     // Compare key fields that can change
     if (workout.notes !== editedWorkout.notes) return true
     if (workout.exercises.length !== editedWorkout.exercises.length) return true
-    
+
     // Compare exercises and sets
     for (let i = 0; i < workout.exercises.length; i++) {
       const workoutEx = workout.exercises[i]
       const editedEx = editedWorkout.exercises[i]
       if (!editedEx) return true
-      
+
       if (workoutEx.notes !== editedEx.notes) return true
       if (workoutEx.sets.length !== editedEx.sets.length) return true
-      
+
       for (let j = 0; j < workoutEx.sets.length; j++) {
         const workoutSet = workoutEx.sets[j]
         const editedSet = editedEx.sets[j]
         if (!editedSet) return true
-        
+
         if (workoutSet.weight !== editedSet.weight ||
             workoutSet.reps !== editedSet.reps ||
             workoutSet.completed !== editedSet.completed) {
@@ -227,7 +229,7 @@ function WorkoutDetailPage() {
         }
       }
     }
-    
+
     return false
   }
 
@@ -257,7 +259,7 @@ function WorkoutDetailPage() {
           </p>
 
           {/* CTA Button */}
-          <Button 
+          <Button
             onClick={() => navigate('/history')}
             className="min-w-[200px] mx-auto"
             size="lg"
@@ -290,7 +292,7 @@ function WorkoutDetailPage() {
       {/* Header */}
       <div className="sticky top-0 bg-card border-b border-[var(--border-primary)] z-10 shadow-sm">
         <div className="flex items-center justify-between px-4 py-4">
-          <button 
+          <button
             onClick={() => navigate('/history')}
             className="flex items-center gap-1 text-primary-500 font-medium min-h-[44px] min-w-[44px] justify-center"
           >
@@ -308,8 +310,8 @@ function WorkoutDetailPage() {
                 <X size={20} />
               </button>
             )}
-            <button 
-              onClick={handleDelete}
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
               className="text-red-500 hover:text-red-600 min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="Delete workout"
             >
@@ -412,10 +414,10 @@ function WorkoutDetailPage() {
                     </div>
 
                     {exercise.sets.map((set, setIndex) => (
-                      <div 
+                      <div
                         key={set.id}
                         className={`flex items-center gap-1.5 py-2 ${
-                          set.completed ? 'bg-[var(--bg-primary)]-50 rounded-lg px-2' : ''
+                          set.completed ? 'bg-primary-50 rounded-lg px-2' : ''
                         }`}
                       >
                         <div className="w-8 flex-shrink-0 text-center text-sm font-medium text-[var(--text-primary)]">
@@ -566,6 +568,23 @@ function WorkoutDetailPage() {
           </Button>
         </div>
       </div>
+
+      <Modal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        size="sm"
+      >
+        <ConfirmDialog
+          title="Delete Workout?"
+          message="Are you sure you want to delete this workout? This cannot be undone."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          variant="destructive"
+          icon="delete"
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      </Modal>
     </div>
   )
 }

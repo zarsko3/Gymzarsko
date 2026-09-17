@@ -1,11 +1,15 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 
 const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000 // 60 minutes
 
 /**
  * Hook that auto-triggers a callback after a period of user inactivity.
- * Listens for DOM interaction events (touch, click, input, keydown) via
- * event delegation on the document and resets the timer on each activity.
+ * Listens for DOM interaction events (touch, click, input, keydown, scroll)
+ * on the document and resets the timer on each activity.
+ *
+ * Mobile browsers suspend timers while the app is in the background, so the
+ * elapsed idle time is also checked against a timestamp when the page becomes
+ * visible again instead of simply restarting the countdown.
  *
  * @param onTimeout - Called once when the inactivity threshold is reached
  * @param enabled - Set to false to pause the timer (e.g. during completion)
@@ -14,63 +18,60 @@ export function useInactivityTimer(
   onTimeout: () => void,
   enabled: boolean = true
 ): void {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const onTimeoutRef = useRef(onTimeout)
-  const firedRef = useRef(false)
 
   // Keep callback ref up-to-date without causing effect re-runs
   useEffect(() => {
     onTimeoutRef.current = onTimeout
   }, [onTimeout])
 
-  const resetTimer = useCallback(() => {
-    if (firedRef.current) return
-
-    if (timerRef.current) {
-      clearTimeout(timerRef.current)
-    }
-
-    timerRef.current = setTimeout(() => {
-      firedRef.current = true
-      onTimeoutRef.current()
-    }, INACTIVITY_TIMEOUT_MS)
-  }, [])
-
   useEffect(() => {
-    if (!enabled) {
-      // Clear timer when disabled
-      if (timerRef.current) {
-        clearTimeout(timerRef.current)
-        timerRef.current = null
-      }
-      return
+    if (!enabled) return
+
+    let timer: ReturnType<typeof setTimeout> | null = null
+    let lastActivity = Date.now()
+    let fired = false
+
+    const fire = () => {
+      if (fired) return
+      fired = true
+      onTimeoutRef.current()
     }
 
-    // Start the initial timer
-    firedRef.current = false
-    resetTimer()
+    const schedule = (delayMs: number) => {
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(fire, delayMs)
+    }
 
-    // Reset on any user interaction (event delegation on document)
-    const events = ['pointerdown', 'keydown', 'input', 'scroll'] as const
-    const handler = () => resetTimer()
+    const handleActivity = () => {
+      if (fired) return
+      lastActivity = Date.now()
+      schedule(INACTIVITY_TIMEOUT_MS)
+    }
 
-    events.forEach((event) => document.addEventListener(event, handler, { passive: true }))
-
-    // Also reset when tab becomes visible again
-    const visibilityHandler = () => {
-      if (document.visibilityState === 'visible') {
-        resetTimer()
+    const handleVisibility = () => {
+      if (fired || document.visibilityState !== 'visible') return
+      const remaining = INACTIVITY_TIMEOUT_MS - (Date.now() - lastActivity)
+      if (remaining <= 0) {
+        fire()
+      } else {
+        schedule(remaining)
       }
     }
-    document.addEventListener('visibilitychange', visibilityHandler)
+
+    schedule(INACTIVITY_TIMEOUT_MS)
+
+    const events = ['pointerdown', 'keydown', 'input'] as const
+    events.forEach((event) => document.addEventListener(event, handleActivity, { passive: true }))
+    // scroll does not bubble from inner scroll containers, so listen in the capture phase
+    document.addEventListener('scroll', handleActivity, { passive: true, capture: true })
+    document.addEventListener('visibilitychange', handleVisibility)
 
     return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current)
-        timerRef.current = null
-      }
-      events.forEach((event) => document.removeEventListener(event, handler))
-      document.removeEventListener('visibilitychange', visibilityHandler)
+      if (timer) clearTimeout(timer)
+      events.forEach((event) => document.removeEventListener(event, handleActivity))
+      document.removeEventListener('scroll', handleActivity, { capture: true })
+      document.removeEventListener('visibilitychange', handleVisibility)
     }
-  }, [enabled, resetTimer])
+  }, [enabled])
 }

@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import { CheckCircle, Clock, TrendingUp, Home, Dumbbell, Plus } from 'lucide-react'
 import type { Workout, WorkoutExercise, WorkoutSet } from '../types'
-import { getWorkouts, getWorkoutById } from '../services/workoutServiceFacade'
-import { addExerciseToWorkout } from '../services/firestoreExerciseService'
+import { getWorkouts, getWorkoutById, updateWorkout } from '../services/workoutServiceFacade'
 import { useToast } from '../hooks/useToast'
 import { formatDuration, calculateVolume } from '../utils/formatters'
 import Button from '../components/ui/Button'
@@ -14,6 +13,8 @@ import Input from '../components/ui/Input'
 
 function WorkoutSummaryPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const workoutId = searchParams.get('id')
   const { showToast } = useToast()
   const [workout, setWorkout] = useState<Workout | null>(null)
   const [showAddExercise, setShowAddExercise] = useState(false)
@@ -31,15 +32,13 @@ function WorkoutSummaryPage() {
   useEffect(() => {
     async function loadWorkout() {
       try {
-        const workouts = await getWorkouts()
-        // Workouts are already sorted by date desc (most recent first)
-        const lastWorkout = workouts[0]
-
-        if (lastWorkout) {
-          // Get full workout details if needed
-          const fullWorkout = await getWorkoutById(lastWorkout.id)
-          setWorkout(fullWorkout || lastWorkout)
+        if (workoutId) {
+          setWorkout(await getWorkoutById(workoutId))
+          return
         }
+        // Fallback: most recent completed workout (sorted by date desc)
+        const workouts = await getWorkouts()
+        setWorkout(workouts.find((w) => w.completed) ?? null)
       } catch (error) {
         console.error('Error loading workout:', error)
       } finally {
@@ -48,7 +47,13 @@ function WorkoutSummaryPage() {
     }
 
     loadWorkout()
-  }, [])
+  }, [workoutId])
+
+  useEffect(() => {
+    if (!isLoading && !workout) {
+      navigate('/', { replace: true })
+    }
+  }, [isLoading, workout, navigate])
 
   if (isLoading) {
     return (
@@ -59,7 +64,6 @@ function WorkoutSummaryPage() {
   }
 
   if (!workout) {
-    navigate('/')
     return null
   }
 
@@ -106,19 +110,33 @@ function WorkoutSummaryPage() {
 
     setIsSubmitting(true)
     try {
-      const exerciseId = await addExerciseToWorkout(workout.id, {
-        name: exerciseForm.name.trim(),
-        sets: exerciseForm.sets,
-        reps: exerciseForm.reps,
-        weight: exerciseForm.weight,
-        notes: exerciseForm.notes.trim(),
-      })
-
-      // Reload workout to show new exercise
-      const updatedWorkout = await getWorkoutById(workout.id)
-      if (updatedWorkout) {
-        setWorkout(updatedWorkout)
+      const exerciseId = `we-custom-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+      const updatedWorkout = {
+        ...workout,
+        exercises: [
+          ...workout.exercises,
+          {
+            id: exerciseId,
+            exerciseId,
+            exercise: {
+              id: exerciseId,
+              name: exerciseForm.name.trim(),
+              muscleGroup: '',
+              category: workout.type,
+            },
+            notes: exerciseForm.notes.trim() || undefined,
+            sets: Array.from({ length: exerciseForm.sets }, (_, i) => ({
+              id: `set-${Date.now()}-${i}`,
+              weight: exerciseForm.weight,
+              reps: exerciseForm.reps,
+              completed: true,
+            })),
+          },
+        ],
       }
+
+      await updateWorkout(updatedWorkout)
+      setWorkout(updatedWorkout)
 
       // Reset form
       setExerciseForm({
@@ -151,7 +169,7 @@ function WorkoutSummaryPage() {
       <div className="px-4 py-8 space-y-6">
         {/* Success Icon */}
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--bg-primary)]-500 rounded-full mb-4">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-primary-500 rounded-full mb-4">
             <CheckCircle size={48} className="text-white" strokeWidth={2} />
           </div>
           <h1 className="text-3xl font-bold text-text-primary">Workout Complete!</h1>
@@ -160,7 +178,7 @@ function WorkoutSummaryPage() {
 
         {/* Motivational Card */}
         <Card className="bg-accent-mint text-center p-6 border-2 border-transparent">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--bg-primary)]-100 rounded-full mb-3">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-3">
             <Dumbbell size={32} className="text-primary-600" strokeWidth={2} />
           </div>
           <p className="text-text-primary font-medium text-lg">

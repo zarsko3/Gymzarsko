@@ -1,4 +1,4 @@
-import type { Workout, WorkoutType, WorkoutMetrics, FilterOptions, CompareMode, ComparisonResult } from '../types'
+import type { Workout, WorkoutMetrics, FilterOptions, CompareMode, ComparisonResult } from '../types'
 import { calculateVolume } from '../utils/formatters'
 import { toDateSafe } from '../utils/formatters'
 import { startOfWeek, endOfWeek, subWeeks, isWithinInterval } from 'date-fns'
@@ -345,7 +345,7 @@ export function getIntensitySetsData(metrics: WorkoutMetrics[]) {
 /**
  * Get chart data for duration/density
  */
-export function getDurationDensityData(metrics: WorkoutMetrics[], compareMode: CompareMode) {
+export function getDurationDensityData(metrics: WorkoutMetrics[], _compareMode: CompareMode) {
   const sorted = [...metrics].sort((a, b) => a.date.getTime() - b.date.getTime())
   
   const chartData = sorted.map(m => ({
@@ -357,34 +357,5 @@ export function getDurationDensityData(metrics: WorkoutMetrics[], compareMode: C
   }))
   
   return { chartData }
-}
-
-/**
- * Get heatmap data for consistency chart
- */
-export function getConsistencyHeatmapData(metrics: WorkoutMetrics[]) {
-  // Group by date and calculate intensity score
-  const dateMap = new Map<string, { count: number; totalVolume: number; maxIntensity: number }>()
-  
-  metrics.forEach(m => {
-    const dateKey = m.date.toISOString().split('T')[0]
-    const existing = dateMap.get(dateKey) || { count: 0, totalVolume: 0, maxIntensity: 0 }
-    dateMap.set(dateKey, {
-      count: existing.count + 1,
-      totalVolume: existing.totalVolume + m.totalVolume,
-      maxIntensity: Math.max(existing.maxIntensity, m.intensity),
-    })
-  })
-  
-  // Convert to array format for heatmap
-  const maxVolume = Math.max(...Array.from(dateMap.values()).map(v => v.totalVolume), 1)
-  
-  return Array.from(dateMap.entries()).map(([date, data]) => ({
-    date: new Date(date),
-    value: data.count, // Number of workouts
-    intensity: data.totalVolume / maxVolume, // Normalized intensity (0-1)
-    totalVolume: data.totalVolume,
-    dateLabel: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-  }))
 }
 

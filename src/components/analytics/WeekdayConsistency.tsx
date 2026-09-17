@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { format, startOfWeek, eachDayOfInterval, isSameDay, getDay } from 'date-fns'
+import { getDay } from 'date-fns'
 import type { WorkoutMetrics } from '../../types'
 import { deltaPill } from '../../utils/numberFormatters'
 
@@ -9,7 +9,7 @@ interface WeekdayConsistencyProps {
   compareMode: 'last-vs-average' | 'week-over-week' | 'none'
 }
 
-function WeekdayConsistency({ metrics, dateRange, compareMode }: WeekdayConsistencyProps) {
+function WeekdayConsistency({ metrics, compareMode }: WeekdayConsistencyProps) {
   // Group workouts by weekday (0 = Sunday, 1 = Monday, etc.)
   const weekdayData = useMemo(() => {
     const weekdays = [0, 1, 2, 3, 4, 5, 6] // Sun to Sat
@@ -62,7 +62,7 @@ function WeekdayConsistency({ metrics, dateRange, compareMode }: WeekdayConsiste
       
       {/* Weekday chips */}
       <div className="flex justify-center gap-2">
-        {orderedDays.map((dayIndex, idx) => {
+        {orderedDays.map((dayIndex) => {
           const dayData = weekdayPercentages.find(d => d.day === dayIndex)
           const percentage = dayData?.percentage || 0
           const count = dayData?.count || 0

@@ -1,5 +1,4 @@
 import { getWorkouts } from './workoutServiceFacade'
-import type { Workout } from '../types'
 
 interface ExercisePR {
   exerciseId: string
@@ -103,45 +102,38 @@ export async function getExerciseHistory(exerciseId: string): Promise<ExerciseHi
   return history.sort((a, b) => b.date.getTime() - a.date.getTime())
 }
 
+type LatestSetData = { weight: number; reps: number }
+
 /**
- * Get latest weight and reps for an exercise by name
- * Returns the most recent completed set data for the exercise
- * Workouts are already sorted by date descending from getWorkouts()
+ * Map of lowercase exercise name -> last completed set from the most recent
+ * workout containing that exercise. Fetches workout history once.
  */
-export async function getLatestExerciseData(exerciseName: string): Promise<{ weight: number; reps: number } | null> {
+export async function getLatestExerciseDataByName(): Promise<Map<string, LatestSetData>> {
+  const latest = new Map<string, LatestSetData>()
   try {
+    // Workouts are sorted by date descending, so the first match per name wins
     const allWorkouts = await getWorkouts()
-    
-    // Workouts are already sorted by date descending (most recent first)
-    // Find the most recent workout that contains this exercise with completed sets
     for (const workout of allWorkouts) {
-      const exercise = workout.exercises.find(
-        ex => ex.exercise.name.toLowerCase() === exerciseName.toLowerCase()
-      )
-      
-      if (exercise) {
-        // Find completed sets with actual data
-        const completedSets = exercise.sets.filter(
-          set => set.completed && set.weight > 0 && set.reps > 0
-        )
-        
+      for (const exercise of workout.exercises) {
+        const key = exercise.exercise.name.toLowerCase()
+        if (latest.has(key)) continue
+        const completedSets = exercise.sets.filter(set => set.completed && set.weight > 0 && set.reps > 0)
         if (completedSets.length > 0) {
-          // Get the set with the highest weight (or most recent if weights are equal)
-          // For simplicity, we'll use the first completed set from the most recent workout
-          // In practice, you might want to average or use the last set
-          const latestSet = completedSets[completedSets.length - 1]
-          return {
-            weight: latestSet.weight,
-            reps: latestSet.reps,
-          }
+          const lastSet = completedSets[completedSets.length - 1]
+          latest.set(key, { weight: lastSet.weight, reps: lastSet.reps })
         }
       }
     }
-    
-    return null
   } catch (error) {
     console.error('Error getting latest exercise data:', error)
-    return null
   }
+  return latest
 }
 
+/**
+ * Get latest weight and reps for a single exercise by name
+ */
+export async function getLatestExerciseData(exerciseName: string): Promise<LatestSetData | null> {
+  const latest = await getLatestExerciseDataByName()
+  return latest.get(exerciseName.toLowerCase()) ?? null
+}

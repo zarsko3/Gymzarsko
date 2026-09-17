@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { AreaChart, Area, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
+import { AreaChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts'
 import type { WorkoutMetrics, CompareMode } from '../../types'
 import { getDensityData, getDurationDensityData } from '../../services/workoutAnalyticsService'
 import CurvyMetricChart from './CurvyMetricChart'

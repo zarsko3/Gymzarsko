@@ -30,12 +30,16 @@ function getUserId(): string {
  * Replaces characters that are problematic in file paths.
  */
 function sanitizeName(name: string): string {
-  return name
+  const slug = name
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, '-')
+    .replace(/[^\p{L}\p{N}]/gu, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
+  if (!slug) {
+    throw new Error('Exercise name must contain letters or numbers')
+  }
+  return slug
 }
 
 /**

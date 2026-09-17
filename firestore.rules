@@ -34,7 +34,7 @@ service cloud.firestore {
     // Users collection - for user-specific subcollections
     match /users/{userId} {
       // Users can only access their own user document
-      allow read, create, update: if isOwner(userId);
+      allow read, create, update, delete: if isOwner(userId);
       
       // Plans subcollection
       match /plans/{planId} {
@@ -48,6 +48,16 @@ service cloud.firestore {
         allow read, create, update, delete: if isOwner(userId);
       }
       
+      // Custom exercises saved to workout templates
+      match /customExercises/{exerciseId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      // Equipment photo references
+      match /exercisePhotos/{photoId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
       // Body Metric Goals subcollection
       match /bodyMetricGoals/{goalId} {
         // Users can read/write their own body metric goals

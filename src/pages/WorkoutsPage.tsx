@@ -1,7 +1,10 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, MoreVertical, Dumbbell, Flame, Activity } from 'lucide-react'
-import type { WorkoutType } from '../types'
+import { ChevronLeft, Dumbbell, Flame, Activity } from 'lucide-react'
+import type { Workout, WorkoutType } from '../types'
 import Card from '../components/ui/Card'
+import ResumeWorkoutCard from '../components/workout/ResumeWorkoutCard'
+import { getCurrentWorkout } from '../services/workoutServiceFacade'
 
 const workoutTypes = [
   {
@@ -29,6 +32,19 @@ const workoutTypes = [
 
 function WorkoutsPage() {
   const navigate = useNavigate()
+  const [activeWorkout, setActiveWorkout] = useState<Workout | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    getCurrentWorkout()
+      .then((workout) => {
+        if (!cancelled) setActiveWorkout(workout)
+      })
+      .catch((error) => console.warn('Could not check for active workout:', error))
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
     <div className="min-h-full">
@@ -43,13 +59,13 @@ function WorkoutsPage() {
             <span>Back</span>
           </button>
           <h1 className="text-lg font-semibold text-primary-600">Workouts</h1>
-          <button className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] min-h-[44px] min-w-[44px] flex items-center justify-center">
-            <MoreVertical size={24} />
-          </button>
+          <div className="min-w-[44px]" />
         </div>
       </div>
 
       <div className="px-4 py-6 space-y-6">
+        {activeWorkout && <ResumeWorkoutCard workout={activeWorkout} />}
+
         {/* Page Title */}
         <div>
           <h2 className="text-2xl font-bold text-[var(--text-primary)]">Select Workout Type</h2>
