@@ -1,5 +1,5 @@
 // Workout Types
-export type WorkoutType = 'push' | 'pull' | 'legs'
+export type WorkoutType = 'push' | 'pull' | 'legs' | 'upper' | 'lower'
 
 export interface Plan {
   id?: string
@@ -21,6 +21,8 @@ export interface Exercise {
   name: string
   muscleGroup: string
   category: string
+  /** Target rep range shown during the workout, e.g. "6-8" */
+  repRange?: string
 }
 
 export interface WorkoutSet {

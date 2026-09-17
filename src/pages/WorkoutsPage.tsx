@@ -1,38 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, Dumbbell, Flame, Activity } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import type { Workout, WorkoutType } from '../types'
 import Card from '../components/ui/Card'
 import ResumeWorkoutCard from '../components/workout/ResumeWorkoutCard'
-import { getCurrentWorkout } from '../services/workoutServiceFacade'
-
-const workoutTypes = [
-  {
-    id: 'push' as WorkoutType,
-    name: 'Push Day',
-    description: 'Chest, Shoulders, Triceps',
-    color: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700',
-    Icon: Dumbbell,
-  },
-  {
-    id: 'pull' as WorkoutType,
-    name: 'Pull Day',
-    description: 'Back, Biceps, Rear Delts',
-    color: 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700',
-    Icon: Flame,
-  },
-  {
-    id: 'legs' as WorkoutType,
-    name: 'Legs Day',
-    description: 'Quads, Hamstrings, Calves',
-    color: 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700',
-    Icon: Activity,
-  },
-]
+import { getCurrentWorkout, getWorkouts } from '../services/workoutServiceFacade'
+import { WORKOUT_TYPES, getNextWorkoutType } from '../constants/workoutTypes'
 
 function WorkoutsPage() {
   const navigate = useNavigate()
   const [activeWorkout, setActiveWorkout] = useState<Workout | null>(null)
+  const [nextType, setNextType] = useState<WorkoutType | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -41,6 +19,13 @@ function WorkoutsPage() {
         if (!cancelled) setActiveWorkout(workout)
       })
       .catch((error) => console.warn('Could not check for active workout:', error))
+    // Suggest the next day in the Push → Pull → Legs → Upper → Lower rotation
+    getWorkouts()
+      .then((workouts) => {
+        const lastCompleted = workouts.find((w) => w.completed)
+        if (!cancelled) setNextType(getNextWorkoutType(lastCompleted?.type))
+      })
+      .catch((error) => console.warn('Could not load workout history:', error))
     return () => {
       cancelled = true
     }
@@ -51,7 +36,7 @@ function WorkoutsPage() {
       {/* Header */}
       <div className="sticky top-0 bg-[var(--bg-primary)] border-b border-[var(--border-primary)] z-10">
         <div className="flex items-center justify-between px-4 py-4">
-          <button 
+          <button
             onClick={() => navigate('/')}
             className="flex items-center gap-1 text-primary-500 font-medium min-h-[44px] min-w-[44px] justify-center"
           >
@@ -74,11 +59,11 @@ function WorkoutsPage() {
 
         {/* Workout Type Cards */}
         <div className="space-y-3">
-          {workoutTypes.map((workout) => (
+          {WORKOUT_TYPES.map((workout) => (
             <Card
               key={workout.id}
               onClick={() => navigate(`/workout/active?type=${workout.id}`)}
-              className={`${workout.color} border-2 hover:shadow-md transition-all cursor-pointer`}
+              className={`${workout.cardClass} border-2 hover:shadow-md transition-all cursor-pointer`}
             >
               <div className="flex items-center justify-between p-2">
                 <div className="flex items-center gap-4">
@@ -86,8 +71,13 @@ function WorkoutsPage() {
                     <workout.Icon size={24} strokeWidth={2} />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-[var(--text-primary)] text-lg">
+                    <h3 className="font-semibold text-[var(--text-primary)] text-lg flex items-center gap-2">
                       {workout.name}
+                      {!activeWorkout && nextType === workout.id && (
+                        <span className="px-2 py-0.5 rounded-full bg-primary-500 text-white text-xs font-semibold">
+                          Next up
+                        </span>
+                      )}
                     </h3>
                     <p className="text-[var(--text-secondary)] text-sm mt-0.5">
                       {workout.description}

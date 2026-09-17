@@ -10,6 +10,7 @@ import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
+import { WORKOUT_TYPE_INFO } from '../constants/workoutTypes'
 
 function WorkoutSummaryPage() {
   const navigate = useNavigate()
@@ -158,12 +159,6 @@ function WorkoutSummaryPage() {
     }
   }
 
-  const workoutTypeNames = {
-    push: 'Push Day',
-    pull: 'Pull Day',
-    legs: 'Legs Day',
-  }
-
   return (
     <div className="min-h-full bg-[var(--bg-primary)]">
       <div className="px-4 py-8 space-y-6">
@@ -189,13 +184,13 @@ function WorkoutSummaryPage() {
         {/* Workout Stats */}
         <div className="space-y-3">
           <h3 className="font-semibold text-text-primary">Workout Summary</h3>
-          
+
           <Card className="bg-card">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-text-secondary">Workout Type</span>
                 <span className="font-semibold text-text-primary">
-                  {workoutTypeNames[workout.type as keyof typeof workoutTypeNames]}
+                  {WORKOUT_TYPE_INFO[workout.type]?.name ?? workout.type}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -334,7 +329,7 @@ function WorkoutSummaryPage() {
             required
             error={formError && formError.includes('name') ? formError : undefined}
           />
-          
+
           <div className="grid grid-cols-3 gap-3">
             <Input
               label="Sets"

@@ -16,7 +16,7 @@ import {
 import type { Unsubscribe } from 'firebase/firestore'
 import { db, auth } from '../lib/firebase'
 import type { Workout, WorkoutType } from '../types'
-import { mockExercises } from './mockData'
+import { mockExercises, getDefaultSets } from './mockData'
 import { getCustomExercises } from './firestorePlanService'
 import { ABANDONED_WORKOUT_AFTER_MS, getWorkoutStart, hasCompletedSets, isAbandonedWorkout } from '../utils/workoutStatus'
 
@@ -285,16 +285,6 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
   isCreatingWorkout = true
   lastWorkoutCreationTime = now
   
-  // Define number of sets per exercise based on workout program
-  const setsPerExercise: Record<string, number> = {
-    // Push: 4, 4, 3, 3, 3, 3, 3 sets
-    'push-1': 4, 'push-2': 4, 'push-3': 3, 'push-4': 3, 'push-5': 3, 'push-6': 3, 'push-7': 3,
-    // Pull: 4, 4, 3, 3, 3, 3, 3 sets
-    'pull-1': 4, 'pull-2': 4, 'pull-3': 3, 'pull-4': 3, 'pull-5': 3, 'pull-6': 3, 'pull-7': 3,
-    // Legs: 3, 4, 4, 3, 3, 3 sets
-    'legs-1': 3, 'legs-2': 4, 'legs-3': 4, 'legs-4': 3, 'legs-5': 3, 'legs-6': 3,
-  }
-  
   // Get default exercises for this workout type
   const defaultExercises = mockExercises
     .filter(ex => ex.category === type)
@@ -302,7 +292,7 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
       id: `we-${exercise.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       exerciseId: exercise.id,
       exercise,
-      sets: Array(setsPerExercise[exercise.id] || 3).fill(null).map((_, i) => ({
+      sets: Array(getDefaultSets(exercise.id)).fill(null).map((_, i) => ({
         id: `set-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         weight: 0,
         reps: 0,
@@ -380,16 +370,6 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
 export async function createWorkoutWithDate(type: WorkoutType, date: Date): Promise<Workout> {
   const userId = getUserId()
   
-  // Define number of sets per exercise based on workout program
-  const setsPerExercise: Record<string, number> = {
-    // Push: 4, 4, 3, 3, 3, 3, 3 sets
-    'push-1': 4, 'push-2': 4, 'push-3': 3, 'push-4': 3, 'push-5': 3, 'push-6': 3, 'push-7': 3,
-    // Pull: 4, 4, 3, 3, 3, 3, 3 sets
-    'pull-1': 4, 'pull-2': 4, 'pull-3': 3, 'pull-4': 3, 'pull-5': 3, 'pull-6': 3, 'pull-7': 3,
-    // Legs: 3, 4, 4, 3, 3, 3 sets
-    'legs-1': 3, 'legs-2': 4, 'legs-3': 4, 'legs-4': 3, 'legs-5': 3, 'legs-6': 3,
-  }
-  
   // Get default exercises for this workout type
   const defaultExercises = mockExercises
     .filter(ex => ex.category === type)
@@ -397,7 +377,7 @@ export async function createWorkoutWithDate(type: WorkoutType, date: Date): Prom
       id: `we-${exercise.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       exerciseId: exercise.id,
       exercise,
-      sets: Array(setsPerExercise[exercise.id] || 3).fill(null).map((_, i) => ({
+      sets: Array(getDefaultSets(exercise.id)).fill(null).map((_, i) => ({
         id: `set-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         weight: 0,
         reps: 0,

@@ -4,12 +4,7 @@ import { PlayCircle, ChevronRight } from 'lucide-react'
 import type { Workout } from '../../types'
 import { getWorkoutStart } from '../../utils/workoutStatus'
 import Card from '../ui/Card'
-
-const workoutTypeNames: Record<Workout['type'], string> = {
-  push: 'Push Day',
-  pull: 'Pull Day',
-  legs: 'Legs Day',
-}
+import { WORKOUT_TYPE_INFO } from '../../constants/workoutTypes'
 
 interface ResumeWorkoutCardProps {
   workout: Workout
@@ -35,7 +30,7 @@ function ResumeWorkoutCard({ workout }: ResumeWorkoutCardProps) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-primary-500">Workout in progress</p>
-          <p className="font-semibold text-[var(--text-primary)] truncate">{workoutTypeNames[workout.type]}</p>
+          <p className="font-semibold text-[var(--text-primary)] truncate">{WORKOUT_TYPE_INFO[workout.type]?.name ?? 'Workout'}</p>
           <p className="text-sm text-[var(--text-secondary)]">
             {start ? `Started ${formatDistanceToNowStrict(start, { addSuffix: true })} · ` : ''}
             {completedSets}/{totalSets} sets

@@ -8,6 +8,7 @@ import { useToast } from '../../hooks/useToast'
 import { createWorkoutWithDate, updateWorkout } from '../../services/workoutServiceFacade'
 import { getAllPlans } from '../../services/firestorePlanService'
 import Modal from '../ui/Modal'
+import { WORKOUT_TYPE_INFO } from '../../constants/workoutTypes'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
 import Card from '../ui/Card'
@@ -30,7 +31,7 @@ function AddWorkoutModal({ isOpen, onClose }: AddWorkoutModalProps) {
   const navigate = useNavigate()
   const { currentUser } = useAuth()
   const { showToast } = useToast()
-  
+
   const [selectedDate, setSelectedDate] = useState<string>(
     format(new Date(), 'yyyy-MM-dd')
   )
@@ -45,7 +46,7 @@ function AddWorkoutModal({ isOpen, onClose }: AddWorkoutModalProps) {
 
   // Get max date (today)
   const maxDate = format(new Date(), 'yyyy-MM-dd')
-  
+
   // Get min date (1 year ago)
   const minDate = format(new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
 
@@ -76,12 +77,12 @@ function AddWorkoutModal({ isOpen, onClose }: AddWorkoutModalProps) {
   const handleWorkoutTypeSelect = async (type: WorkoutType) => {
     setSelectedType(type)
     setShowWorkoutTypeModal(false)
-    
+
     // Ensure plans are loaded
     if (availablePlans.length === 0) {
       const plans = await getAllPlans()
       setAvailablePlans(plans)
-      
+
       // Auto-select and apply matching plan
       const matchingPlan = plans.find(p => p.type === type && p.id?.startsWith('default-'))
       if (matchingPlan && matchingPlan.id) {
@@ -112,7 +113,7 @@ function AddWorkoutModal({ isOpen, onClose }: AddWorkoutModalProps) {
       weight: 0,
       notes: '',
     }))
-    
+
     setExercises(prefilledExercises)
     showToast('success', 'Plan applied — exercises prefilled ✅')
   }
@@ -145,9 +146,9 @@ function AddWorkoutModal({ isOpen, onClose }: AddWorkoutModalProps) {
     if (!selectedDate) return false
     if (!selectedType) return false
     if (exercises.length === 0) return false
-    
+
     // Check all exercises have valid data
-    return exercises.every(ex => 
+    return exercises.every(ex =>
       ex.name.trim().length > 0 &&
       ex.sets > 0 &&
       ex.reps > 0 &&
@@ -206,12 +207,12 @@ function AddWorkoutModal({ isOpen, onClose }: AddWorkoutModalProps) {
       console.log('Updating workout with exercises:', updatedWorkout.exercises.length)
       await updateWorkout(updatedWorkout)
       console.log('Workout updated successfully')
-      
+
       showToast('success', 'Workout saved 💪')
-      
+
       // Close modal first
       onClose()
-      
+
       // Navigate to workout detail
       // Use setTimeout to ensure modal closes before navigation
       setTimeout(() => {
@@ -225,12 +226,6 @@ function AddWorkoutModal({ isOpen, onClose }: AddWorkoutModalProps) {
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  const workoutTypeColors = {
-    push: 'bg-blue-50 text-blue-600 border-blue-200',
-    pull: 'bg-green-50 text-green-600 border-green-200',
-    legs: 'bg-purple-50 text-purple-600 border-purple-200',
   }
 
   return (
@@ -259,9 +254,9 @@ function AddWorkoutModal({ isOpen, onClose }: AddWorkoutModalProps) {
                 className="w-full max-w-full min-w-0 px-4 py-3 pr-12 border border-[var(--border-primary)] rounded-lg bg-card text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 disabled={isSubmitting}
               />
-              <Calendar 
-                size={20} 
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none" 
+              <Calendar
+                size={20}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none"
               />
             </div>
             {selectedDate && (
@@ -278,7 +273,7 @@ function AddWorkoutModal({ isOpen, onClose }: AddWorkoutModalProps) {
             </label>
             {selectedType ? (
               <div className="flex items-center justify-between p-3 border border-[var(--border-primary)] rounded-lg bg-card w-full max-w-full min-w-0">
-                <span className={`px-3 py-1 rounded-full border text-sm font-medium ${workoutTypeColors[selectedType]}`}>
+                <span className={`px-3 py-1 rounded-full border text-sm font-medium ${WORKOUT_TYPE_INFO[selectedType].badgeClass}`}>
                   {selectedType.charAt(0).toUpperCase() + selectedType.slice(1)} Day
                 </span>
                 <Button

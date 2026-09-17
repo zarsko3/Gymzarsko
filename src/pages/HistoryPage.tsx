@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
-import { ChevronLeft, Trash2, Clock, TrendingUp, Calendar, Dumbbell, Search, X, Flame, Activity, Plus, Edit2 } from 'lucide-react'
+import { ChevronLeft, Trash2, Clock, TrendingUp, Calendar, Dumbbell, Search, X, Plus, Edit2 } from 'lucide-react'
 import type { Workout, WorkoutType } from '../types'
 import { deleteWorkout, updateWorkout } from '../services/workoutServiceFacade'
 import { useToast } from '../hooks/useToast'
@@ -15,6 +15,7 @@ import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
 import AddWorkoutModal from '../components/history/AddWorkoutModal'
 import EditWorkoutModal from '../components/history/EditWorkoutModal'
 import { findWorkoutsWithoutDuration, hasCompletedSets } from '../utils/workoutStatus'
+import { WORKOUT_TYPES, WORKOUT_TYPE_INFO } from '../constants/workoutTypes'
 
 function HistoryPage() {
   const navigate = useNavigate()
@@ -38,28 +39,22 @@ function HistoryPage() {
       showToast('error', 'Unable to load your workout history. Please try again.')
     }
   }, [error, showToast])
-  const [filter, setFilter] = useState<'all' | 'push' | 'pull' | 'legs'>('all')
+  const [filter, setFilter] = useState<'all' | WorkoutType>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
   const filteredWorkouts = workouts
     .filter(w => filter === 'all' || w.type === filter)
     .filter(w => {
       if (!searchQuery) return true
-      
+
       const query = searchQuery.toLowerCase()
       const dateStr = format(w.date, 'EEEE, MMM d, yyyy').toLowerCase()
       const exerciseNames = w.exercises.map(ex => ex.exercise.name.toLowerCase()).join(' ')
       const workoutType = w.type.toLowerCase()
-      
+
       return dateStr.includes(query) || exerciseNames.includes(query) || workoutType.includes(query)
     })
     .sort((a, b) => b.date.getTime() - a.date.getTime())
-
-  const workoutTypeInfo = {
-    push: { name: 'Push', Icon: Dumbbell, color: 'bg-blue-50 text-blue-600 border-blue-200' },
-    pull: { name: 'Pull', Icon: Flame, color: 'bg-green-50 text-green-600 border-green-200' },
-    legs: { name: 'Legs', Icon: Activity, color: 'bg-purple-50 text-purple-600 border-purple-200' },
-  }
 
   const handleDeleteWorkout = (workoutId: string) => {
     setShowDeleteConfirm(workoutId)
@@ -154,7 +149,7 @@ function HistoryPage() {
         {/* Header */}
         <div className="sticky top-0 bg-[var(--bg-primary)] border-b border-[var(--border-primary)] z-10">
           <div className="flex items-center justify-between px-4 py-4">
-            <button 
+            <button
               onClick={() => navigate('/')}
               className="flex items-center gap-1 text-primary-500 font-medium min-h-[44px] min-w-[44px] justify-center"
             >
@@ -182,7 +177,7 @@ function HistoryPage() {
             </p>
 
             {/* CTA Button */}
-            <Button 
+            <Button
               onClick={() => setShowWorkoutModal(true)}
               className="min-w-[200px] shadow-sm hover:shadow-md mx-auto"
               size="lg"
@@ -200,7 +195,7 @@ function HistoryPage() {
       {/* Header */}
       <div className="sticky top-0 bg-[var(--bg-primary)] border-b border-border-primary z-10">
         <div className="flex items-center justify-between px-4 py-4">
-          <button 
+          <button
             onClick={() => navigate('/')}
             className="flex items-center gap-1 text-primary-500 font-medium min-h-[44px] min-w-[44px] justify-center"
           >
@@ -208,7 +203,7 @@ function HistoryPage() {
             <span>Back</span>
           </button>
           <h1 className="text-lg font-semibold text-primary-600">History</h1>
-          <button 
+          <button
             onClick={() => setShowAddWorkoutModal(true)}
             className="text-primary-500 hover:text-primary-600 min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Add workout"
@@ -220,29 +215,19 @@ function HistoryPage() {
 
       <div className="px-4 py-6 space-y-6">
         {/* Stats Summary */}
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <Card className="bg-card text-center p-3">
             <div className="text-2xl font-bold text-primary-500">{workouts.length}</div>
             <div className="text-[var(--text-secondary)] text-xs mt-1">Total</div>
           </Card>
-          <Card className="bg-card text-center p-3">
-            <div className="text-2xl font-bold text-primary-500">
-              {workouts.filter(w => w.type === 'push').length}
-            </div>
-            <div className="text-[var(--text-secondary)] text-xs mt-1">Push</div>
-          </Card>
-          <Card className="bg-card text-center p-3">
-            <div className="text-2xl font-bold text-primary-500">
-              {workouts.filter(w => w.type === 'pull').length}
-            </div>
-            <div className="text-[var(--text-secondary)] text-xs mt-1">Pull</div>
-          </Card>
-          <Card className="bg-card text-center p-3">
-            <div className="text-2xl font-bold text-primary-500">
-              {workouts.filter(w => w.type === 'legs').length}
-            </div>
-            <div className="text-[var(--text-secondary)] text-xs mt-1">Legs</div>
-          </Card>
+          {WORKOUT_TYPES.map((type) => (
+            <Card key={type.id} className="bg-card text-center p-3">
+              <div className="text-2xl font-bold text-primary-500">
+                {workouts.filter(w => w.type === type.id).length}
+              </div>
+              <div className="text-[var(--text-secondary)] text-xs mt-1">{type.shortName}</div>
+            </Card>
+          ))}
         </div>
 
         {workoutsWithoutDuration.length > 0 && (
@@ -296,39 +281,20 @@ function HistoryPage() {
           >
             All Workouts
           </button>
-          <button
-            onClick={() => setFilter('push')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${
-              filter === 'push'
-                ? 'bg-primary-500 text-white'
-                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
-            }`}
-          >
-            <Dumbbell size={16} strokeWidth={2} />
-            Push
-          </button>
-          <button
-            onClick={() => setFilter('pull')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${
-              filter === 'pull'
-                ? 'bg-primary-500 text-white'
-                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
-            }`}
-          >
-            <Flame size={16} strokeWidth={2} />
-            Pull
-          </button>
-          <button
-            onClick={() => setFilter('legs')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${
-              filter === 'legs'
-                ? 'bg-primary-500 text-white'
-                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
-            }`}
-          >
-            <Activity size={16} strokeWidth={2} />
-            Legs
-          </button>
+          {WORKOUT_TYPES.map((type) => (
+            <button
+              key={type.id}
+              onClick={() => setFilter(type.id)}
+              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${
+                filter === type.id
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
+              }`}
+            >
+              <type.Icon size={16} strokeWidth={2} />
+              {type.shortName}
+            </button>
+          ))}
         </div>
 
         {/* Results Count */}
@@ -375,13 +341,13 @@ function HistoryPage() {
               )}
             </Card>
           )}
-          
+
           {filteredWorkouts.map((workout) => {
             const stats = getWorkoutStats(workout)
             const duration = workout.startTime && workout.endTime
               ? formatDuration(workout.startTime, workout.endTime)
               : 'N/A'
-            const typeInfo = workoutTypeInfo[workout.type]
+            const typeInfo = WORKOUT_TYPE_INFO[workout.type]
 
             return (
               <Card
@@ -393,9 +359,9 @@ function HistoryPage() {
                   {/* Header */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`px-3 py-1 rounded-full border ${typeInfo.color} font-medium text-sm flex items-center gap-1.5`}>
+                      <div className={`px-3 py-1 rounded-full border ${typeInfo.badgeClass} font-medium text-sm flex items-center gap-1.5`}>
                         <typeInfo.Icon size={14} strokeWidth={2} />
-                        {typeInfo.name}
+                        {typeInfo.shortName}
                       </div>
                     </div>
                     <div className="flex items-center gap-1">

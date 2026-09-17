@@ -16,6 +16,7 @@ import { useWorkoutTimer } from '../hooks/useWorkoutTimer'
 import { useInactivityTimer } from '../hooks/useInactivityTimer'
 import WorkoutHeader from '../components/workout/WorkoutHeader'
 import SetNumberInput from '../components/workout/SetNumberInput'
+import { WORKOUT_TYPE_INFO } from '../constants/workoutTypes'
 
 const EMPTY_EXERCISE_FORM = { name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 }
 
@@ -725,16 +726,10 @@ function ActiveWorkoutPage() {
     )
   }
 
-  const workoutTypeNames: Record<WorkoutType, string> = {
-    push: 'Push Day',
-    pull: 'Pull Day',
-    legs: 'Legs Day',
-  }
-
   return (
     <div className="min-h-full bg-[var(--bg-primary)]">
       <WorkoutHeader
-        title={workoutTypeNames[workout.type]}
+        title={WORKOUT_TYPE_INFO[workout.type]?.name ?? 'Workout'}
         elapsedTime={formatTime(elapsedTime)}
         onExit={handleBack}
         onComplete={handleCompleteWorkout}
@@ -816,6 +811,7 @@ function ActiveWorkoutPage() {
                 <div className="flex items-center gap-2">
                   <p className="text-[var(--text-secondary)] text-sm">
                     {exercise.exercise.muscleGroup}
+                    {exercise.exercise.repRange && ` • ${exercise.exercise.repRange} reps`}
                   </p>
                   {prefilledSets.has(exercise.id) && (
                     <div className="flex items-center gap-1 text-xs text-primary-500">

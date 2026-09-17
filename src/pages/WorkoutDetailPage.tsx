@@ -10,6 +10,7 @@ import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
+import { WORKOUT_TYPE_INFO } from '../constants/workoutTypes'
 
 function WorkoutDetailPage() {
   const navigate = useNavigate()
@@ -92,18 +93,6 @@ function WorkoutDetailPage() {
 
     loadWorkout()
   }, [workoutId])
-
-  const workoutTypeNames = {
-    push: 'Push Day',
-    pull: 'Pull Day',
-    legs: 'Legs Day',
-  }
-
-  const workoutTypeColors = {
-    push: 'bg-blue-50 text-blue-600 border-blue-200',
-    pull: 'bg-green-50 text-green-600 border-green-200',
-    legs: 'bg-purple-50 text-purple-600 border-purple-200',
-  }
 
   const handleSetChange = (
     exerciseIndex: number,
@@ -324,8 +313,8 @@ function WorkoutDetailPage() {
       <div className="px-4 py-6 space-y-4">
         {/* Workout Type Badge */}
         <div className="flex items-center justify-center gap-3">
-          <div className={`px-6 py-3 rounded-full border-2 ${workoutTypeColors[displayWorkout.type]} font-semibold text-lg`}>
-            {workoutTypeNames[displayWorkout.type]}
+          <div className={`px-6 py-3 rounded-full border-2 ${WORKOUT_TYPE_INFO[displayWorkout.type].badgeClass} font-semibold text-lg`}>
+            {WORKOUT_TYPE_INFO[displayWorkout.type].name}
           </div>
           {displayWorkout.completed && (
             <CheckCircle size={24} className="text-primary-500" />

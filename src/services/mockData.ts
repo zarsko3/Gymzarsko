@@ -27,7 +27,38 @@ export const mockExercises: Exercise[] = [
   { id: 'legs-4', name: 'Leg Curl Machine', muscleGroup: 'Hamstrings', category: 'legs' },
   { id: 'legs-5', name: 'Standing Calf Raises', muscleGroup: 'Calves', category: 'legs' },
   { id: 'legs-6', name: 'Plank / Hanging Leg Raises', muscleGroup: 'Core', category: 'legs' },
+
+  // Upper Exercises — balanced push/pull, different movements and angles than PPL days
+  { id: 'upper-1', name: 'Weighted Pull-Ups', muscleGroup: 'Back', category: 'upper', repRange: '6-8' },
+  { id: 'upper-2', name: 'Flat Dumbbell Press', muscleGroup: 'Chest', category: 'upper', repRange: '8-10' },
+  { id: 'upper-3', name: 'Chest-Supported T-Bar Row', muscleGroup: 'Back', category: 'upper', repRange: '8-10' },
+  { id: 'upper-4', name: 'Seated Dumbbell Arnold Press', muscleGroup: 'Front Delts', category: 'upper', repRange: '8-12' },
+  { id: 'upper-5', name: 'Single-Arm Cable Lateral Raise', muscleGroup: 'Side Delts', category: 'upper', repRange: '12-15' },
+  { id: 'upper-6', name: 'Hammer Curls', muscleGroup: 'Biceps', category: 'upper', repRange: '10-12' },
+  { id: 'upper-7', name: 'Overhead Cable Triceps Extension', muscleGroup: 'Triceps', category: 'upper', repRange: '10-12' },
+
+  // Lower Exercises — hinge and single-leg focus to complement the squat-based Legs day
+  { id: 'lower-1', name: 'Deadlift (conventional or trap bar)', muscleGroup: 'Hamstrings', category: 'lower', repRange: '4-6' },
+  { id: 'lower-2', name: 'Bulgarian Split Squat', muscleGroup: 'Quads', category: 'lower', repRange: '8-10 / leg' },
+  { id: 'lower-3', name: 'Leg Press', muscleGroup: 'Quads', category: 'lower', repRange: '10-12' },
+  { id: 'lower-4', name: 'Barbell Hip Thrust', muscleGroup: 'Glutes', category: 'lower', repRange: '8-10' },
+  { id: 'lower-5', name: 'Nordic Hamstring Curl (assisted)', muscleGroup: 'Hamstrings', category: 'lower', repRange: '6-8' },
+  { id: 'lower-6', name: 'Seated Calf Raises', muscleGroup: 'Calves', category: 'lower', repRange: '12-15' },
+  { id: 'lower-7', name: 'Cable Crunch', muscleGroup: 'Core', category: 'lower', repRange: '12-15' },
 ]
+
+// Working sets per exercise; anything not listed defaults to 3
+const DEFAULT_SETS: Record<string, number> = {
+  'push-1': 4, 'push-2': 4,
+  'pull-1': 4, 'pull-2': 4,
+  'legs-2': 4, 'legs-3': 4,
+  'upper-1': 4, 'upper-2': 4,
+  'lower-1': 3, 'lower-2': 3, 'lower-6': 4,
+}
+
+export function getDefaultSets(exerciseId: string): number {
+  return DEFAULT_SETS[exerciseId] ?? 3
+}
 
 // Mock User Profile
 export const mockUserProfile: UserProfile = {
@@ -50,16 +81,6 @@ export const mockUserProfile: UserProfile = {
 export const generateMockWorkout = (type: WorkoutType): Workout => {
   const exercises = mockExercises.filter(ex => ex.category === type)
   
-  // Define number of sets per exercise based on workout program
-  const setsPerExercise: Record<string, number> = {
-    // Push: 4, 4, 3, 3, 3, 3, 3 sets
-    'push-1': 4, 'push-2': 4, 'push-3': 3, 'push-4': 3, 'push-5': 3, 'push-6': 3, 'push-7': 3,
-    // Pull: 4, 4, 3, 3, 3, 3, 3 sets
-    'pull-1': 4, 'pull-2': 4, 'pull-3': 3, 'pull-4': 3, 'pull-5': 3, 'pull-6': 3, 'pull-7': 3,
-    // Legs: 3, 4, 4, 3, 3, 3 sets
-    'legs-1': 3, 'legs-2': 4, 'legs-3': 4, 'legs-4': 3, 'legs-5': 3, 'legs-6': 3,
-  }
-  
   return {
     id: `workout-${Date.now()}`,
     type,
@@ -68,8 +89,8 @@ export const generateMockWorkout = (type: WorkoutType): Workout => {
       id: `we-${exercise.id}-${Date.now()}`,
       exerciseId: exercise.id,
       exercise,
-      sets: Array(setsPerExercise[exercise.id] || 3).fill(null).map((_, i) => ({
-        id: `set-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      sets: Array(getDefaultSets(exercise.id)).fill(null).map((_, i) => ({
+        id: `set-${i}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
         weight: 0,
         reps: 0,
         completed: false,

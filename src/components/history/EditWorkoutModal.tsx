@@ -4,6 +4,7 @@ import { Timestamp } from 'firebase/firestore'
 import { Calendar, Clock } from 'lucide-react'
 import type { Workout, WorkoutSet } from '../../types'
 import Modal from '../ui/Modal'
+import { WORKOUT_TYPE_INFO } from '../../constants/workoutTypes'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
 import Card from '../ui/Card'
@@ -25,7 +26,7 @@ function EditWorkoutModal({ isOpen, onClose, workout, onSave }: EditWorkoutModal
     if (workout && isOpen) {
       // Deep clone the workout for editing and normalize dates
       const cloned = JSON.parse(JSON.stringify(workout))
-      
+
       // Normalize date to ensure it's a Date object
       const rawDate = workout.date
       const normalizedDate = rawDate instanceof Timestamp
@@ -35,7 +36,7 @@ function EditWorkoutModal({ isOpen, onClose, workout, onSave }: EditWorkoutModal
           : rawDate instanceof Date
             ? rawDate
             : new Date()
-      
+
       // Normalize startTime if it exists
       let normalizedStartTime: Date | undefined
       if (workout.startTime) {
@@ -48,7 +49,7 @@ function EditWorkoutModal({ isOpen, onClose, workout, onSave }: EditWorkoutModal
               ? rawStartTime
               : undefined
       }
-      
+
       // Normalize endTime if it exists
       let normalizedEndTime: Date | undefined
       if (workout.endTime) {
@@ -61,7 +62,7 @@ function EditWorkoutModal({ isOpen, onClose, workout, onSave }: EditWorkoutModal
               ? rawEndTime
               : undefined
       }
-      
+
       setEditedWorkout({
         ...cloned,
         date: normalizedDate,
@@ -82,7 +83,7 @@ function EditWorkoutModal({ isOpen, onClose, workout, onSave }: EditWorkoutModal
 
     const newWorkout = { ...editedWorkout }
     const set = newWorkout.exercises[exerciseIndex].sets[setIndex]
-    
+
     if (field === 'weight') {
       set.weight = Math.max(0, value)
     } else {
@@ -113,14 +114,14 @@ function EditWorkoutModal({ isOpen, onClose, workout, onSave }: EditWorkoutModal
 
     const newDate = new Date(e.target.value)
     const newWorkout = { ...editedWorkout }
-    
+
     // Preserve time if startTime exists
     if (newWorkout.startTime) {
       const startTime = new Date(newWorkout.startTime)
       newDate.setHours(startTime.getHours(), startTime.getMinutes(), startTime.getSeconds())
       newWorkout.startTime = newDate
     }
-    
+
     newWorkout.date = newDate
     setEditedWorkout(newWorkout)
   }
@@ -207,12 +208,6 @@ function EditWorkoutModal({ isOpen, onClose, workout, onSave }: EditWorkoutModal
 
   if (!workout || !editedWorkout) return null
 
-  const workoutTypeColors = {
-    push: 'bg-blue-50 text-blue-600 border-blue-200',
-    pull: 'bg-green-50 text-green-600 border-green-200',
-    legs: 'bg-purple-50 text-purple-600 border-purple-200',
-  }
-
   return (
     <Modal
       isOpen={isOpen}
@@ -243,7 +238,7 @@ function EditWorkoutModal({ isOpen, onClose, workout, onSave }: EditWorkoutModal
         {/* Workout Header */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <span className={`px-3 py-1 rounded-full border text-sm font-medium ${workoutTypeColors[workout.type]}`}>
+            <span className={`px-3 py-1 rounded-full border text-sm font-medium ${WORKOUT_TYPE_INFO[workout.type].badgeClass}`}>
               {workout.type.charAt(0).toUpperCase() + workout.type.slice(1)} Day
             </span>
           </div>
