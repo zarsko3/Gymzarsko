@@ -1,4 +1,5 @@
-import { useLocation, Outlet } from 'react-router-dom'
+import { useState } from 'react'
+import { useLocation, useOutlet } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import BottomNav from './BottomNav'
 
@@ -13,6 +14,17 @@ const getContainerVariants = (shouldReduceMotion: boolean) => ({
   },
   exit: {},
 })
+
+/**
+ * Renders the route element captured when this page mounted. A plain <Outlet />
+ * inside an exiting AnimatePresence child would render the *new* route, mounting
+ * the next page twice (e.g. ActiveWorkoutPage creating two workouts).
+ */
+function FrozenOutlet() {
+  const outlet = useOutlet()
+  const [frozenOutlet] = useState(outlet)
+  return frozenOutlet
+}
 
 function Layout() {
   const location = useLocation()
@@ -64,7 +76,7 @@ function Layout() {
               transition={pageTransition}
               style={{ willChange: 'transform, opacity', isolation: 'isolate' }}
             >
-              <Outlet />
+              <FrozenOutlet />
             </motion.div>
           </motion.div>
         </AnimatePresence>

@@ -92,7 +92,6 @@ function ActiveWorkoutPage() {
   } | null>(null)
 
   // Refs to prevent duplicate operations
-  const pendingStartRef = useRef<{ type: WorkoutType; promise: Promise<Workout> } | null>(null)
   const isSavingExerciseNameRef = useRef(false)
 
   // Layer 1: Completion guard — prevents any saves after workout is marked done
@@ -228,20 +227,6 @@ function ActiveWorkoutPage() {
     return { workout: populated, prefilled }
   }
 
-  /** Start a workout, sharing the in-flight request if the same type is already being created */
-  const startWorkoutOnce = (type: WorkoutType): Promise<Workout> => {
-    const pending = pendingStartRef.current
-    if (pending && pending.type === type) return pending.promise
-
-    const promise = startWorkout(type).finally(() => {
-      if (pendingStartRef.current?.promise === promise) {
-        pendingStartRef.current = null
-      }
-    })
-    pendingStartRef.current = { type, promise }
-    return promise
-  }
-
   // Clear prefilled data for a specific exercise
   const clearPrefilledData = (exerciseIndex: number) => {
     if (!workout) return
@@ -305,7 +290,8 @@ function ActiveWorkoutPage() {
           const errorInfo = handleFirestoreError(error)
           console.warn('Could not check for existing workout:', errorInfo.message)
         }
-        return startWorkoutOnce(workoutType)
+        // startWorkout returns the in-flight/existing workout, so repeat calls are safe
+        return startWorkout(workoutType)
       }
 
       // No type or id in URL: resume whatever is active

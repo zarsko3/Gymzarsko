@@ -195,105 +195,61 @@ export async function getWorkoutById(id: string): Promise<Workout | null> {
   }
 }
 
-// Global flag to prevent duplicate workout creation across multiple calls
-let isCreatingWorkout = false
-let lastWorkoutCreationTime = 0
-const WORKOUT_CREATION_DEBOUNCE_MS = 2000 // 2 second debounce
+// In-flight starts per type: concurrent callers share one request instead of racing
+const pendingStarts = new Map<WorkoutType, Promise<Workout>>()
 
-// Track recently completed workouts to prevent immediate duplicates
-const recentlyCompletedWorkouts: Map<string, number> = new Map() // type -> timestamp
-const RECENTLY_COMPLETED_WINDOW_MS = 5000 // 5 second window to prevent duplicates after completion
+// Last workout created per type. Covers the gap where a lookup fails (e.g. index
+// still building) right after creation; cleared when that workout ends.
+const lastCreated = new Map<WorkoutType, { workout: Workout; at: number }>()
+const LAST_CREATED_TTL_MS = 60 * 1000
+
+function forgetCreatedWorkout(workoutId: string) {
+  for (const [type, entry] of lastCreated) {
+    if (entry.workout.id === workoutId) lastCreated.delete(type)
+  }
+}
 
 /**
- * Start a new workout
- * Makes creation idempotent by checking for existing active workout first
- * Uses debounce and in-flight flag to prevent duplicates
+ * Start a workout of the given type, or return the one already in progress.
+ * Safe to call concurrently — it never creates two workouts for the same start.
  */
-export async function startWorkout(type: WorkoutType): Promise<Workout> {
+export function startWorkout(type: WorkoutType): Promise<Workout> {
+  const pending = pendingStarts.get(type)
+  if (pending) return pending
+
+  const promise = findOrCreateWorkout(type).finally(() => {
+    pendingStarts.delete(type)
+  })
+  pendingStarts.set(type, promise)
+  return promise
+}
+
+async function findOrCreateWorkout(type: WorkoutType): Promise<Workout> {
   const userId = getUserId()
-  
-  // Debounce: prevent rapid successive calls
-  const now = Date.now()
-  if (isCreatingWorkout || (now - lastWorkoutCreationTime < WORKOUT_CREATION_DEBOUNCE_MS)) {
-    console.log('Workout creation debounced or in progress, checking for existing workout...')
-    // Try to get existing workout instead
-    try {
-      const existingWorkout = await getCurrentWorkout()
-      if (existingWorkout && existingWorkout.type === type && !existingWorkout.completed) {
-        console.log('Returning existing active workout')
-        return existingWorkout
-      }
-    } catch {
-      // If check fails, wait a bit and try again
-      await new Promise(resolve => setTimeout(resolve, 500))
-      try {
-        const existingWorkout = await getCurrentWorkout()
-        if (existingWorkout && existingWorkout.type === type && !existingWorkout.completed) {
-          console.log('Returning existing active workout (retry)')
-          return existingWorkout
-        }
-      } catch (retryError) {
-        console.warn('Could not check for existing workout:', retryError)
-      }
-    }
-    
-    // If still creating, throw error to prevent duplicate
-    if (isCreatingWorkout) {
-      throw new Error('Workout creation already in progress. Please wait...')
-    }
-  }
-  
-  // Check for existing active workout of the same type to prevent duplicates
+
   try {
     const existingWorkout = await getCurrentWorkout()
-    if (existingWorkout && existingWorkout.type === type && !existingWorkout.completed) {
-      console.log('Active workout of same type already exists, returning existing workout')
+    if (existingWorkout && existingWorkout.type === type) {
       return existingWorkout
     }
   } catch (error) {
-    // If getCurrentWorkout fails (e.g., index not ready), log but continue
-    // This prevents blocking workout creation if index is still building
-    console.warn('Could not check for existing workout (index may be building):', error)
-  }
-  
-  // Check if a workout of this type was recently completed to prevent duplicates
-  const recentlyCompletedTime = recentlyCompletedWorkouts.get(type)
-  if (recentlyCompletedTime && (now - recentlyCompletedTime < RECENTLY_COMPLETED_WINDOW_MS)) {
-    const timeSinceCompletion = now - recentlyCompletedTime
-    console.log(`Workout of type ${type} was completed ${timeSinceCompletion}ms ago, checking for active workout again...`)
-    
-    // Wait a bit for Firestore to propagate the completion update, then check again
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Double-check for active workout - if completion hasn't propagated, we might still find it
-    try {
-      const existingWorkout = await getCurrentWorkout()
-      if (existingWorkout && existingWorkout.type === type && !existingWorkout.completed) {
-        console.log('Found active workout after waiting, returning it instead of creating duplicate')
-        return existingWorkout
-      }
-    } catch (checkError) {
-      console.warn('Error checking for active workout after completion:', checkError)
+    // Don't block starting a workout if the lookup fails (e.g. index still building)
+    console.warn('Could not check for existing workout:', error)
+    const recent = lastCreated.get(type)
+    if (recent && Date.now() - recent.at < LAST_CREATED_TTL_MS) {
+      return recent.workout
     }
-    
-    // If we still don't find an active workout, it's safe to create a new one
-    // (the recently completed workout has been properly saved)
-    console.log('No active workout found after completion, proceeding with new workout creation')
   }
-  
-  // Set flag and timestamp
-  isCreatingWorkout = true
-  lastWorkoutCreationTime = now
-  
+
   // Get default exercises for this workout type
   const defaultExercises = mockExercises
     .filter(ex => ex.category === type)
     .map(exercise => ({
-      id: `we-${exercise.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `we-${exercise.id}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       exerciseId: exercise.id,
       exercise,
       sets: Array(getDefaultSets(exercise.id)).fill(null).map((_, i) => ({
-        id: `set-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `set-${i}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
         weight: 0,
         reps: 0,
         completed: false,
@@ -309,7 +265,7 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
     customExerciseEntries = customExercises
       .filter(ce => !defaultNames.has(ce.name.toLowerCase()))
       .map(ce => ({
-        id: `we-custom-${ce.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `we-custom-${ce.id}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
         exerciseId: ce.id,
         exercise: {
           id: ce.id,
@@ -318,7 +274,7 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
           category: ce.category,
         },
         sets: Array(ce.defaultSets || 3).fill(null).map((_, i) => ({
-          id: `set-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: `set-${i}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
           weight: 0,
           reps: 0,
           completed: false,
@@ -351,14 +307,10 @@ export async function startWorkout(type: WorkoutType): Promise<Workout> {
       ...newWorkout,
       id: docRef.id,
     } as Workout
-    
-    // Reset flag after successful creation
-    isCreatingWorkout = false
-    
+
+    lastCreated.set(type, { workout: createdWorkout, at: Date.now() })
     return createdWorkout
   } catch (error) {
-    // Reset flag on error
-    isCreatingWorkout = false
     console.error('Error starting workout:', error)
     throw error
   }
@@ -374,11 +326,11 @@ export async function createWorkoutWithDate(type: WorkoutType, date: Date): Prom
   const defaultExercises = mockExercises
     .filter(ex => ex.category === type)
     .map(exercise => ({
-      id: `we-${exercise.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `we-${exercise.id}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       exerciseId: exercise.id,
       exercise,
       sets: Array(getDefaultSets(exercise.id)).fill(null).map((_, i) => ({
-        id: `set-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `set-${i}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
         weight: 0,
         reps: 0,
         completed: false,
@@ -393,7 +345,7 @@ export async function createWorkoutWithDate(type: WorkoutType, date: Date): Prom
     customExerciseEntries = customExercises
       .filter(ce => !defaultNames.has(ce.name.toLowerCase()))
       .map(ce => ({
-        id: `we-custom-${ce.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `we-custom-${ce.id}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
         exerciseId: ce.id,
         exercise: {
           id: ce.id,
@@ -402,7 +354,7 @@ export async function createWorkoutWithDate(type: WorkoutType, date: Date): Prom
           category: ce.category,
         },
         sets: Array(ce.defaultSets || 3).fill(null).map((_, i) => ({
-          id: `set-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: `set-${i}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
           weight: 0,
           reps: 0,
           completed: false,
@@ -478,13 +430,7 @@ export async function completeWorkout(workout: Workout): Promise<Workout> {
       updatedAt: serverTimestamp(),
     })
 
-    // Track this completed workout to prevent immediate duplicates
-    recentlyCompletedWorkouts.set(workout.type, Date.now())
-
-    // Clean up old entries after window expires
-    setTimeout(() => {
-      recentlyCompletedWorkouts.delete(workout.type)
-    }, RECENTLY_COMPLETED_WINDOW_MS)
+    forgetCreatedWorkout(workout.id)
 
     return {
       ...workout,
@@ -504,6 +450,7 @@ export async function deleteWorkout(id: string): Promise<void> {
   try {
     const workoutRef = doc(db, WORKOUTS_COLLECTION, id)
     await deleteDoc(workoutRef)
+    forgetCreatedWorkout(id)
   } catch (error) {
     console.error('Error deleting workout:', error)
     throw error
