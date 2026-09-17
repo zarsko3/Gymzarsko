@@ -7,7 +7,10 @@ const firestore = vi.hoisted(() => ({
 
 vi.mock('firebase/firestore', () => {
   class Timestamp {
-    constructor(private readonly date: Date) {}
+    private readonly date: Date
+    constructor(date: Date) {
+      this.date = date
+    }
     static fromDate(date: Date) {
       return new Timestamp(date)
     }
