@@ -1,24 +1,29 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { format, subDays, endOfDay, startOfDay } from 'date-fns'
-import type { WorkoutType, FilterOptions, CompareMode } from '../types'
+import { format } from 'date-fns'
+import { ChevronRight } from 'lucide-react'
+import type { WorkoutType } from '../types'
 import WeeklyCalendar from '../components/home/WeeklyCalendar'
 import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
 import Banner from '../components/home/Banner'
-import AnalyticsFilters from '../components/analytics/AnalyticsFilters'
-import MiniChartCard from '../components/analytics/MiniChartCard'
-import VolumeTrendChart from '../components/analytics/VolumeTrendChart'
-import IntensitySetsChart from '../components/analytics/IntensitySetsChart'
+import NextWorkoutCard from '../components/home/NextWorkoutCard'
+import WeeklySummary from '../components/home/WeeklySummary'
+import MuscleGroupBars from '../components/home/MuscleGroupBars'
+import RecentRecords from '../components/home/RecentRecords'
+import ResumeWorkoutCard from '../components/workout/ResumeWorkoutCard'
 import {
-  filterWorkouts,
-  getAllWorkoutMetrics,
-  compareWorkouts,
+  getWeeklyProgress,
+  getSetsPerMuscleGroup,
+  getRecentPersonalRecords,
 } from '../services/workoutAnalyticsService'
 import { useWorkoutsSubscription } from '../hooks/useWorkoutsSubscription'
 import { cleanUpAbandonedWorkouts } from '../services/workoutServiceFacade'
 import { findActiveWorkout } from '../utils/workoutStatus'
-import ResumeWorkoutCard from '../components/workout/ResumeWorkoutCard'
+import { WORKOUT_TYPES, getNextWorkoutType } from '../constants/workoutTypes'
 import { useToast } from '../hooks/useToast'
+
+// One full rotation: Push, Pull, Legs, Upper, Lower
+const WEEKLY_GOAL = WORKOUT_TYPES.length
 
 function HomePage() {
   const navigate = useNavigate()
@@ -26,17 +31,7 @@ function HomePage() {
   const [showWorkoutModal, setShowWorkoutModal] = useState(false)
   const { workouts: allWorkouts, isLoading, error } = useWorkoutsSubscription()
   const { showToast } = useToast()
-  
-  // Filter and comparison state
-  const [filters, setFilters] = useState<FilterOptions>({
-    dateRange: {
-      start: startOfDay(subDays(today, 29)), // 30 days
-      end: endOfDay(today),
-    },
-    workoutType: 'all',
-  })
-  const [compareMode, setCompareMode] = useState<CompareMode>('last-vs-average')
-  
+
   // Close workouts left open from earlier sessions (once per visit)
   const hasCleanedUpRef = useRef(false)
   useEffect(() => {
@@ -53,37 +48,20 @@ function HomePage() {
       showToast('error', 'Unable to load workouts right now. Please try again.')
     }
   }, [error, showToast])
-  
-  
-  const workoutDays = allWorkouts.filter(w => w.completed).map(w => w.date)
 
-  // Filter and compute metrics
-  const filteredWorkouts = useMemo(() => {
-    return filterWorkouts(allWorkouts, filters)
-  }, [allWorkouts, filters])
-  
-  const metrics = useMemo(() => {
-    return getAllWorkoutMetrics(filteredWorkouts)
-  }, [filteredWorkouts])
-  
-  // Comparison results for each metric
-  const volumeComparison = useMemo(() => {
-    return compareWorkouts(metrics, compareMode, 'totalVolume')
-  }, [metrics, compareMode])
-  
-  const intensityComparison = useMemo(() => {
-    return compareWorkouts(metrics, compareMode, 'intensity')
-  }, [metrics, compareMode])
-  
-  // Format values for display
-  const formatVolume = (volume: number) => {
-    if (volume >= 1000) return `${(volume / 1000).toFixed(1)}k`
-    return Math.round(volume).toString()
-  }
-  
-  const formatIntensity = (intensity: number) => {
-    return `${Math.round(intensity)}kg`
-  }
+  const workoutDays = useMemo(
+    () => allWorkouts.filter((w) => w.completed).map((w) => w.date),
+    [allWorkouts]
+  )
+
+  const nextType = useMemo(() => {
+    const lastCompleted = allWorkouts.find((w) => w.completed)
+    return getNextWorkoutType(lastCompleted?.type)
+  }, [allWorkouts])
+
+  const weeklyProgress = useMemo(() => getWeeklyProgress(allWorkouts, WEEKLY_GOAL), [allWorkouts])
+  const muscleGroups = useMemo(() => getSetsPerMuscleGroup(allWorkouts), [allWorkouts])
+  const records = useMemo(() => getRecentPersonalRecords(allWorkouts), [allWorkouts])
 
   // Show loading state if needed
   if (isLoading) {
@@ -108,7 +86,11 @@ function HomePage() {
         {/* Banner - Always shows rotating banners */}
         <Banner mode="random-banners" />
 
-        {activeWorkout && <ResumeWorkoutCard workout={activeWorkout} />}
+        {activeWorkout ? (
+          <ResumeWorkoutCard workout={activeWorkout} />
+        ) : (
+          <NextWorkoutCard type={nextType} />
+        )}
 
         {/* Date */}
         <p className="text-[var(--text-primary)] text-lg font-medium text-center">
@@ -116,45 +98,29 @@ function HomePage() {
         </p>
 
         {/* Weekly Calendar */}
-        <WeeklyCalendar 
+        <WeeklyCalendar
           workoutDays={workoutDays}
           currentDate={today}
           onTodayClick={handleTodayClick}
         />
 
-        {/* Analytics Dashboard */}
-        <div className="space-y-4">
-          <h3 className="text-xl font-bold text-[var(--text-primary)]">Workout Analytics</h3>
-          
-          {/* Filters */}
-          <AnalyticsFilters
-            filters={filters}
-            compareMode={compareMode}
-            onFiltersChange={setFilters}
-            onCompareModeChange={setCompareMode}
-          />
-          
-          {/* Mini Charts Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Volume Trend */}
-            <MiniChartCard
-              title="Volume Trend"
-              value={volumeComparison ? `${formatVolume(volumeComparison.current)} kg` : '--'}
-              comparison={volumeComparison}
-              isLoading={isLoading}
-              chart={<VolumeTrendChart metrics={metrics} compareMode={compareMode} />}
-            />
-            
-            {/* Intensity vs Sets */}
-            <MiniChartCard
-              title="Intensity vs Sets"
-              value={intensityComparison ? formatIntensity(intensityComparison.current) : '--'}
-              comparison={intensityComparison}
-              isLoading={isLoading}
-              chart={<IntensitySetsChart metrics={metrics} compareMode={compareMode} />}
-            />
-          </div>
-        </div>
+        {/* Weekly progress */}
+        <WeeklySummary progress={weeklyProgress} />
+
+        {/* Training balance */}
+        <MuscleGroupBars data={muscleGroups} />
+
+        {/* Recent personal records */}
+        <RecentRecords records={records} />
+
+        <button
+          onClick={() => navigate('/analytics')}
+          className="w-full flex items-center justify-center gap-1 py-2 text-sm font-medium text-primary-500 hover:text-primary-600 min-h-[44px]"
+          type="button"
+        >
+          See all stats
+          <ChevronRight size={16} />
+        </button>
       </div>
 
       {/* Workout Type Selection Modal */}
