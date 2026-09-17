@@ -1,12 +1,19 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, Trash2, Check, MessageSquare, FileText, Edit2, X } from 'lucide-react'
+import { Plus, Trash2, Check, MessageSquare, FileText, Edit2, X, History } from 'lucide-react'
 import type { Workout, WorkoutType, WorkoutExercise, WorkoutSet, Exercise } from '../types'
 import { startWorkout, updateWorkout, completeWorkout, getCurrentWorkout, getWorkoutById } from '../services/workoutServiceFacade'
-import { getLatestExerciseData, getLatestExerciseDataByName } from '../services/firestoreProgressService'
+import {
+  getLatestExerciseData,
+  getLastSessionByExerciseName,
+  getTopSet,
+  formatSessionSets,
+  type LastSession,
+} from '../services/firestoreProgressService'
 import { saveCustomExercise } from '../services/firestorePlanService'
 import { useToast } from '../hooks/useToast'
 import { handleFirestoreError } from '../utils/firestoreErrorHandler'
+import { haptic } from '../utils/haptic'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
@@ -16,6 +23,7 @@ import { useWorkoutTimer } from '../hooks/useWorkoutTimer'
 import { useInactivityTimer } from '../hooks/useInactivityTimer'
 import WorkoutHeader from '../components/workout/WorkoutHeader'
 import SetNumberInput from '../components/workout/SetNumberInput'
+import RestTimer, { DEFAULT_REST_SECONDS } from '../components/workout/RestTimer'
 import { WORKOUT_TYPE_INFO } from '../constants/workoutTypes'
 
 const EMPTY_EXERCISE_FORM = { name: '', muscleGroup: '', sets: 3, targetWeight: 0, targetReps: 10 }
@@ -67,6 +75,9 @@ function ActiveWorkoutPage() {
   const [isAddingExercise, setIsAddingExercise] = useState(false)
   const [isCompletingWorkout, setIsCompletingWorkout] = useState(false)
   const [prefilledSets, setPrefilledSets] = useState<Map<string, { weight: number; reps: number }>>(new Map())
+  const [lastSessions, setLastSessions] = useState<Map<string, LastSession>>(new Map())
+  const [restStartedAt, setRestStartedAt] = useState<number | null>(null)
+  const [restSeconds, setRestSeconds] = useState(DEFAULT_REST_SECONDS)
   const elapsedTime = useWorkoutTimer(workout?.startTime ?? null)
 
   // Auto-end workout after 60 minutes of inactivity
@@ -198,33 +209,34 @@ function ActiveWorkoutPage() {
   // Fill empty sets with the last session's numbers (does not save or touch state)
   const autoPopulateWorkoutSets = async (
     workout: Workout
-  ): Promise<{ workout: Workout; prefilled: Map<string, { weight: number; reps: number }> }> => {
+  ): Promise<{
+    workout: Workout
+    prefilled: Map<string, { weight: number; reps: number }>
+    sessions: Map<string, LastSession>
+  }> => {
     const prefilled = new Map<string, { weight: number; reps: number }>()
     const needsData = (set: WorkoutSet) => !set.completed && set.weight === 0 && set.reps === 0
-    if (!workout.exercises.some(ex => ex.sets.some(needsData))) {
-      return { workout, prefilled }
-    }
 
     // One history fetch for all exercises instead of one per exercise
-    const latestByName = await getLatestExerciseDataByName()
+    const sessions = await getLastSessionByExerciseName(workout.id)
 
     const populated: Workout = {
       ...workout,
       exercises: workout.exercises.map(exercise => {
-        const latestData = latestByName.get(exercise.exercise.name.toLowerCase())
-        if (!latestData || !exercise.sets.some(needsData)) return exercise
+        const topSet = getTopSet(sessions.get(exercise.exercise.name.toLowerCase()))
+        if (!topSet || !exercise.sets.some(needsData)) return exercise
 
-        prefilled.set(exercise.id, latestData)
+        prefilled.set(exercise.id, topSet)
         return {
           ...exercise,
           sets: exercise.sets.map(set =>
-            needsData(set) ? { ...set, weight: latestData.weight, reps: latestData.reps } : set
+            needsData(set) ? { ...set, weight: topSet.weight, reps: topSet.reps } : set
           ),
         }
       }),
     }
 
-    return { workout: populated, prefilled }
+    return { workout: populated, prefilled, sessions }
   }
 
   // Clear prefilled data for a specific exercise
@@ -315,9 +327,10 @@ function ActiveWorkoutPage() {
           return
         }
 
-        const { workout: populated, prefilled } = await autoPopulateWorkoutSets(loaded)
+        const { workout: populated, prefilled, sessions } = await autoPopulateWorkoutSets(loaded)
         if (cancelled) return
 
+        setLastSessions(sessions)
         setPrefilledSets(prefilled)
         if (prefilled.size > 0) {
           await persistWorkoutChange(populated)
@@ -357,7 +370,17 @@ function ActiveWorkoutPage() {
   const handleToggleSet = (exerciseIndex: number, setIndex: number) => {
     if (!workout) return
 
+    const wasCompleted = workout.exercises[exerciseIndex]?.sets[setIndex]?.completed
     debouncedSave(updateSetAt(workout, exerciseIndex, setIndex, (set) => ({ ...set, completed: !set.completed })))
+
+    // Completing a set starts the rest countdown; unchecking one clears it
+    if (!wasCompleted) {
+      haptic('light')
+      setRestSeconds(DEFAULT_REST_SECONDS)
+      setRestStartedAt(Date.now())
+    } else {
+      setRestStartedAt(null)
+    }
   }
 
   const handleAddSet = (exerciseIndex: number) => {
@@ -435,6 +458,7 @@ function ActiveWorkoutPage() {
     // Layer 1: Guard — prevent any further saves immediately
     isWorkoutDoneRef.current = true
     setIsCompletingWorkout(true)
+    setRestStartedAt(null)
 
     try {
       // Layer 2: Flush any pending debounced save before completing
@@ -714,6 +738,13 @@ function ActiveWorkoutPage() {
 
   return (
     <div className="min-h-full bg-[var(--bg-primary)]">
+      <RestTimer
+        startedAt={restStartedAt}
+        durationSeconds={restSeconds}
+        onExtend={(seconds) => setRestSeconds((prev) => prev + seconds)}
+        onDismiss={() => setRestStartedAt(null)}
+      />
+
       <WorkoutHeader
         title={WORKOUT_TYPE_INFO[workout.type]?.name ?? 'Workout'}
         elapsedTime={formatTime(elapsedTime)}
@@ -834,6 +865,18 @@ function ActiveWorkoutPage() {
                   </div>
                 )}
               </div>
+
+              {/* Last session */}
+              {(() => {
+                const lastSession = lastSessions.get(exercise.exercise.name.toLowerCase())
+                if (!lastSession) return null
+                return (
+                  <div className="flex items-start gap-2 text-xs text-[var(--text-secondary)] bg-[var(--bg-secondary)] rounded-lg px-3 py-2">
+                    <History size={14} className="flex-shrink-0 mt-0.5" />
+                    <span>Last time · {formatSessionSets(lastSession)}</span>
+                  </div>
+                )
+              })()}
 
               {/* Sets Table */}
               <div className="space-y-2">

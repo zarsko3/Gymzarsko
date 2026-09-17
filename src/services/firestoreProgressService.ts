@@ -104,36 +104,60 @@ export async function getExerciseHistory(exerciseId: string): Promise<ExerciseHi
 
 type LatestSetData = { weight: number; reps: number }
 
+export interface LastSession {
+  /** Completed sets from that session, in order */
+  sets: LatestSetData[]
+  date: Date
+}
+
 /**
- * Map of lowercase exercise name -> last completed set from the most recent
- * workout containing that exercise. Fetches workout history once.
+ * Map of lowercase exercise name -> the most recent session that logged it.
+ * Fetches workout history once.
  */
-export async function getLatestExerciseDataByName(): Promise<Map<string, LatestSetData>> {
-  const latest = new Map<string, LatestSetData>()
+export async function getLastSessionByExerciseName(
+  excludeWorkoutId?: string
+): Promise<Map<string, LastSession>> {
+  const lastSessions = new Map<string, LastSession>()
   try {
     // Workouts are sorted by date descending, so the first match per name wins
     const allWorkouts = await getWorkouts()
     for (const workout of allWorkouts) {
+      if (workout.id === excludeWorkoutId) continue
       for (const exercise of workout.exercises) {
         const key = exercise.exercise.name.toLowerCase()
-        if (latest.has(key)) continue
-        const completedSets = exercise.sets.filter(set => set.completed && set.weight > 0 && set.reps > 0)
-        if (completedSets.length > 0) {
-          const lastSet = completedSets[completedSets.length - 1]
-          latest.set(key, { weight: lastSet.weight, reps: lastSet.reps })
+        if (lastSessions.has(key)) continue
+        const sets = exercise.sets
+          .filter(set => set.completed && set.weight > 0 && set.reps > 0)
+          .map(set => ({ weight: set.weight, reps: set.reps }))
+        if (sets.length > 0) {
+          lastSessions.set(key, {
+            sets,
+            date: workout.date instanceof Date ? workout.date : new Date(workout.date),
+          })
         }
       }
     }
   } catch (error) {
-    console.error('Error getting latest exercise data:', error)
+    console.error('Error getting last session data:', error)
   }
-  return latest
+  return lastSessions
+}
+
+/** Heaviest set of a session — the sensible starting point for today */
+export function getTopSet(session: LastSession | undefined): LatestSetData | null {
+  if (!session || session.sets.length === 0) return null
+  return session.sets.reduce((best, set) => (set.weight > best.weight ? set : best))
+}
+
+/** "65×10, 65×9, 60×10" */
+export function formatSessionSets(session: LastSession): string {
+  return session.sets.map(set => `${set.weight}×${set.reps}`).join(', ')
 }
 
 /**
  * Get latest weight and reps for a single exercise by name
  */
 export async function getLatestExerciseData(exerciseName: string): Promise<LatestSetData | null> {
-  const latest = await getLatestExerciseDataByName()
-  return latest.get(exerciseName.toLowerCase()) ?? null
+  const sessions = await getLastSessionByExerciseName()
+  return getTopSet(sessions.get(exerciseName.toLowerCase()))
 }
