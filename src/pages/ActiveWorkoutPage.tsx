@@ -1,15 +1,23 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, Trash2, Check, MessageSquare, FileText, Edit2, X, History } from 'lucide-react'
+import { Plus, Trash2, Check, MessageSquare, FileText, Edit2, X, History, TrendingUp } from 'lucide-react'
 import type { Workout, WorkoutType, WorkoutExercise, WorkoutSet, Exercise } from '../types'
 import { startWorkout, updateWorkout, completeWorkout, getCurrentWorkout, getWorkoutById } from '../services/workoutServiceFacade'
 import {
-  getLatestExerciseData,
   getLastSessionByExerciseName,
   getTopSet,
   formatSessionSets,
   type LastSession,
 } from '../services/firestoreProgressService'
+import {
+  getRepRange,
+  getProgression,
+  getSetSuggestion,
+  fillFromSuggestion,
+  findUnmarkedSets,
+  markSetsWithNumbersDone,
+  type SetValues,
+} from '../utils/setSuggestions'
 import { saveCustomExercise } from '../services/firestorePlanService'
 import { useToast } from '../hooks/useToast'
 import { handleFirestoreError } from '../utils/firestoreErrorHandler'
@@ -74,7 +82,9 @@ function ActiveWorkoutPage() {
   const [showAddExercise, setShowAddExercise] = useState(false)
   const [isAddingExercise, setIsAddingExercise] = useState(false)
   const [isCompletingWorkout, setIsCompletingWorkout] = useState(false)
-  const [prefilledSets, setPrefilledSets] = useState<Map<string, { weight: number; reps: number }>>(new Map())
+  // Exercise id -> progression the user chose to apply this session
+  const [appliedProgressions, setAppliedProgressions] = useState<Map<string, SetValues>>(new Map())
+  const [showUnmarkedSetsDialog, setShowUnmarkedSetsDialog] = useState(false)
   const [lastSessions, setLastSessions] = useState<Map<string, LastSession>>(new Map())
   const [restStartedAt, setRestStartedAt] = useState<number | null>(null)
   const [restSeconds, setRestSeconds] = useState(DEFAULT_REST_SECONDS)
@@ -206,64 +216,17 @@ function ActiveWorkoutPage() {
     }
   }
 
-  // Fill empty sets with the last session's numbers (does not save or touch state)
-  const autoPopulateWorkoutSets = async (
-    workout: Workout
-  ): Promise<{
-    workout: Workout
-    prefilled: Map<string, { weight: number; reps: number }>
-    sessions: Map<string, LastSession>
-  }> => {
-    const prefilled = new Map<string, { weight: number; reps: number }>()
-    const needsData = (set: WorkoutSet) => !set.completed && set.weight === 0 && set.reps === 0
+  const getLastSession = (exercise: WorkoutExercise) =>
+    lastSessions.get(exercise.exercise.name.toLowerCase())
 
-    // One history fetch for all exercises instead of one per exercise
-    const sessions = await getLastSessionByExerciseName(workout.id)
-
-    const populated: Workout = {
-      ...workout,
-      exercises: workout.exercises.map(exercise => {
-        const topSet = getTopSet(sessions.get(exercise.exercise.name.toLowerCase()))
-        if (!topSet || !exercise.sets.some(needsData)) return exercise
-
-        prefilled.set(exercise.id, topSet)
-        return {
-          ...exercise,
-          sets: exercise.sets.map(set =>
-            needsData(set) ? { ...set, weight: topSet.weight, reps: topSet.reps } : set
-          ),
-        }
-      }),
-    }
-
-    return { workout: populated, prefilled, sessions }
+  /** Greyed-out values for a set: nothing is written until the set is accepted */
+  const getSuggestionFor = (exercise: WorkoutExercise, setIndex: number): SetValues | null => {
+    const base = appliedProgressions.get(exercise.id) ?? getTopSet(getLastSession(exercise))
+    return getSetSuggestion(exercise.sets, setIndex, base)
   }
 
-  // Clear prefilled data for a specific exercise
-  const clearPrefilledData = (exerciseIndex: number) => {
-    if (!workout) return
-
-    const exercise = workout.exercises[exerciseIndex]
-    const prefilledData = prefilledSets.get(exercise.id)
-
-    if (prefilledData) {
-      // Clear all sets that match the prefilled values
-      const newWorkout = updateExerciseAt(workout, exerciseIndex, (ex) => ({
-        ...ex,
-        sets: ex.sets.map(set =>
-          !set.completed && set.weight === prefilledData.weight && set.reps === prefilledData.reps
-            ? { ...set, weight: 0, reps: 0 }
-            : set
-        ),
-      }))
-
-      debouncedSave(newWorkout)
-
-      // Remove from prefilled sets
-      const newPrefilledSets = new Map(prefilledSets)
-      newPrefilledSets.delete(exercise.id)
-      setPrefilledSets(newPrefilledSets)
-    }
+  const handleApplyProgression = (exercise: WorkoutExercise, progression: SetValues) => {
+    setAppliedProgressions((prev) => new Map(prev).set(exercise.id, progression))
   }
 
   // Load workout based on URL type parameter or ID. Re-runs when the URL changes;
@@ -327,16 +290,12 @@ function ActiveWorkoutPage() {
           return
         }
 
-        const { workout: populated, prefilled, sessions } = await autoPopulateWorkoutSets(loaded)
+        // One history fetch for all exercises; used for "Last time" and suggestions
+        const sessions = await getLastSessionByExerciseName(loaded.id)
         if (cancelled) return
 
         setLastSessions(sessions)
-        setPrefilledSets(prefilled)
-        if (prefilled.size > 0) {
-          await persistWorkoutChange(populated)
-        } else {
-          setWorkout(populated)
-        }
+        setWorkout(loaded)
       } catch (error) {
         fail(error)
       } finally {
@@ -370,8 +329,12 @@ function ActiveWorkoutPage() {
   const handleToggleSet = (exerciseIndex: number, setIndex: number) => {
     if (!workout) return
 
-    const wasCompleted = workout.exercises[exerciseIndex]?.sets[setIndex]?.completed
-    debouncedSave(updateSetAt(workout, exerciseIndex, setIndex, (set) => ({ ...set, completed: !set.completed })))
+    const exercise = workout.exercises[exerciseIndex]
+    const wasCompleted = exercise?.sets[setIndex]?.completed
+    const suggestion = exercise ? getSuggestionFor(exercise, setIndex) : null
+    debouncedSave(updateSetAt(workout, exerciseIndex, setIndex, (set) =>
+      set.completed ? { ...set, completed: false } : { ...fillFromSuggestion(set, suggestion), completed: true }
+    ))
 
     // Completing a set starts the rest countdown; unchecking one clears it
     if (!wasCompleted) {
@@ -386,16 +349,11 @@ function ActiveWorkoutPage() {
   const handleAddSet = (exerciseIndex: number) => {
     if (!workout) return
 
-    debouncedSave(updateExerciseAt(workout, exerciseIndex, (ex) => {
-      const lastSet = ex.sets[ex.sets.length - 1]
-      return {
-        ...ex,
-        sets: [
-          ...ex.sets,
-          { id: randomId('set'), weight: lastSet?.weight || 0, reps: lastSet?.reps || 0, completed: false },
-        ],
-      }
-    }))
+    // New sets start empty; the previous set shows through as a suggestion
+    debouncedSave(updateExerciseAt(workout, exerciseIndex, (ex) => ({
+      ...ex,
+      sets: [...ex.sets, { id: randomId('set'), weight: 0, reps: 0, completed: false }],
+    })))
   }
 
   const handleRemoveSet = (exerciseIndex: number, setIndex: number) => {
@@ -452,21 +410,26 @@ function ActiveWorkoutPage() {
     navigate('/')
   }
 
-  const handleCompleteWorkout = async () => {
+  const handleCompleteWorkout = async (options?: { markUnmarkedDone?: boolean }) => {
     if (!workout || isCompletingWorkout) return
+    const finalWorkout = options?.markUnmarkedDone ? markSetsWithNumbersDone(workout) : workout
 
     // Layer 1: Guard — prevent any further saves immediately
     isWorkoutDoneRef.current = true
     setIsCompletingWorkout(true)
     setRestStartedAt(null)
+    setShowUnmarkedSetsDialog(false)
 
     try {
       // Layer 2: Flush any pending debounced save before completing
       await flushPendingSave()
+      if (finalWorkout !== workout) {
+        await updateWorkout(finalWorkout)
+      }
 
-      await completeWorkout(workout)
+      await completeWorkout(finalWorkout)
       showToast('success', 'Workout saved 💪')
-      navigate(`/workout/summary?id=${workout.id}`)
+      navigate(`/workout/summary?id=${finalWorkout.id}`)
     } catch (error) {
       console.error('Error completing workout:', error)
       showToast('error', 'Failed to complete workout. Please try again.')
@@ -474,6 +437,16 @@ function ActiveWorkoutPage() {
       isWorkoutDoneRef.current = false
       setIsCompletingWorkout(false)
     }
+  }
+
+  /** Finish button: check for sets that were filled in but never marked done */
+  const handleRequestComplete = () => {
+    if (!workout || isCompletingWorkout) return
+    if (findUnmarkedSets(workout).length > 0) {
+      setShowUnmarkedSetsDialog(true)
+      return
+    }
+    handleCompleteWorkout()
   }
 
   const handleEditExercise = (exerciseIndex: number) => {
@@ -557,15 +530,8 @@ function ActiveWorkoutPage() {
 
     setIsAddingExercise(true)
     try {
-      // Fill in weight from the last session only when the user left it empty
       const avgReps = exerciseForm.targetReps || 10
-      let avgWeight = exerciseForm.targetWeight || 0
-      if (avgWeight === 0) {
-        const latestData = await getLatestExerciseData(exerciseForm.name.trim())
-        if (latestData) {
-          avgWeight = latestData.weight
-        }
-      }
+      const avgWeight = exerciseForm.targetWeight || 0
 
       const numSets = Math.max(1, Math.floor(exerciseForm.sets))
       const exerciseId = randomId('we-custom')
@@ -749,7 +715,7 @@ function ActiveWorkoutPage() {
         title={WORKOUT_TYPE_INFO[workout.type]?.name ?? 'Workout'}
         elapsedTime={formatTime(elapsedTime)}
         onExit={handleBack}
-        onComplete={handleCompleteWorkout}
+        onComplete={handleRequestComplete}
         isCompleting={isCompletingWorkout}
       />
 
@@ -830,18 +796,6 @@ function ActiveWorkoutPage() {
                     {exercise.exercise.muscleGroup}
                     {exercise.exercise.repRange && ` • ${exercise.exercise.repRange} reps`}
                   </p>
-                  {prefilledSets.has(exercise.id) && (
-                    <div className="flex items-center gap-1 text-xs text-primary-500">
-                      <span>• From last session</span>
-                      <button
-                        onClick={() => clearPrefilledData(exerciseIndex)}
-                        className="text-primary-500 hover:text-primary-600 underline"
-                        type="button"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  )}
                 </div>
                     </>
                   )}
@@ -870,10 +824,33 @@ function ActiveWorkoutPage() {
               {(() => {
                 const lastSession = lastSessions.get(exercise.exercise.name.toLowerCase())
                 if (!lastSession) return null
+                const progression = getProgression(lastSession, getRepRange(exercise), exercise.exercise.name)
+                const applied = appliedProgressions.get(exercise.id)
                 return (
-                  <div className="flex items-start gap-2 text-xs text-[var(--text-secondary)] bg-[var(--bg-secondary)] rounded-lg px-3 py-2">
-                    <History size={14} className="flex-shrink-0 mt-0.5" />
-                    <span>Last time · {formatSessionSets(lastSession)}</span>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2 text-xs text-[var(--text-secondary)] bg-[var(--bg-secondary)] rounded-lg px-3 py-2">
+                      <History size={14} className="flex-shrink-0 mt-0.5" />
+                      <span>Last time · {formatSessionSets(lastSession)}</span>
+                    </div>
+                    {progression && (
+                      <div className="flex items-center gap-2 text-xs rounded-lg px-3 py-2 border border-primary-500 text-primary-600 dark:text-primary-400">
+                        <TrendingUp size={14} className="flex-shrink-0" />
+                        <span className="flex-1">
+                          {applied
+                            ? `Aiming for ${progression.weight} kg × ${progression.reps} today`
+                            : `Try ${progression.weight} kg — you hit ${progression.topReps} on every set`}
+                        </span>
+                        {!applied && (
+                          <button
+                            type="button"
+                            onClick={() => handleApplyProgression(exercise, progression)}
+                            className="px-2 min-h-[32px] rounded-md border border-primary-500 font-medium hover:bg-primary-500 hover:text-white transition-colors"
+                          >
+                            Apply
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )
               })()}
@@ -887,7 +864,9 @@ function ActiveWorkoutPage() {
                   <div className="w-20"></div>
                 </div>
 
-                {exercise.sets.map((set: WorkoutSet, setIndex: number) => (
+                {exercise.sets.map((set: WorkoutSet, setIndex: number) => {
+                  const suggestion = set.completed ? null : getSuggestionFor(exercise, setIndex)
+                  return (
                   <div
                     key={set.id}
                     className={`flex items-center gap-2 ${
@@ -918,8 +897,8 @@ function ActiveWorkoutPage() {
                       data-exercise={exerciseIndex}
                       data-set={setIndex}
                       data-field="weight"
-                      className="flex-1 px-2 py-3 border border-[var(--border)] rounded-lg text-center text-base bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] min-w-[80px]"
-                      placeholder="0"
+                      className="flex-1 px-2 py-3 border border-[var(--border)] rounded-lg text-center text-base bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-inactive)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] min-w-[80px]"
+                      placeholder={suggestion?.weight ? String(suggestion.weight) : '0'}
                       disabled={set.completed}
                     />
 
@@ -948,8 +927,8 @@ function ActiveWorkoutPage() {
                       data-exercise={exerciseIndex}
                       data-set={setIndex}
                       data-field="reps"
-                      className="flex-1 px-2 py-3 border border-[var(--border)] rounded-lg text-center text-base bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] min-w-[80px]"
-                      placeholder="0"
+                      className="flex-1 px-2 py-3 border border-[var(--border)] rounded-lg text-center text-base bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-inactive)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] min-w-[80px]"
+                      placeholder={suggestion?.reps ? String(suggestion.reps) : '0'}
                       disabled={set.completed}
                     />
 
@@ -975,7 +954,8 @@ function ActiveWorkoutPage() {
                       )}
                     </div>
                   </div>
-                ))}
+                  )
+                })}
 
                 {/* Add Set Button */}
                 <button
@@ -1040,7 +1020,7 @@ function ActiveWorkoutPage() {
         <Button
           fullWidth
           size="lg"
-          onClick={handleCompleteWorkout}
+          onClick={handleRequestComplete}
           disabled={isCompletingWorkout}
           className="mt-6"
         >
@@ -1226,6 +1206,41 @@ function ActiveWorkoutPage() {
           onConfirm={handleConfirmRemoveExercise}
           onCancel={() => setShowRemoveExerciseConfirm(null)}
         />
+      </Modal>
+
+      {/* Sets filled in but not marked done */}
+      <Modal
+        isOpen={showUnmarkedSetsDialog}
+        onClose={() => setShowUnmarkedSetsDialog(false)}
+        size="sm"
+      >
+        {(() => {
+          const unmarked = workout ? findUnmarkedSets(workout) : []
+          const total = unmarked.reduce((sum, entry) => sum + entry.count, 0)
+          const list = unmarked.map((entry) => `${entry.exerciseName} (${entry.count})`).join(', ')
+          return (
+            <>
+              <ConfirmDialog
+                title={`${total} ${total === 1 ? "set isn't" : "sets aren't"} marked done`}
+                message={`${list}. Sets that aren't marked done don't count toward volume or records.`}
+                confirmLabel="Mark done and finish"
+                cancelLabel="Finish without them"
+                variant="default"
+                icon="warning"
+                isLoading={isCompletingWorkout}
+                onConfirm={() => handleCompleteWorkout({ markUnmarkedDone: true })}
+                onCancel={() => handleCompleteWorkout()}
+              />
+              <button
+                type="button"
+                onClick={() => setShowUnmarkedSetsDialog(false)}
+                className="w-full mt-2 min-h-[44px] text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              >
+                Back to workout
+              </button>
+            </>
+          )
+        })()}
       </Modal>
 
       {/* Save to Template Confirmation Modal */}

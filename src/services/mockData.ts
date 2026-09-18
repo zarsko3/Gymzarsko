@@ -3,29 +3,29 @@ import type { Exercise, Workout, WorkoutType, UserProfile } from '../types'
 // Mock Exercise Database - Updated to match PPL Workout Routine
 export const mockExercises: Exercise[] = [
   // Push Exercises (Chest, Front Delts, Triceps)
-  { id: 'push-1', name: 'Bench Press', muscleGroup: 'Chest', category: 'push' },
-  { id: 'push-2', name: 'Overhead Shoulder Press (machine, seated)', muscleGroup: 'Front Delts', category: 'push' },
-  { id: 'push-3', name: 'Incline Dumbbell Press', muscleGroup: 'Chest', category: 'push' },
-  { id: 'push-4', name: 'Lateral Raises', muscleGroup: 'Front Delts', category: 'push' },
-  { id: 'push-5', name: 'Triceps Pushdowns', muscleGroup: 'Triceps', category: 'push' },
-  { id: 'push-6', name: 'Skull Crushers', muscleGroup: 'Triceps', category: 'push' },
-  { id: 'push-7', name: 'Chest Press (machine)', muscleGroup: 'Chest', category: 'push' },
+  { id: 'push-1', name: 'Bench Press', muscleGroup: 'Chest', category: 'push', repRange: '6-8' },
+  { id: 'push-2', name: 'Overhead Shoulder Press (machine, seated)', muscleGroup: 'Front Delts', category: 'push', repRange: '8-10' },
+  { id: 'push-3', name: 'Incline Dumbbell Press', muscleGroup: 'Chest', category: 'push', repRange: '8-10' },
+  { id: 'push-4', name: 'Lateral Raises', muscleGroup: 'Front Delts', category: 'push', repRange: '12-15' },
+  { id: 'push-5', name: 'Triceps Pushdowns', muscleGroup: 'Triceps', category: 'push', repRange: '10-12' },
+  { id: 'push-6', name: 'Skull Crushers', muscleGroup: 'Triceps', category: 'push', repRange: '8-12' },
+  { id: 'push-7', name: 'Chest Press (machine)', muscleGroup: 'Chest', category: 'push', repRange: '10-12' },
 
   // Pull Exercises (Back, Rear Delts, Biceps)
-  { id: 'pull-1', name: 'Lat Pulldown', muscleGroup: 'Back', category: 'pull' },
-  { id: 'pull-2', name: 'Dumbbell Row', muscleGroup: 'Back', category: 'pull' },
-  { id: 'pull-3', name: 'Face Pulls', muscleGroup: 'Rear Delts', category: 'pull' },
-  { id: 'pull-4', name: 'Dumbbell Shrugs (Smith Machine)', muscleGroup: 'Traps', category: 'pull' },
-  { id: 'pull-5', name: 'Cable Bicep Curls', muscleGroup: 'Biceps', category: 'pull' },
-  { id: 'pull-6', name: 'EZ Bar Curl (W bar)', muscleGroup: 'Biceps', category: 'pull' },
-  { id: 'pull-7', name: 'Incline Dumbbell Curls (60° bench, supinated grip)', muscleGroup: 'Biceps', category: 'pull' },
+  { id: 'pull-1', name: 'Lat Pulldown', muscleGroup: 'Back', category: 'pull', repRange: '8-10' },
+  { id: 'pull-2', name: 'Dumbbell Row', muscleGroup: 'Back', category: 'pull', repRange: '8-10' },
+  { id: 'pull-3', name: 'Face Pulls', muscleGroup: 'Rear Delts', category: 'pull', repRange: '12-15' },
+  { id: 'pull-4', name: 'Dumbbell Shrugs (Smith Machine)', muscleGroup: 'Traps', category: 'pull', repRange: '10-12' },
+  { id: 'pull-5', name: 'Cable Bicep Curls', muscleGroup: 'Biceps', category: 'pull', repRange: '10-12' },
+  { id: 'pull-6', name: 'EZ Bar Curl (W bar)', muscleGroup: 'Biceps', category: 'pull', repRange: '8-10' },
+  { id: 'pull-7', name: 'Incline Dumbbell Curls (60° bench, supinated grip)', muscleGroup: 'Biceps', category: 'pull', repRange: '10-12' },
 
   // Leg Exercises (Quads, Hamstrings, Glutes, Calves, Core)
-  { id: 'legs-1', name: 'Leg Extension (warm-up + isolation)', muscleGroup: 'Quads', category: 'legs' },
-  { id: 'legs-2', name: 'Squats', muscleGroup: 'Quads', category: 'legs' },
-  { id: 'legs-3', name: 'Romanian Deadlift', muscleGroup: 'Hamstrings', category: 'legs' },
-  { id: 'legs-4', name: 'Leg Curl Machine', muscleGroup: 'Hamstrings', category: 'legs' },
-  { id: 'legs-5', name: 'Standing Calf Raises', muscleGroup: 'Calves', category: 'legs' },
+  { id: 'legs-1', name: 'Leg Extension (warm-up + isolation)', muscleGroup: 'Quads', category: 'legs', repRange: '12-15' },
+  { id: 'legs-2', name: 'Squats', muscleGroup: 'Quads', category: 'legs', repRange: '6-8' },
+  { id: 'legs-3', name: 'Romanian Deadlift', muscleGroup: 'Hamstrings', category: 'legs', repRange: '8-10' },
+  { id: 'legs-4', name: 'Leg Curl Machine', muscleGroup: 'Hamstrings', category: 'legs', repRange: '10-12' },
+  { id: 'legs-5', name: 'Standing Calf Raises', muscleGroup: 'Calves', category: 'legs', repRange: '12-15' },
   { id: 'legs-6', name: 'Plank / Hanging Leg Raises', muscleGroup: 'Core', category: 'legs' },
 
   // Upper Exercises — balanced push/pull, different movements and angles than PPL days

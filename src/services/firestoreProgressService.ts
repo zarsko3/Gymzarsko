@@ -153,11 +153,3 @@ export function getTopSet(session: LastSession | undefined): LatestSetData | nul
 export function formatSessionSets(session: LastSession): string {
   return session.sets.map(set => `${set.weight}×${set.reps}`).join(', ')
 }
-
-/**
- * Get latest weight and reps for a single exercise by name
- */
-export async function getLatestExerciseData(exerciseName: string): Promise<LatestSetData | null> {
-  const sessions = await getLastSessionByExerciseName()
-  return getTopSet(sessions.get(exerciseName.toLowerCase()))
-}
