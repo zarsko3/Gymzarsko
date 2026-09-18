@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Timer } from 'lucide-react'
 import { hapticSuccess } from '../../utils/haptic'
 
@@ -22,6 +23,10 @@ function formatTime(seconds: number) {
  * Countdown bar shown above the bottom navigation after completing a set.
  * Time is derived from a timestamp, so it stays correct if the phone
  * throttles timers while the screen is off.
+ *
+ * Rendered into <body>: pages sit inside an animated wrapper with
+ * `will-change: transform`, which would pin a fixed element to the bottom of
+ * the page instead of the bottom of the screen.
  */
 function RestTimer({ startedAt, durationSeconds, onExtend, onDismiss }: RestTimerProps) {
   const [remaining, setRemaining] = useState(durationSeconds)
@@ -53,7 +58,7 @@ function RestTimer({ startedAt, durationSeconds, onExtend, onDismiss }: RestTime
   const isDone = remaining === 0
   const progress = Math.min(100, Math.max(0, (remaining / durationSeconds) * 100))
 
-  return (
+  return createPortal(
     <div
       className="fixed left-0 right-0 z-40 px-4 pointer-events-none"
       style={{ bottom: 'calc(64px + env(safe-area-inset-bottom, 0px) + 8px)' }}
@@ -94,7 +99,8 @@ function RestTimer({ startedAt, durationSeconds, onExtend, onDismiss }: RestTime
           />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

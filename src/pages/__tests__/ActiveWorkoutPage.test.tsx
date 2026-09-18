@@ -118,4 +118,18 @@ describe('ActiveWorkoutPage suggestions', () => {
     const completed = facade.completeWorkout.mock.calls[0][0] as Workout
     expect(completed.exercises[0].sets[1]).toMatchObject({ weight: 32.5, completed: true })
   })
+
+  it('starts the rest timer outside the page so it stays pinned to the screen', async () => {
+    const { container } = renderPage()
+    await screen.findByText(/Last time/)
+
+    const checkButtons = screen.getAllByRole('button').filter((b) => b.querySelector('.lucide-check'))
+    fireEvent.click(checkButtons[0])
+
+    const timer = await screen.findByRole('status')
+    expect(within(timer).getByText('1:30')).toBeInTheDocument()
+    // Pages sit inside a transformed wrapper, which would pin a fixed element to the
+    // page instead of the viewport — the timer must render outside it
+    expect(container.contains(timer)).toBe(false)
+  })
 })
