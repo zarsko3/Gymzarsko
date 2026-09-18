@@ -28,6 +28,19 @@ export async function getWorkouts(): Promise<Workout[]> {
 }
 
 /**
+ * Most recent workouts, newest first
+ */
+export async function getRecentWorkouts(count: number): Promise<Workout[]> {
+  if (USE_FIRESTORE) {
+    return await firestoreService.getRecentWorkouts(count)
+  }
+  const workouts = localStorageService.getWorkouts()
+  return [...workouts]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, count)
+}
+
+/**
  * Get workout by ID
  */
 export async function getWorkoutById(id: string): Promise<Workout | null> {

@@ -12,6 +12,7 @@ import {
   Timestamp,
   serverTimestamp,
   onSnapshot,
+  limit,
 } from 'firebase/firestore'
 import type { Unsubscribe } from 'firebase/firestore'
 import { db, auth } from '../lib/firebase'
@@ -170,6 +171,22 @@ export async function getWorkouts(): Promise<Workout[]> {
 }
 
 /**
+ * Most recent workouts for the current user, newest first.
+ * Cheaper than getWorkouts() when only recent history matters.
+ */
+export async function getRecentWorkouts(count: number): Promise<Workout[]> {
+  const userId = getUserId()
+  const q = query(
+    collection(db, WORKOUTS_COLLECTION),
+    where('userId', '==', userId),
+    orderBy('date', 'desc'),
+    limit(count)
+  )
+  const snapshot = await getDocs(q)
+  return snapshot.docs.map((d) => firestoreToWorkout(d.id, d.data()))
+}
+
+/**
  * Get a single workout by ID
  * Verifies that the workout belongs to the current user
  */
@@ -227,6 +244,13 @@ export function startWorkout(type: WorkoutType): Promise<Workout> {
 async function findOrCreateWorkout(type: WorkoutType): Promise<Workout> {
   const userId = getUserId()
 
+  // Look up the active workout and the custom exercises at the same time; the
+  // custom exercises are only needed when a new workout gets created
+  const customExercisesPromise = getCustomExercises(type).catch((error) => {
+    console.warn('Could not load custom exercises:', error)
+    return []
+  })
+
   try {
     const existingWorkout = await getCurrentWorkout()
     if (existingWorkout && existingWorkout.type === type) {
@@ -259,7 +283,7 @@ async function findOrCreateWorkout(type: WorkoutType): Promise<Workout> {
   // Fetch user's saved custom exercises for this workout type and append them
   let customExerciseEntries: typeof defaultExercises = []
   try {
-    const customExercises = await getCustomExercises(type)
+    const customExercises = await customExercisesPromise
     // Exclude any that share a name with a default exercise (case-insensitive)
     const defaultNames = new Set(mockExercises.filter(ex => ex.category === type).map(ex => ex.name.toLowerCase()))
     customExerciseEntries = customExercises

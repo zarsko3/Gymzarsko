@@ -1,4 +1,5 @@
 import { getWorkouts } from './workoutServiceFacade'
+import type { Workout } from '../types'
 
 interface ExercisePR {
   exerciseId: string
@@ -117,28 +118,32 @@ export interface LastSession {
 export async function getLastSessionByExerciseName(
   excludeWorkoutId?: string
 ): Promise<Map<string, LastSession>> {
-  const lastSessions = new Map<string, LastSession>()
   try {
-    // Workouts are sorted by date descending, so the first match per name wins
-    const allWorkouts = await getWorkouts()
-    for (const workout of allWorkouts) {
-      if (workout.id === excludeWorkoutId) continue
-      for (const exercise of workout.exercises) {
-        const key = exercise.exercise.name.toLowerCase()
-        if (lastSessions.has(key)) continue
-        const sets = exercise.sets
-          .filter(set => set.completed && set.weight > 0 && set.reps > 0)
-          .map(set => ({ weight: set.weight, reps: set.reps }))
-        if (sets.length > 0) {
-          lastSessions.set(key, {
-            sets,
-            date: workout.date instanceof Date ? workout.date : new Date(workout.date),
-          })
-        }
-      }
-    }
+    return buildLastSessions(await getWorkouts(), excludeWorkoutId)
   } catch (error) {
     console.error('Error getting last session data:', error)
+    return new Map()
+  }
+}
+
+/** Same as getLastSessionByExerciseName, from workouts already loaded (newest first) */
+export function buildLastSessions(workouts: Workout[], excludeWorkoutId?: string): Map<string, LastSession> {
+  const lastSessions = new Map<string, LastSession>()
+  for (const workout of workouts) {
+    if (workout.id === excludeWorkoutId) continue
+    for (const exercise of workout.exercises) {
+      const key = exercise.exercise.name.toLowerCase()
+      if (lastSessions.has(key)) continue
+      const sets = exercise.sets
+        .filter(set => set.completed && set.weight > 0 && set.reps > 0)
+        .map(set => ({ weight: set.weight, reps: set.reps }))
+      if (sets.length > 0) {
+        lastSessions.set(key, {
+          sets,
+          date: workout.date instanceof Date ? workout.date : new Date(workout.date),
+        })
+      }
+    }
   }
   return lastSessions
 }

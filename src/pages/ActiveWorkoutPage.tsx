@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Check, MessageSquare, FileText, History, TrendingUp } from 'lucide-react'
 import type { Workout, WorkoutType, WorkoutExercise, WorkoutSet, Exercise } from '../types'
-import { startWorkout, updateWorkout, completeWorkout, getCurrentWorkout, getWorkoutById } from '../services/workoutServiceFacade'
+import { startWorkout, updateWorkout, completeWorkout, getCurrentWorkout, getWorkoutById, getRecentWorkouts } from '../services/workoutServiceFacade'
 import {
-  getLastSessionByExerciseName,
+  buildLastSessions,
   getTopSet,
   formatSessionSets,
   type LastSession,
@@ -64,6 +64,9 @@ function updateSetAt(
     sets: exercise.sets.map((set, i) => (i === setIndex ? update(set) : set)),
   }))
 }
+
+// Enough history for "Last time" on every exercise: six full rotations
+const RECENT_HISTORY_LIMIT = 30
 
 function ActiveWorkoutPage() {
   const navigate = useNavigate()
@@ -257,17 +260,7 @@ function ActiveWorkoutPage() {
       }
 
       if (workoutType) {
-        try {
-          const currentWorkout = await getCurrentWorkout()
-          if (currentWorkout && currentWorkout.type === workoutType) {
-            return currentWorkout
-          }
-        } catch (error) {
-          // Don't block starting a workout if the lookup fails (e.g. index still building)
-          const errorInfo = handleFirestoreError(error)
-          console.warn('Could not check for existing workout:', errorInfo.message)
-        }
-        // startWorkout returns the in-flight/existing workout, so repeat calls are safe
+        // Returns the active workout of this type if there is one, otherwise creates it
         return startWorkout(workoutType)
       }
 
@@ -277,6 +270,11 @@ function ActiveWorkoutPage() {
 
     async function loadWorkout() {
       setIsLoadingWorkout(true)
+      // History for "Last time" downloads alongside the workout instead of after it
+      const historyPromise = getRecentWorkouts(RECENT_HISTORY_LIMIT).catch((error) => {
+        console.warn('Could not load recent workouts:', error)
+        return []
+      })
       try {
         const loaded = await resolveWorkout()
         if (cancelled) return
@@ -292,12 +290,12 @@ function ActiveWorkoutPage() {
           return
         }
 
-        // One history fetch for all exercises; used for "Last time" and suggestions
-        const sessions = await getLastSessionByExerciseName(loaded.id)
-        if (cancelled) return
-
-        setLastSessions(sessions)
+        // Show the workout now; "Last time" and suggestions fill in when history arrives
         setWorkout(loaded)
+        setIsLoadingWorkout(false)
+        historyPromise.then((recent) => {
+          if (!cancelled) setLastSessions(buildLastSessions(recent, loaded.id))
+        })
       } catch (error) {
         fail(error)
       } finally {

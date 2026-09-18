@@ -9,27 +9,28 @@ const facade = vi.hoisted(() => ({
   getCurrentWorkout: vi.fn(),
   getWorkoutById: vi.fn(),
   updateWorkout: vi.fn(async () => {}),
+  getRecentWorkouts: vi.fn(),
   completeWorkout: vi.fn(async (w: unknown) => w),
 }))
 
 vi.mock('../../services/workoutServiceFacade', () => facade)
 vi.mock('../../services/firestorePlanService', () => ({ saveCustomExercise: vi.fn() }))
-vi.mock('../../services/firestoreProgressService', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../services/firestoreProgressService')>()
-  return {
-    ...actual,
-    getLastSessionByExerciseName: vi.fn(async () =>
-      new Map([
-        [
-          'flat dumbbell press',
-          { sets: [{ weight: 30, reps: 10 }, { weight: 30, reps: 10 }, { weight: 30, reps: 10 }], date: new Date('2026-09-10') },
-        ],
-      ])
-    ),
-  }
-})
-
 import ActiveWorkoutPage from '../ActiveWorkoutPage'
+
+const previousUpper: Workout = {
+  id: 'past',
+  type: 'upper',
+  date: new Date('2026-09-10'),
+  completed: true,
+  exercises: [
+    {
+      id: 'p1',
+      exerciseId: 'upper-2',
+      exercise: { id: 'upper-2', name: 'Flat Dumbbell Press', muscleGroup: 'Chest', category: 'upper', repRange: '8-10' },
+      sets: [0, 1, 2].map((i) => ({ id: `p${i}`, weight: 30, reps: 10, completed: true })),
+    },
+  ],
+}
 
 function makeWorkout(): Workout {
   return {
@@ -70,7 +71,8 @@ const weightInputs = () => screen.getAllByRole('spinbutton').filter((el) => el.g
 describe('ActiveWorkoutPage suggestions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    facade.getCurrentWorkout.mockResolvedValue(makeWorkout())
+    facade.startWorkout.mockResolvedValue(makeWorkout())
+    facade.getRecentWorkouts.mockResolvedValue([previousUpper])
   })
 
   it('shows last session as grey suggestions without filling the fields', async () => {
@@ -148,5 +150,21 @@ describe('ActiveWorkoutPage suggestions', () => {
     fireEvent.click(within(menu).getByRole('menuitem', { name: /Rename/ }))
     expect(screen.getByPlaceholderText('Exercise name')).toHaveValue('Flat Dumbbell Press')
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('shows the workout without waiting for history, and asks history in parallel', async () => {
+    let releaseHistory: (workouts: Workout[]) => void = () => {}
+    facade.getRecentWorkouts.mockReturnValue(new Promise<Workout[]>((resolve) => { releaseHistory = resolve }))
+
+    renderPage()
+
+    // Workout is on screen while history is still downloading
+    expect(await screen.findByText('Flat Dumbbell Press')).toBeInTheDocument()
+    expect(screen.queryByText(/Last time/)).not.toBeInTheDocument()
+    expect(facade.getRecentWorkouts).toHaveBeenCalledWith(30)
+    expect(facade.getCurrentWorkout).not.toHaveBeenCalled()
+
+    releaseHistory([previousUpper])
+    expect(await screen.findByText(/Last time · 30×10, 30×10, 30×10/)).toBeInTheDocument()
   })
 })

@@ -58,13 +58,16 @@ function WorkoutSummaryPage() {
   useEffect(() => {
     async function loadWorkout() {
       try {
-        // History powers records and the comparison with the last workout of this type
-        const workouts = await getWorkouts()
-        setAllWorkouts(workouts)
+        // History powers records and the comparison with the last workout of this type;
+        // fetch it alongside the workout rather than one after the other
         if (workoutId) {
-          setWorkout(await getWorkoutById(workoutId))
+          const [workouts, current] = await Promise.all([getWorkouts(), getWorkoutById(workoutId)])
+          setAllWorkouts(workouts)
+          setWorkout(current)
           return
         }
+        const workouts = await getWorkouts()
+        setAllWorkouts(workouts)
         // Fallback: most recent completed workout (sorted by date desc)
         setWorkout(workouts.find((w) => w.completed) ?? null)
       } catch (error) {
