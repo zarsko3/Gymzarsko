@@ -1,16 +1,40 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { format } from 'date-fns'
-import { CheckCircle, Clock, TrendingUp, Home, Dumbbell, Plus } from 'lucide-react'
-import type { Workout, WorkoutExercise, WorkoutSet } from '../types'
+import { Check, Home, Plus, ArrowUpRight, ArrowDownRight, Equal } from 'lucide-react'
+import type { Workout } from '../types'
 import { getWorkouts, getWorkoutById, updateWorkout } from '../services/workoutServiceFacade'
 import { useToast } from '../hooks/useToast'
-import { formatDuration, calculateVolume } from '../utils/formatters'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
 import { WORKOUT_TYPE_INFO } from '../constants/workoutTypes'
+import SessionRecordsCard from '../components/workout/SessionRecordsCard'
+import {
+  getWorkoutTotals,
+  compareWithPreviousOfType,
+  getSessionRecords,
+  getExerciseTrend,
+  getTopSet,
+  type Trend,
+} from '../utils/workoutSummary'
+
+function formatVolume(kg: number) {
+  return Math.abs(kg) >= 1000 ? `${(kg / 1000).toFixed(1)}k` : `${Math.round(kg)}`
+}
+
+function formatDelta(value: number | null, unit = '') {
+  if (value === null || value === 0) return null
+  const sign = value > 0 ? '+' : '−'
+  return `${sign}${Math.abs(value) >= 1000 ? formatVolume(Math.abs(value)) : Math.abs(Math.round(value * 10) / 10)}${unit}`
+}
+
+const trendIcons: Record<Trend, { Icon: typeof Equal; className: string; label: string }> = {
+  up: { Icon: ArrowUpRight, className: 'text-green-600 dark:text-green-400', label: 'Better than last time' },
+  same: { Icon: Equal, className: 'text-[var(--text-secondary)]', label: 'Same as last time' },
+  down: { Icon: ArrowDownRight, className: 'text-red-500', label: 'Below last time' },
+}
 
 function WorkoutSummaryPage() {
   const navigate = useNavigate()
@@ -18,6 +42,7 @@ function WorkoutSummaryPage() {
   const workoutId = searchParams.get('id')
   const { showToast } = useToast()
   const [workout, setWorkout] = useState<Workout | null>(null)
+  const [allWorkouts, setAllWorkouts] = useState<Workout[]>([])
   const [showAddExercise, setShowAddExercise] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [exerciseForm, setExerciseForm] = useState({
@@ -33,12 +58,14 @@ function WorkoutSummaryPage() {
   useEffect(() => {
     async function loadWorkout() {
       try {
+        // History powers records and the comparison with the last workout of this type
+        const workouts = await getWorkouts()
+        setAllWorkouts(workouts)
         if (workoutId) {
           setWorkout(await getWorkoutById(workoutId))
           return
         }
         // Fallback: most recent completed workout (sorted by date desc)
-        const workouts = await getWorkouts()
         setWorkout(workouts.find((w) => w.completed) ?? null)
       } catch (error) {
         console.error('Error loading workout:', error)
@@ -49,6 +76,15 @@ function WorkoutSummaryPage() {
 
     loadWorkout()
   }, [workoutId])
+
+  const summary = useMemo(() => {
+    if (!workout) return null
+    return {
+      totals: getWorkoutTotals(workout),
+      comparison: compareWithPreviousOfType(workout, allWorkouts),
+      records: getSessionRecords(workout, allWorkouts),
+    }
+  }, [workout, allWorkouts])
 
   useEffect(() => {
     if (!isLoading && !workout) {
@@ -64,22 +100,33 @@ function WorkoutSummaryPage() {
     )
   }
 
-  if (!workout) {
+  if (!workout || !summary) {
     return null
   }
 
-  const totalSets = workout.exercises.reduce((sum: number, ex: WorkoutExercise) => sum + ex.sets.length, 0)
-  const completedSets = workout.exercises.reduce(
-    (sum: number, ex: WorkoutExercise) => sum + ex.sets.filter((s: WorkoutSet) => s.completed).length,
-    0
-  )
-  const totalVolume = workout.exercises.reduce(
-    (sum: number, ex: WorkoutExercise) => sum + ex.sets.reduce((s: number, set: WorkoutSet) => s + calculateVolume(set.weight, set.reps), 0),
-    0
-  )
-  const duration = workout.startTime && workout.endTime
-    ? formatDuration(workout.startTime, workout.endTime)
-    : '0m'
+  const { totals, comparison, records } = summary
+  const typeName = WORKOUT_TYPE_INFO[workout.type]?.name ?? 'Workout'
+  const stats = [
+    {
+      label: 'duration',
+      value: totals.durationMinutes !== null ? `${totals.durationMinutes}m` : '—',
+      delta: formatDelta(comparison?.durationMinutes ?? null, 'm'),
+      // Shorter for the same work isn't better or worse, so keep it neutral
+      positive: null as boolean | null,
+    },
+    {
+      label: 'sets',
+      value: `${totals.sets}`,
+      delta: formatDelta(comparison?.sets ?? null),
+      positive: comparison ? comparison.sets > 0 : null,
+    },
+    {
+      label: 'kg volume',
+      value: formatVolume(totals.volume),
+      delta: formatDelta(comparison?.volume ?? null),
+      positive: comparison ? comparison.volume > 0 : null,
+    },
+  ]
 
   const validateForm = (): boolean => {
     if (!exerciseForm.name.trim()) {
@@ -162,73 +209,53 @@ function WorkoutSummaryPage() {
   return (
     <div className="min-h-full bg-[var(--bg-primary)]">
       <div className="px-4 py-8 space-y-6">
-        {/* Success Icon */}
+        {/* Header */}
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-primary-500 rounded-full mb-4">
-            <CheckCircle size={48} className="text-white" strokeWidth={2} />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-500 text-white mb-3">
+            <Check size={36} strokeWidth={2.5} />
           </div>
-          <h1 className="text-3xl font-bold text-text-primary">Workout Complete!</h1>
-          <p className="text-text-secondary mt-2">Great job on finishing your workout</p>
-        </div>
-
-        {/* Motivational Card */}
-        <Card className="bg-accent-mint text-center p-6 border-2 border-transparent">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-3">
-            <Dumbbell size={32} className="text-primary-600" strokeWidth={2} />
-          </div>
-          <p className="text-text-primary font-medium text-lg">
-            You're one step closer to your goals!
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Workout complete</h1>
+          <p className="text-[var(--text-secondary)] mt-1">
+            {typeName} · {format(workout.date, 'EEE, MMM d')}
           </p>
-        </Card>
-
-        {/* Workout Stats */}
-        <div className="space-y-3">
-          <h3 className="font-semibold text-text-primary">Workout Summary</h3>
-
-          <Card className="bg-card">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Workout Type</span>
-                <span className="font-semibold text-text-primary">
-                  {WORKOUT_TYPE_INFO[workout.type]?.name ?? workout.type}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Date</span>
-                <span className="font-semibold text-text-primary">
-                  {format(workout.date, 'MMM d, yyyy')}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-text-secondary flex items-center gap-2">
-                  <Clock size={16} />
-                  Duration
-                </span>
-                <span className="font-semibold text-text-primary">{duration}</span>
-              </div>
-            </div>
-          </Card>
-
-          <div className="grid grid-cols-3 gap-3">
-            <Card className="bg-card text-center p-4">
-              <div className="text-2xl font-bold text-primary-500">{workout.exercises.length}</div>
-              <div className="text-text-secondary text-xs mt-1">Exercises</div>
-            </Card>
-            <Card className="bg-card text-center p-4">
-              <div className="text-2xl font-bold text-primary-500">{completedSets}/{totalSets}</div>
-              <div className="text-text-secondary text-xs mt-1">Sets</div>
-            </Card>
-            <Card className="bg-card text-center p-4">
-              <div className="text-2xl font-bold text-primary-500">{Math.round(totalVolume)}</div>
-              <div className="text-text-secondary text-xs mt-1">Volume (kg)</div>
-            </Card>
-          </div>
         </div>
 
-        {/* Exercise Breakdown */}
+        <SessionRecordsCard records={records} />
+
+        {/* Totals vs the last workout of the same type */}
+        <div>
+          <div className="grid grid-cols-3 gap-3">
+            {stats.map((stat) => (
+              <Card key={stat.label} className="bg-card text-center p-3">
+                <div className="text-2xl font-bold text-[var(--text-primary)] tabular-nums">{stat.value}</div>
+                <div className="text-[var(--text-secondary)] text-xs">{stat.label}</div>
+                {stat.delta && (
+                  <div
+                    className={`text-xs font-medium mt-1 tabular-nums ${
+                      stat.positive === true
+                        ? 'text-green-600 dark:text-green-400'
+                        : stat.positive === false
+                          ? 'text-red-500'
+                          : 'text-[var(--text-secondary)]'
+                    }`}
+                  >
+                    {stat.delta}
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+          {comparison && (
+            <p className="text-xs text-[var(--text-secondary)] text-center mt-2">
+              Compared to your last {typeName.toLowerCase()}
+            </p>
+          )}
+        </div>
+
+        {/* Exercises */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-text-primary">Exercise Breakdown</h3>
+            <h3 className="font-semibold text-[var(--text-primary)]">Exercises</h3>
             <Button
               variant="secondary"
               size="sm"
@@ -238,27 +265,27 @@ function WorkoutSummaryPage() {
               Add Exercise
             </Button>
           </div>
-          {workout.exercises.map((exercise: WorkoutExercise) => {
-            const completedSets = exercise.sets.filter((s: WorkoutSet) => s.completed).length
-            const exerciseVolume = exercise.sets.reduce(
-              (sum: number, set: WorkoutSet) => sum + calculateVolume(set.weight, set.reps),
-              0
-            )
-
-            return (
-              <Card key={exercise.id} className="bg-card">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium text-text-primary">{exercise.exercise.name}</h4>
-                    <p className="text-text-secondary text-sm">
-                      {completedSets} sets • {Math.round(exerciseVolume)} kg
-                    </p>
-                  </div>
-                  <TrendingUp size={20} className="text-primary-500" />
+          <Card className="bg-card divide-y divide-[var(--border-primary)] py-1">
+            {workout.exercises.map((exercise) => {
+              const doneSets = exercise.sets.filter((set) => set.completed).length
+              const top = getTopSet(exercise)
+              const trend = getExerciseTrend(exercise, workout, allWorkouts)
+              const trendInfo = trend ? trendIcons[trend] : null
+              return (
+                <div key={exercise.id} className="flex items-center justify-between gap-3 py-3">
+                  <span className="text-sm text-[var(--text-primary)] truncate">{exercise.exercise.name}</span>
+                  <span className="flex items-center gap-1.5 flex-shrink-0 text-sm text-[var(--text-secondary)] tabular-nums">
+                    {doneSets === 0
+                      ? 'skipped'
+                      : `${doneSets} ${doneSets === 1 ? 'set' : 'sets'}${top ? ` · best ${top.weight}×${top.reps}` : ''}`}
+                    {trendInfo && (
+                      <trendInfo.Icon size={16} className={trendInfo.className} aria-label={trendInfo.label} />
+                    )}
+                  </span>
                 </div>
-              </Card>
-            )
-          })}
+              )
+            })}
+          </Card>
         </div>
 
         {/* Actions */}
