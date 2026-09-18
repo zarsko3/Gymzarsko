@@ -211,7 +211,7 @@ function WorkoutSummaryPage() {
       <div className="px-4 py-8 space-y-6">
         {/* Header */}
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-500 text-white mb-3">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-500 text-on-primary mb-3">
             <Check size={36} strokeWidth={2.5} />
           </div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">Workout complete</h1>

@@ -132,4 +132,21 @@ describe('ActiveWorkoutPage suggestions', () => {
     // page instead of the viewport — the timer must render outside it
     expect(container.contains(timer)).toBe(false)
   })
+
+  it('shows a done counter and one menu for exercise actions', async () => {
+    renderPage()
+    await screen.findByText(/Last time/)
+    expect(screen.getByText('0/2')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mark set 1 done' }))
+    await waitFor(() => expect(screen.getByText('1/2')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Exercise options' }))
+    const menu = screen.getByRole('menu')
+    expect(within(menu).getByRole('menuitem', { name: /Edit sets and targets/ })).toBeInTheDocument()
+
+    fireEvent.click(within(menu).getByRole('menuitem', { name: /Rename/ }))
+    expect(screen.getByPlaceholderText('Exercise name')).toHaveValue('Flat Dumbbell Press')
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
 })

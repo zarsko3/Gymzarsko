@@ -12,7 +12,7 @@ function NotFoundPage() {
       </div>
       <Link
         to="/"
-        className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-primary-600 text-white font-semibold hover:bg-primary-700 transition-colors"
+        className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-primary-600 text-on-primary font-semibold hover:bg-primary-700 transition-colors"
       >
         Back to Dashboard
       </Link>

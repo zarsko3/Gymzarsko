@@ -21,7 +21,7 @@ interface MetricChartProps {
 }
 
 function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChartProps) {
-  const [accentColor, setAccentColor] = useState<string>('#10B981')
+  const [accentColor, setAccentColor] = useState<string>('#6474EC')
   const shouldReduceMotion = useReducedMotion() ?? false
 
   // Get computed CSS variable value for accent color
@@ -132,7 +132,7 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
                 onClick={() => onTimeRangeChange(range)}
                 className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                   timeRange === range
-                    ? 'bg-primary-500 text-white'
+                    ? 'bg-primary-500 text-on-primary'
                     : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
                 }`}
               >
@@ -163,7 +163,7 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
                 onClick={() => onTimeRangeChange(range)}
                 className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                   timeRange === range
-                    ? 'bg-primary-500 text-white'
+                    ? 'bg-primary-500 text-on-primary'
                     : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
                 }`}
               >
@@ -192,7 +192,7 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
               onClick={() => onTimeRangeChange(range)}
               className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                 timeRange === range
-                  ? 'bg-primary-500 text-white'
+                  ? 'bg-primary-500 text-on-primary'
                   : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
               }`}
             >
@@ -238,13 +238,13 @@ function MetricChart({ entries, goal, timeRange, onTimeRangeChange }: MetricChar
                 {goal && (
                   <ReferenceLine
                     y={goal.targetWeight}
-                    stroke="#10B981"
+                    stroke={accentColor}
                     strokeDasharray="5 5"
                     strokeWidth={2}
                     label={{
                       value: `Goal: ${goal.targetWeight}kg`,
                       position: 'right',
-                      fill: '#10B981',
+                      fill: accentColor,
                       fontSize: 12,
                     }}
                   />

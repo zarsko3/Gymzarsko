@@ -25,6 +25,7 @@ export default {
         },
         // Semantic theme colors - defined at root for utility classes
         card: 'var(--bg-card)',
+        'on-primary': 'var(--on-primary)',
         text: {
           primary: 'var(--text-primary)',
           secondary: 'var(--text-secondary)',

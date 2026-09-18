@@ -25,7 +25,7 @@ function ResumeWorkoutCard({ workout }: ResumeWorkoutCardProps) {
       className="border-2 border-primary-500"
     >
       <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0">
+        <div className="w-11 h-11 rounded-full bg-primary-500 text-on-primary flex items-center justify-center flex-shrink-0">
           <PlayCircle size={24} />
         </div>
         <div className="flex-1 min-w-0">

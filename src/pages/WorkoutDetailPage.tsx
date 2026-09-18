@@ -235,7 +235,7 @@ function WorkoutDetailPage() {
       <div className="min-h-full flex items-center justify-center px-4">
         <div className="max-w-sm w-full text-center">
           {/* Icon */}
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 flex items-center justify-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
             <Calendar size={40} className="text-red-500" strokeWidth={2} />
           </div>
 
@@ -550,7 +550,7 @@ function WorkoutDetailPage() {
             fullWidth
             variant="ghost"
             onClick={handleDelete}
-            className="text-red-500 hover:bg-red-50"
+            className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
           >
             <Trash2 size={20} />
             Delete Workout

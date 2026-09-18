@@ -1,4 +1,3 @@
-import { User } from 'lucide-react'
 import Card from '../ui/Card'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
@@ -20,36 +19,37 @@ function ProfileSettingsSection({
   saving,
   disableSave,
 }: ProfileSettingsSectionProps) {
+  const name = displayName || fallbackName
+  const initial = name.trim().charAt(0).toUpperCase() || '?'
+
   return (
     <section>
-      <h2 className="text-lg font-semibold text-text-primary mb-3">Profile Settings</h2>
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--text-secondary)] mb-2 px-1">Profile</h2>
 
-      <Card className="bg-gradient-to-br from-primary-50 to-primary-100 border-2 border-primary-200 mb-3">
-        <div className="p-6 flex items-center gap-4">
-          <div className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center flex-shrink-0">
-            <User className="w-10 h-10 text-white" strokeWidth={2} />
+      <Card className="bg-card">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 rounded-full bg-primary-100 text-primary-600 dark:text-primary-600 flex items-center justify-center text-lg font-semibold flex-shrink-0">
+            {initial}
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-xl font-bold text-text-primary truncate">
-              {displayName || fallbackName}
-            </h3>
-          </div>
+          <p className="text-lg font-semibold text-[var(--text-primary)] truncate">{name}</p>
         </div>
-      </Card>
 
-      <Card className="bg-card mb-3">
-        <div className="p-4 space-y-3">
-          <Input
-            label="Display Name"
-            type="text"
-            value={displayName}
-            onChange={(e) => onDisplayNameChange(e.target.value)}
-            placeholder="Your name"
-            disabled={saving}
-          />
-          <Button onClick={onSave} disabled={disableSave}>
-            {saving ? 'Saving...' : 'Save'}
-          </Button>
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <Input
+              label="Display name"
+              type="text"
+              value={displayName}
+              onChange={(e) => onDisplayNameChange(e.target.value)}
+              placeholder="Your name"
+              disabled={saving}
+            />
+          </div>
+          {!disableSave && (
+            <Button onClick={onSave} disabled={saving}>
+              {saving ? 'Saving...' : 'Save'}
+            </Button>
+          )}
         </div>
       </Card>
     </section>
@@ -57,4 +57,3 @@ function ProfileSettingsSection({
 }
 
 export default ProfileSettingsSection
-

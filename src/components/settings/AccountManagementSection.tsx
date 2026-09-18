@@ -1,10 +1,33 @@
-import { Lock, LogOut, Trash2 } from 'lucide-react'
+import { ChevronRight, Lock, LogOut, Trash2, type LucideIcon } from 'lucide-react'
 import Card from '../ui/Card'
 
 interface AccountManagementSectionProps {
   onChangePassword: () => void
   onLogout: () => void
   onDeleteAccount: () => void
+}
+
+interface RowProps {
+  Icon: LucideIcon
+  label: string
+  onClick: () => void
+  danger?: boolean
+}
+
+function Row({ Icon, label, onClick, danger = false }: RowProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-4 min-h-[52px] text-left hover:bg-[var(--bg-secondary)] transition-colors ${
+        danger ? 'text-red-500' : 'text-[var(--text-primary)]'
+      }`}
+    >
+      <Icon size={20} className={danger ? '' : 'text-[var(--text-secondary)]'} />
+      <span className="flex-1 font-medium">{label}</span>
+      {!danger && <ChevronRight size={18} className="text-[var(--text-inactive)]" />}
+    </button>
+  )
 }
 
 function AccountManagementSection({
@@ -14,43 +37,15 @@ function AccountManagementSection({
 }: AccountManagementSectionProps) {
   return (
     <section>
-      <h2 className="text-lg font-semibold text-text-primary mb-3">Account Management</h2>
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--text-secondary)] mb-2 px-1">Account</h2>
 
-      <Card onClick={onChangePassword} className="bg-card mb-3 cursor-pointer hover:shadow-md transition-shadow">
-        <div className="p-4 flex items-center gap-3">
-          <Lock className="w-5 h-5 text-primary-500" />
-          <div>
-            <h3 className="font-medium text-text-primary">Change Password</h3>
-            <p className="text-sm text-text-secondary">Update your password</p>
-          </div>
-        </div>
-      </Card>
-
-      <Card onClick={onLogout} className="bg-card mb-3 cursor-pointer hover:shadow-md transition-shadow">
-        <div className="p-4 flex items-center gap-3">
-          <LogOut className="w-5 h-5 text-yellow-600" />
-          <div>
-            <h3 className="font-medium text-yellow-700">Log Out</h3>
-            <p className="text-sm text-text-secondary">Sign out of your account</p>
-          </div>
-        </div>
-      </Card>
-
-      <Card
-        onClick={onDeleteAccount}
-        className="bg-red-50 border-2 border-red-200 cursor-pointer hover:shadow-md transition-shadow"
-      >
-        <div className="p-4 flex items-center gap-3">
-          <Trash2 className="w-5 h-5 text-red-600" />
-          <div>
-            <h3 className="font-medium text-red-600">Delete Account</h3>
-            <p className="text-sm text-red-500">Permanently delete your account and data</p>
-          </div>
-        </div>
+      <Card className="bg-card p-0 overflow-hidden divide-y divide-[var(--border-primary)]">
+        <Row Icon={Lock} label="Change password" onClick={onChangePassword} />
+        <Row Icon={LogOut} label="Log out" onClick={onLogout} />
+        <Row Icon={Trash2} label="Delete account" onClick={onDeleteAccount} danger />
       </Card>
     </section>
   )
 }
 
 export default AccountManagementSection
-

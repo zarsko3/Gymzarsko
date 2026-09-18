@@ -11,21 +11,23 @@
   --text-secondary: #64748B;
   --text-inactive: #94A3B8;
 
-  /* Primary Brand Colors */
-  --primary-50: #f0fdf4;
-  --primary-100: #dcfce7;
-  --primary-200: #bbf7d0;
-  --primary-300: #86efac;
-  --primary-400: #4ade80;
-  --primary-500: #10B981;
-  --primary-600: #059669;
-  --primary-700: #047857;
-  --primary-800: #065f46;
-  --primary-900: #064e3b;
+  /* Primary Brand Colors (periwinkle) */
+  --primary-50: #F2F4FF;
+  --primary-100: #E4E8FE;
+  --primary-200: #CBD2FC;
+  --primary-300: #A9B4FA;
+  --primary-400: #8B9CF7;
+  --primary-500: #6474EC;
+  --primary-600: #5061DD;
+  --primary-700: #4150BF;
+  --primary-800: #36439A;
+  --primary-900: #2E3878;
+  /* Text/icons placed on a primary background */
+  --on-primary: #FFFFFF;
 
   /* Accent Colors */
-  --accent: #10B981;
-  --accent-mint: #D1E7DD;
+  --accent: #6474EC;
+  --accent-mint: #E4E8FE;
   --accent-soft-blue: #EFF6FF;
   --accent-soft-green: #ECFDF5;
   --accent-soft-purple: #F5F3FF;
@@ -73,9 +75,9 @@
   --text-dim: #a5b0c5;
   --ring: rgba(255, 255, 255, 0.06);
   
-  /* Accent (warm orange) */
-  --accent: #ffb55c;
-  --accent-strong: #ff9b2e;
+  /* Accent (periwinkle) */
+  --accent: #8B9CF7;
+  --accent-strong: #A3B0FA;
   
   /* Per-metric colors */
   --metric-volume: #FFD37A;
@@ -97,20 +99,22 @@
   --text-secondary: var(--text-dim);
   --text-inactive: #B0B8C8; /* Improved contrast from #94A3B8 */
   
-  /* Primary Brand Colors (slightly adjusted for dark mode) */
-  --primary-50: #064e3b;
-  --primary-100: #065f46;
-  --primary-200: #047857;
-  --primary-300: #059669;
-  --primary-400: #10B981;
-  --primary-500: #34D399;
-  --primary-600: #4ADE80;
-  --primary-700: #86EFAC;
-  --primary-800: #BBF7D0;
-  --primary-900: #DCFCE7;
+  /* Primary Brand Colors (periwinkle, lighter end faces the dark background) */
+  --primary-50: #1B2040;
+  --primary-100: #232A55;
+  --primary-200: #2F3872;
+  --primary-300: #4A56A8;
+  --primary-400: #7282EE;
+  --primary-500: #8B9CF7;
+  --primary-600: #A3B0FA;
+  --primary-700: #BCC6FC;
+  --primary-800: #D6DCFD;
+  --primary-900: #ECEFFE;
+  /* Periwinkle is light in dark mode, so text on it is dark */
+  --on-primary: #0B1220;
   
   /* Accent Colors (backward compatibility) */
-  --accent-mint: #1E3A2F;
+  --accent-mint: #1E2547;
   --accent-soft-blue: #1E3A5F;
   --accent-soft-green: #1E3A2F;
   --accent-soft-purple: #2E1F3A;

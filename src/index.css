@@ -56,6 +56,17 @@
     max-width: 100%;
   }
 
+  /* Number fields: no spinner arrows, values are typed on a numeric keypad */
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
   /* Ensure touch targets are at least 44x44px */
   button,
   a,

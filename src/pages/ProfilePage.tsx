@@ -116,7 +116,7 @@ function ProfilePage() {
         {/* Logout Button */}
         <Card 
           onClick={() => setShowLogoutModal(true)}
-          className="border-2 border-red-200 bg-red-50 cursor-pointer hover:shadow-md transition-shadow"
+          className="border-2 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center gap-3 p-2">
             <LogOut size={24} className="text-red-600" strokeWidth={1.5} />

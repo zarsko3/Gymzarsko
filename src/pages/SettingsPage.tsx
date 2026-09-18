@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ChevronLeft,
   AlertCircle,
   CheckCircle,
   Loader2,
@@ -10,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
+import PageHeader from '../components/layout/PageHeader'
 import ProfileSettingsSection from '../components/settings/ProfileSettingsSection'
 import ThemePreferenceSection from '../components/settings/ThemePreferenceSection'
 import AccountManagementSection from '../components/settings/AccountManagementSection'
@@ -183,20 +183,7 @@ function SettingsPage() {
 
   return (
     <div className="min-h-full bg-[var(--bg-primary)]">
-      {/* Header */}
-      <div className="sticky top-0 bg-card border-b border-border-primary z-10 shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-1 text-primary-500 font-medium min-h-[44px] min-w-[44px] justify-center"
-          >
-            <ChevronLeft size={20} />
-            <span>Back</span>
-          </button>
-          <h1 className="text-lg font-semibold text-primary-600">Settings</h1>
-          <div className="w-[80px]" /> {/* Spacer for alignment */}
-        </div>
-      </div>
+      <PageHeader title="Settings" />
 
       {/* Message Banner */}
       {message && (
@@ -204,7 +191,7 @@ function SettingsPage() {
           className={`max-w-2xl mx-auto mt-4 mx-4 p-4 rounded-lg flex items-start gap-3 ${
             message.type === 'success'
               ? 'bg-green-50 border border-green-200'
-              : 'bg-red-50 border border-red-200'
+              : 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800'
           }`}
         >
           {message.type === 'success' ? (
@@ -240,11 +227,7 @@ function SettingsPage() {
           onDeleteAccount={() => setShowDeleteModal(true)}
         />
 
-        {/* App Info */}
-        <div className="text-center pt-4 pb-6">
-          <p className="text-text-secondary text-sm font-medium">Gymzarsko v1.0.0</p>
-          <p className="text-text-inactive text-xs mt-1">Built with React, Tailwind & Firebase</p>
-        </div>
+        <p className="text-center text-xs text-[var(--text-inactive)] pt-2 pb-6">Gymzarsko</p>
       </div>
 
       {/* Change Password Modal */}
@@ -261,7 +244,7 @@ function SettingsPage() {
       >
         <div className="space-y-4">
           {passwordError && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+            <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-red-700">{passwordError}</p>
             </div>
@@ -362,7 +345,7 @@ function SettingsPage() {
         title="Delete Account"
       >
         <div className="space-y-4">
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
             <p className="text-sm text-red-700 font-medium mb-2">⚠️ Warning: This action cannot be undone!</p>
             <p className="text-sm text-red-600">
               All your workouts, progress data, and profile information will be permanently deleted.
@@ -370,7 +353,7 @@ function SettingsPage() {
           </div>
 
           {deleteError && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+            <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-red-700">{deleteError}</p>
             </div>

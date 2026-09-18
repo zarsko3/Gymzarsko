@@ -39,7 +39,7 @@ function WorkoutTypeModal({ isOpen, onClose, onSelectWorkout }: WorkoutTypeModal
               type="button"
             >
               <div className="flex items-center gap-4 p-4">
-                <div className="w-12 h-12 rounded-full bg-[var(--primary-100)] text-[var(--accent)] flex items-center justify-center flex-shrink-0">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${workout.iconClass}`}>
                   <workout.Icon size={24} strokeWidth={2} />
                 </div>
                 <div className="flex-1 min-w-0">

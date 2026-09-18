@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
-import { ChevronLeft, Trash2, Clock, TrendingUp, Calendar, Dumbbell, Search, X, Plus, Edit2 } from 'lucide-react'
+import { Trash2, Clock, TrendingUp, Calendar, Dumbbell, Search, X, Plus, Edit2 } from 'lucide-react'
 import type { Workout, WorkoutType } from '../types'
 import { deleteWorkout, updateWorkout } from '../services/workoutServiceFacade'
 import { useToast } from '../hooks/useToast'
@@ -14,6 +14,7 @@ import ConfirmDialog from '../components/ui/ConfirmDialog'
 import WorkoutTypeModal from '../components/home/WorkoutTypeModal'
 import AddWorkoutModal from '../components/history/AddWorkoutModal'
 import EditWorkoutModal from '../components/history/EditWorkoutModal'
+import PageHeader, { headerIconButtonClass } from '../components/layout/PageHeader'
 import { findWorkoutsWithoutDuration, hasCompletedSets } from '../utils/workoutStatus'
 import { WORKOUT_TYPES, WORKOUT_TYPE_INFO } from '../constants/workoutTypes'
 
@@ -146,20 +147,7 @@ function HistoryPage() {
   if (workouts.length === 0) {
     return (
       <div className="min-h-full">
-        {/* Header */}
-        <div className="sticky top-0 bg-[var(--bg-primary)] border-b border-[var(--border-primary)] z-10">
-          <div className="flex items-center justify-between px-4 py-4">
-            <button
-              onClick={() => navigate('/')}
-              className="flex items-center gap-1 text-primary-500 font-medium min-h-[44px] min-w-[44px] justify-center"
-            >
-              <ChevronLeft size={20} />
-              <span>Back</span>
-            </button>
-            <h1 className="text-lg font-semibold text-primary-600">History</h1>
-            <div className="min-w-[44px]"></div>
-          </div>
-        </div>
+        <PageHeader title="History" />
 
         <div className="flex items-center justify-center min-h-[70vh] px-4">
           <div className="max-w-sm w-full text-center">
@@ -192,26 +180,18 @@ function HistoryPage() {
 
   return (
     <div className="min-h-full">
-      {/* Header */}
-      <div className="sticky top-0 bg-[var(--bg-primary)] border-b border-border-primary z-10">
-        <div className="flex items-center justify-between px-4 py-4">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-1 text-primary-500 font-medium min-h-[44px] min-w-[44px] justify-center"
-          >
-            <ChevronLeft size={20} />
-            <span>Back</span>
-          </button>
-          <h1 className="text-lg font-semibold text-primary-600">History</h1>
+      <PageHeader
+        title="History"
+        actions={
           <button
             onClick={() => setShowAddWorkoutModal(true)}
-            className="text-primary-500 hover:text-primary-600 min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className={headerIconButtonClass}
             aria-label="Add workout"
           >
             <Plus size={24} />
           </button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="px-4 py-6 space-y-6">
         {/* Stats Summary */}
@@ -275,7 +255,7 @@ function HistoryPage() {
             onClick={() => setFilter('all')}
             className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
               filter === 'all'
-                ? 'bg-primary-500 text-white'
+                ? 'bg-primary-500 text-on-primary'
                 : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
             }`}
           >
@@ -287,7 +267,7 @@ function HistoryPage() {
               onClick={() => setFilter(type.id)}
               className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${
                 filter === type.id
-                  ? 'bg-primary-500 text-white'
+                  ? 'bg-primary-500 text-on-primary'
                   : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
               }`}
             >

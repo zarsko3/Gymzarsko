@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { motion } from 'framer-motion'
 import { useReducedMotion } from 'framer-motion'
-import { ChevronLeft, Plus, TrendingUp, Target, Edit2 } from 'lucide-react'
+import { Plus, TrendingUp, Target, Edit2 } from 'lucide-react'
 import Card from '../components/ui/Card'
+import PageHeader, { headerIconButtonClass } from '../components/layout/PageHeader'
 import AddMetricModal from '../components/bodyMetrics/AddMetricModal'
 import EditMetricModal from '../components/bodyMetrics/EditMetricModal'
 import MetricChart from '../components/bodyMetrics/MetricChart'
@@ -19,7 +19,6 @@ import type { BodyMetricEntry, BodyMetricGoal } from '../types'
 type TimeRange = '7d' | '30d' | '90d' | 'all'
 
 function ProgressPage() {
-  const navigate = useNavigate()
   const { currentUser, loading: authLoading } = useAuth()
   const shouldReduceMotion = useReducedMotion() ?? false
   const [entries, setEntries] = useState<BodyMetricEntry[]>([])
@@ -114,26 +113,18 @@ function ProgressPage() {
   if (!isLoading && entries.length === 0) {
     return (
       <div className="min-h-full">
-        {/* Header */}
-        <div className="sticky top-0 bg-[var(--bg-primary)] border-b border-[var(--border-primary)] z-10">
-          <div className="flex items-center justify-between px-4 py-4">
-            <button 
-              onClick={() => navigate('/')}
-              className="flex items-center gap-1 text-primary-500 font-medium min-h-[44px] min-w-[44px] justify-center"
-            >
-              <ChevronLeft size={20} />
-              <span>Back</span>
-            </button>
-            <h1 className="text-lg font-semibold text-primary-600">Body Metrics</h1>
-            <button 
+        <PageHeader
+          title="Metrics"
+          actions={
+            <button
               onClick={handleAdd}
-              className="text-primary-500 hover:text-primary-600 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className={headerIconButtonClass}
               aria-label="Add weight entry"
             >
               <Plus size={24} />
             </button>
-          </div>
-        </div>
+          }
+        />
 
         <div className="flex items-center justify-center min-h-[70vh] px-4">
           <div className="max-w-sm w-full text-center">
@@ -153,7 +144,7 @@ function ProgressPage() {
             {/* CTA Button */}
             <button
               onClick={handleAdd}
-              className="w-full px-6 py-3 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 transition-colors"
+              className="w-full px-6 py-3 bg-primary-500 text-on-primary rounded-lg font-medium hover:bg-primary-600 transition-colors"
             >
               Log Your First Weight
             </button>
@@ -171,35 +162,27 @@ function ProgressPage() {
 
   return (
     <div className="min-h-full bg-[var(--bg-primary)]">
-      {/* Header */}
-      <div className="sticky top-0 bg-[var(--bg-primary)] border-b border-[var(--border-primary)] z-10">
-        <div className="flex items-center justify-between px-4 py-4">
-          <button 
-            onClick={() => navigate('/')}
-            className="flex items-center gap-1 text-primary-500 font-medium min-h-[44px] min-w-[44px] justify-center"
-          >
-            <ChevronLeft size={20} />
-            <span>Back</span>
-          </button>
-          <h1 className="text-lg font-semibold text-primary-600">Body Metrics</h1>
-          <div className="flex items-center gap-2">
-            <button 
+      <PageHeader
+        title="Metrics"
+        actions={
+          <>
+            <button
               onClick={() => setShowGoalModal(true)}
-              className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className={headerIconButtonClass}
               aria-label="Goal settings"
             >
               <Target size={20} />
             </button>
-            <button 
+            <button
               onClick={handleAdd}
-              className="text-primary-500 hover:text-primary-600 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className={headerIconButtonClass}
               aria-label="Add weight entry"
             >
               <Plus size={24} />
             </button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div className="px-4 py-6 space-y-6 flex flex-col flex-1 min-w-0">
         {/* Stats Cards */}

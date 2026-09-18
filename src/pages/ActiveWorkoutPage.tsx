@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, Trash2, Check, MessageSquare, FileText, Edit2, X, History, TrendingUp } from 'lucide-react'
+import { Plus, Check, MessageSquare, FileText, History, TrendingUp } from 'lucide-react'
 import type { Workout, WorkoutType, WorkoutExercise, WorkoutSet, Exercise } from '../types'
 import { startWorkout, updateWorkout, completeWorkout, getCurrentWorkout, getWorkoutById } from '../services/workoutServiceFacade'
 import {
@@ -31,6 +31,8 @@ import { useWorkoutTimer } from '../hooks/useWorkoutTimer'
 import { useInactivityTimer } from '../hooks/useInactivityTimer'
 import WorkoutHeader from '../components/workout/WorkoutHeader'
 import SetNumberInput from '../components/workout/SetNumberInput'
+import ExerciseMenu from '../components/workout/ExerciseMenu'
+import SwipeableSetRow from '../components/workout/SwipeableSetRow'
 import RestTimer, { DEFAULT_REST_SECONDS } from '../components/workout/RestTimer'
 import { WORKOUT_TYPE_INFO } from '../constants/workoutTypes'
 
@@ -719,25 +721,8 @@ function ActiveWorkoutPage() {
         isCompleting={isCompletingWorkout}
       />
 
-      <div className="px-4 py-6 space-y-4">
-        {/* Action Buttons */}
-        <div className="flex gap-2">
-          <button
-            className="font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:opacity-80 active:opacity-70 px-6 py-3 text-base min-h-[48px] w-full"
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              setExerciseForm(EMPTY_EXERCISE_FORM)
-              setShowAddExercise(true)
-            }}
-            type="button"
-            disabled={isAddingExercise}
-          >
-            <Plus size={20} />
-            {isAddingExercise ? 'Adding...' : 'Add Exercise'}
-          </button>
-        </div>
-
+      {/* Extra bottom room while the rest bar is up, so it never covers the last buttons */}
+      <div className={`px-4 pt-6 space-y-4 ${restStartedAt !== null ? 'pb-28' : 'pb-6'}`}>
         {/* Exercises */}
         {workout.exercises.map((exercise: WorkoutExercise, exerciseIndex: number) => (
           <Card key={exercise.id} className="bg-card group">
@@ -779,43 +764,26 @@ function ActiveWorkoutPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-[var(--text-primary)] text-lg">
-                  {exercise.exercise.name}
-                </h3>
-                        <button
-                          onClick={() => handleStartEditingExerciseName(exerciseIndex)}
-                          className="p-1 hover:bg-[var(--bg-secondary)] rounded transition-colors text-primary-500"
-                          aria-label="Edit exercise name"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                      </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-[var(--text-secondary)] text-sm">
-                    {exercise.exercise.muscleGroup}
-                    {exercise.exercise.repRange && ` • ${exercise.exercise.repRange} reps`}
-                  </p>
-                </div>
+                      <h3 className="font-semibold text-[var(--text-primary)] text-lg">
+                        {exercise.exercise.name}
+                      </h3>
+                      <p className="text-[var(--text-secondary)] text-sm">
+                        {exercise.exercise.muscleGroup}
+                        {exercise.exercise.repRange && ` · ${exercise.exercise.repRange} reps`}
+                      </p>
                     </>
                   )}
                 </div>
                 {editingExerciseNameIndex !== exerciseIndex && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEditExercise(exerciseIndex)}
-                      className="p-2 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors text-primary-500"
-                      aria-label="Edit exercise"
-                    >
-                      <Edit2 size={18} />
-                    </button>
-                    <button
-                      onClick={() => handleRemoveExercise(exerciseIndex)}
-                      className="p-2 hover:bg-red-50 rounded-lg transition-colors text-red-500"
-                      aria-label="Remove exercise"
-                    >
-                      <X size={18} />
-                    </button>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <span className="text-sm font-medium text-[var(--text-secondary)] tabular-nums">
+                      {exercise.sets.filter((set) => set.completed).length}/{exercise.sets.length}
+                    </span>
+                    <ExerciseMenu
+                      onRename={() => handleStartEditingExerciseName(exerciseIndex)}
+                      onEdit={() => handleEditExercise(exerciseIndex)}
+                      onRemove={() => handleRemoveExercise(exerciseIndex)}
+                    />
                   </div>
                 )}
               </div>
@@ -844,7 +812,7 @@ function ActiveWorkoutPage() {
                           <button
                             type="button"
                             onClick={() => handleApplyProgression(exercise, progression)}
-                            className="px-2 min-h-[32px] rounded-md border border-primary-500 font-medium hover:bg-primary-500 hover:text-white transition-colors"
+                            className="px-2 min-h-[32px] rounded-md border border-primary-500 font-medium hover:bg-primary-500 hover:text-on-primary transition-colors"
                           >
                             Apply
                           </button>
@@ -857,23 +825,32 @@ function ActiveWorkoutPage() {
 
               {/* Sets Table */}
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)] pb-2 border-b border-[var(--border-primary)]">
-                  <div className="w-8 text-center">SET</div>
-                  <div className="flex-1 text-center">WEIGHT</div>
-                  <div className="flex-1 text-center">REPS</div>
-                  <div className="w-20"></div>
+                <div className="flex items-center gap-2 px-1 text-xs font-medium text-[var(--text-secondary)]">
+                  <div className="w-7 text-center">#</div>
+                  <div className="flex-1 text-center">kg</div>
+                  <div className="flex-1 text-center">reps</div>
+                  <div className="w-12"></div>
                 </div>
 
                 {exercise.sets.map((set: WorkoutSet, setIndex: number) => {
                   const suggestion = set.completed ? null : getSuggestionFor(exercise, setIndex)
+                  const inputClass = set.completed
+                    ? 'flex-1 min-w-[72px] px-2 py-2.5 rounded-lg text-center text-base font-semibold bg-transparent border border-transparent text-primary-600 dark:text-primary-500 disabled:opacity-100'
+                    : 'flex-1 min-w-[72px] px-2 py-2.5 rounded-lg text-center text-base bg-[var(--input-bg)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] placeholder:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
                   return (
-                  <div
+                  <SwipeableSetRow
                     key={set.id}
-                    className={`flex items-center gap-2 ${
-                      set.completed ? 'opacity-60' : ''
+                    canDelete={exercise.sets.length > 1}
+                    onDelete={() => handleRemoveSet(exerciseIndex, setIndex)}
+                    className={`flex items-center gap-2 p-1 rounded-lg transition-colors ${
+                      set.completed ? 'bg-primary-50' : ''
                     }`}
                   >
-                    <div className="w-8 text-center text-[var(--text-primary)] font-medium text-sm">
+                    <div
+                      className={`w-7 text-center font-medium text-sm ${
+                        set.completed ? 'text-primary-600 dark:text-primary-500' : 'text-[var(--text-secondary)]'
+                      }`}
+                    >
                       {setIndex + 1}
                     </div>
 
@@ -897,7 +874,7 @@ function ActiveWorkoutPage() {
                       data-exercise={exerciseIndex}
                       data-set={setIndex}
                       data-field="weight"
-                      className="flex-1 px-2 py-3 border border-[var(--border)] rounded-lg text-center text-base bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-inactive)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] min-w-[80px]"
+                      className={inputClass}
                       placeholder={suggestion?.weight ? String(suggestion.weight) : '0'}
                       disabled={set.completed}
                     />
@@ -927,35 +904,31 @@ function ActiveWorkoutPage() {
                       data-exercise={exerciseIndex}
                       data-set={setIndex}
                       data-field="reps"
-                      className="flex-1 px-2 py-3 border border-[var(--border)] rounded-lg text-center text-base bg-[var(--input-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-inactive)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] min-w-[80px]"
+                      className={inputClass}
                       placeholder={suggestion?.reps ? String(suggestion.reps) : '0'}
                       disabled={set.completed}
                     />
 
-                    <div className="flex gap-1 w-20">
-                      <button
-                        onClick={() => handleToggleSet(exerciseIndex, setIndex)}
-                        className={`flex-1 min-w-[36px] h-9 flex items-center justify-center rounded-lg transition-colors ${
-                          set.completed
-                            ? 'bg-primary-500 text-white'
-                            : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:opacity-80'
-                        }`}
-                      >
-                        <Check size={16} />
-                      </button>
-
-                      {exercise.sets.length > 1 && (
-                        <button
-                          onClick={() => handleRemoveSet(exerciseIndex, setIndex)}
-                          className="min-w-[36px] h-9 flex items-center justify-center rounded-lg bg-[var(--bg-secondary)] text-red-500 hover:opacity-80"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleSet(exerciseIndex, setIndex)}
+                      aria-label={set.completed ? `Mark set ${setIndex + 1} not done` : `Mark set ${setIndex + 1} done`}
+                      aria-pressed={set.completed}
+                      className={`w-12 h-11 flex-shrink-0 flex items-center justify-center rounded-lg transition-colors ${
+                        set.completed
+                          ? 'bg-primary-500 text-on-primary'
+                          : 'border-2 border-primary-400 text-primary-500 hover:bg-primary-50'
+                      }`}
+                    >
+                      <Check size={20} strokeWidth={2.5} />
+                    </button>
+                  </SwipeableSetRow>
                   )
                 })}
+
+                {exerciseIndex === 0 && exercise.sets.length > 1 && (
+                  <p className="text-center text-xs text-[var(--text-inactive)]">Swipe a set left to delete it</p>
+                )}
 
                 {/* Add Set Button */}
                 <button
@@ -991,6 +964,21 @@ function ActiveWorkoutPage() {
             </div>
           </Card>
         ))}
+
+        <button
+          className="w-full min-h-[48px] flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[var(--border)] text-[var(--text-secondary)] font-medium hover:border-primary-500 hover:text-primary-500 transition-colors disabled:opacity-50"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setExerciseForm(EMPTY_EXERCISE_FORM)
+            setShowAddExercise(true)
+          }}
+          type="button"
+          disabled={isAddingExercise}
+        >
+          <Plus size={20} />
+          {isAddingExercise ? 'Adding...' : 'Add Exercise'}
+        </button>
 
         {/* Workout Notes */}
         <Card className="bg-card">
