@@ -35,6 +35,8 @@ export interface WorkoutSet {
 export interface WorkoutExercise {
   id: string
   exerciseId: string
+  /** Program exercise this entry fills (stays the same when the exercise is swapped) */
+  slotId?: string
   exercise: Exercise
   sets: WorkoutSet[]
   notes?: string

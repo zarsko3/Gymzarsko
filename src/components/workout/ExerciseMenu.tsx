@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import { MoreHorizontal, Pencil, SlidersHorizontal, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Pencil, Repeat, SlidersHorizontal, Trash2 } from 'lucide-react'
 
 interface ExerciseMenuProps {
+  onSwap: () => void
   onRename: () => void
   onEdit: () => void
   onRemove: () => void
 }
 
 /** One "⋯" button for everything you can do to an exercise */
-function ExerciseMenu({ onRename, onEdit, onRemove }: ExerciseMenuProps) {
+function ExerciseMenu({ onSwap, onRename, onEdit, onRemove }: ExerciseMenuProps) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -54,6 +55,10 @@ function ExerciseMenu({ onRename, onEdit, onRemove }: ExerciseMenuProps) {
           role="menu"
           className="absolute right-0 top-full mt-1 z-20 w-52 !max-w-none py-1 rounded-xl bg-card border border-[var(--border)] shadow-lg overflow-hidden"
         >
+          <button role="menuitem" type="button" onClick={choose(onSwap)} className={`${itemClass} text-[var(--text-primary)]`}>
+            <Repeat size={16} className="text-[var(--text-secondary)]" />
+            Swap exercise
+          </button>
           <button role="menuitem" type="button" onClick={choose(onRename)} className={`${itemClass} text-[var(--text-primary)]`}>
             <Pencil size={16} className="text-[var(--text-secondary)]" />
             Rename

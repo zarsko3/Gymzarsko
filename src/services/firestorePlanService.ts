@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, deleteDoc, doc, query, where, Timestamp, serverTimestamp } from 'firebase/firestore'
+import { collection, getDocs, addDoc, deleteDoc, doc, query, where, Timestamp, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { db, auth } from '../lib/firebase'
 import type { Plan, WorkoutType } from '../types'
 import { mockExercises, getDefaultSets } from './mockData'
@@ -14,6 +14,12 @@ export interface CustomExercise {
   category: WorkoutType
   defaultSets: number
   defaultReps: number
+  /**
+   * true: added to every new workout of `category`. false: only kept in the
+   * exercise library (search and swaps). Older entries have no flag and were
+   * always template exercises.
+   */
+  inTemplate?: boolean
   createdAt?: Date
 }
 
@@ -136,33 +142,45 @@ export async function createPlan(plan: Omit<Plan, 'id' | 'userId' | 'createdAt' 
  * Prevents duplicates by checking if an exercise with the same name already exists.
  */
 export async function saveCustomExercise(
-  exercise: Omit<CustomExercise, 'id' | 'createdAt'>,
+  exercise: Omit<CustomExercise, 'id' | 'createdAt' | 'inTemplate'>,
+  options: { inTemplate?: boolean } = {},
 ): Promise<CustomExercise> {
   const userId = getUserId()
+  const inTemplate = options.inTemplate ?? true
 
   try {
     const exercisesRef = collection(db, 'users', userId, CUSTOM_EXERCISES_COLLECTION)
+    const toExercise = (d: { id: string; data: () => Record<string, any> }) =>
+      ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate?.() }) as CustomExercise
 
-    // Check for duplicate name+category
-    const q = query(
-      exercisesRef,
-      where('category', '==', exercise.category),
-      where('name', '==', exercise.name),
-    )
-    const existing = await getDocs(q)
-    if (!existing.empty) {
-      // Already saved — return the existing one
-      const existingDoc = existing.docs[0]
-      return { id: existingDoc.id, ...existingDoc.data(), createdAt: existingDoc.data().createdAt?.toDate?.() } as CustomExercise
+    if (!inTemplate) {
+      // Library entry: one per name, whichever workout type it was created in
+      const existing = await getDocs(query(exercisesRef, where('name', '==', exercise.name)))
+      if (!existing.empty) return toExercise(existing.docs[0])
+    } else {
+      // Template entry: one per name and workout type
+      const existing = await getDocs(
+        query(exercisesRef, where('category', '==', exercise.category), where('name', '==', exercise.name))
+      )
+      if (!existing.empty) {
+        const existingDoc = existing.docs[0]
+        // A library-only entry becomes part of the template
+        if (existingDoc.data().inTemplate === false) {
+          await updateDoc(existingDoc.ref, { inTemplate: true })
+        }
+        return { ...toExercise(existingDoc), inTemplate: true }
+      }
     }
 
     const docRef = await addDoc(exercisesRef, {
       ...exercise,
+      inTemplate,
       createdAt: serverTimestamp(),
     })
 
     return {
       ...exercise,
+      inTemplate,
       id: docRef.id,
       createdAt: new Date(),
     }
@@ -173,7 +191,22 @@ export async function saveCustomExercise(
 }
 
 /**
- * Get all custom exercises for a specific workout type.
+ * Every exercise the user created, for search and swaps.
+ */
+export async function getLibraryExercises(): Promise<CustomExercise[]> {
+  try {
+    const userId = getUserId()
+    const snapshot = await getDocs(collection(db, 'users', userId, CUSTOM_EXERCISES_COLLECTION))
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate?.() })) as CustomExercise[]
+  } catch (error) {
+    console.error('Error getting exercise library:', error)
+    return []
+  }
+}
+
+/**
+ * Custom exercises that belong in every new workout of this type
+ * (library-only entries are left out).
  */
 export async function getCustomExercises(workoutType: WorkoutType): Promise<CustomExercise[]> {
   try {
@@ -182,11 +215,11 @@ export async function getCustomExercises(workoutType: WorkoutType): Promise<Cust
     const q = query(exercisesRef, where('category', '==', workoutType))
     const snapshot = await getDocs(q)
 
-    return snapshot.docs.map(d => ({
+    return (snapshot.docs.map(d => ({
       id: d.id,
       ...d.data(),
       createdAt: d.data().createdAt?.toDate?.(),
-    })) as CustomExercise[]
+    })) as CustomExercise[]).filter(exercise => exercise.inTemplate !== false)
   } catch (error) {
     console.error('Error getting custom exercises:', error)
     return []

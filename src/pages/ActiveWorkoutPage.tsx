@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, Check, MessageSquare, FileText, History, TrendingUp } from 'lucide-react'
-import type { Workout, WorkoutType, WorkoutExercise, WorkoutSet, Exercise } from '../types'
+import { Plus, Check, MessageSquare, FileText, History, TrendingUp, Info } from 'lucide-react'
+import type { Workout, WorkoutType, WorkoutExercise, WorkoutSet } from '../types'
 import { startWorkout, updateWorkout, completeWorkout, getCurrentWorkout, getWorkoutById, getRecentWorkouts } from '../services/workoutServiceFacade'
 import {
   buildLastSessions,
@@ -18,7 +18,18 @@ import {
   markSetsWithNumbersDone,
   type SetValues,
 } from '../utils/setSuggestions'
-import { saveCustomExercise } from '../services/firestorePlanService'
+import { saveCustomExercise, getLibraryExercises, type CustomExercise } from '../services/firestorePlanService'
+import { setProgramSwap } from '../services/programService'
+import { mockExercises } from '../services/mockData'
+import { emptySets } from '../utils/programBuilder'
+import {
+  getAlternatives,
+  findBuiltInExercise,
+  type LibraryExercise,
+} from '../constants/exerciseLibrary'
+import AddExerciseSheet from '../components/workout/AddExerciseSheet'
+import SwapExerciseSheet, { type SwapScope } from '../components/workout/SwapExerciseSheet'
+import ExerciseHowToSheet from '../components/workout/ExerciseHowToSheet'
 import { useToast } from '../hooks/useToast'
 import { handleFirestoreError } from '../utils/firestoreErrorHandler'
 import { haptic } from '../utils/haptic'
@@ -65,6 +76,17 @@ function updateSetAt(
   }))
 }
 
+const PROGRAM_IDS = new Set(mockExercises.map((exercise) => exercise.id))
+
+function toLibraryExercise(custom: CustomExercise): LibraryExercise {
+  return { id: custom.id, name: custom.name, muscleGroup: custom.muscleGroup, source: 'custom' }
+}
+
+/** Program slot an exercise fills, if any (older workouts have no slotId) */
+function getSlotId(exercise: WorkoutExercise): string | undefined {
+  return exercise.slotId ?? (PROGRAM_IDS.has(exercise.exerciseId) ? exercise.exerciseId : undefined)
+}
+
 // Enough history for "Last time" on every exercise: six full rotations
 const RECENT_HISTORY_LIMIT = 30
 
@@ -85,6 +107,9 @@ function ActiveWorkoutPage() {
   const [editingExerciseNameValue, setEditingExerciseNameValue] = useState('')
   const [exerciseNameError, setExerciseNameError] = useState('')
   const [showAddExercise, setShowAddExercise] = useState(false)
+  const [customLibrary, setCustomLibrary] = useState<LibraryExercise[]>([])
+  const [swapIndex, setSwapIndex] = useState<number | null>(null)
+  const [howToIndex, setHowToIndex] = useState<number | null>(null)
   const [isAddingExercise, setIsAddingExercise] = useState(false)
   const [isCompletingWorkout, setIsCompletingWorkout] = useState(false)
   // Exercise id -> progression the user chose to apply this session
@@ -233,6 +258,19 @@ function ActiveWorkoutPage() {
   const handleApplyProgression = (exercise: WorkoutExercise, progression: SetValues) => {
     setAppliedProgressions((prev) => new Map(prev).set(exercise.id, progression))
   }
+
+  // The user's own exercises, for search and swaps
+  useEffect(() => {
+    let cancelled = false
+    getLibraryExercises()
+      .then((exercises) => {
+        if (!cancelled) setCustomLibrary(exercises.map(toLibraryExercise))
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Load workout based on URL type parameter or ID. Re-runs when the URL changes;
   // results from a superseded run are ignored so two loads can never race.
@@ -515,80 +553,114 @@ function ActiveWorkoutPage() {
     }
   }
 
-  const handleAddCustomExercise = async () => {
-    if (!workout || !workout.id) {
-      console.error('Cannot add exercise: workout or workout.id is missing')
-      showToast('error', 'Workout not found. Please try again.')
-      return
+  const addLibraryExercise = async (libraryExercise: LibraryExercise, setCount: number) => {
+    if (!workout) return
+    const newWorkoutExercise: WorkoutExercise = {
+      id: randomId('we'),
+      exerciseId: libraryExercise.id,
+      exercise: {
+        id: libraryExercise.id,
+        name: libraryExercise.name,
+        muscleGroup: libraryExercise.muscleGroup,
+        category: workout.type,
+        repRange: libraryExercise.repRange,
+      },
+      sets: emptySets(setCount),
     }
 
-    // Validate form
-    if (!exerciseForm.name.trim() || !exerciseForm.muscleGroup.trim()) {
-      showToast('error', 'Please fill in all required fields')
-      return
-    }
+    const saved = await persistWorkoutChange(
+      { ...workout, exercises: [...workout.exercises, newWorkoutExercise] },
+      { successMessage: `${libraryExercise.name} added` }
+    )
+    if (!saved) return
 
+    setShowAddExercise(false)
+    // Offer to keep it in future workouts of this type
+    const isInProgram = mockExercises.some(
+      (exercise) => exercise.category === workout.type && exercise.name === libraryExercise.name
+    )
+    if (!isInProgram) {
+      setShowSaveToTemplate({
+        name: libraryExercise.name,
+        muscleGroup: libraryExercise.muscleGroup,
+        sets: setCount,
+        reps: parseInt(libraryExercise.repRange ?? '', 10) || 10,
+      })
+    }
+  }
+
+  const handleCreateExercise = async (name: string, muscleGroup: string, setCount: number) => {
+    if (!workout) return
     setIsAddingExercise(true)
     try {
-      const avgReps = exerciseForm.targetReps || 10
-      const avgWeight = exerciseForm.targetWeight || 0
-
-      const numSets = Math.max(1, Math.floor(exerciseForm.sets))
-      const exerciseId = randomId('we-custom')
-
-      const newExercise: Exercise = {
-        id: exerciseId,
-        name: exerciseForm.name.trim(),
-        muscleGroup: exerciseForm.muscleGroup.trim(),
-        category: workout.type,
+      // New exercises go to the library so they show up in search and swaps next time
+      let libraryExercise: LibraryExercise = { id: randomId('custom'), name, muscleGroup, source: 'custom' }
+      try {
+        const saved = await saveCustomExercise(
+          { name, muscleGroup, category: workout.type, defaultSets: setCount, defaultReps: 10 },
+          { inTemplate: false }
+        )
+        libraryExercise = toLibraryExercise(saved)
+        setCustomLibrary((prev) =>
+          prev.some((exercise) => exercise.name.toLowerCase() === name.toLowerCase()) ? prev : [...prev, libraryExercise]
+        )
+      } catch (error) {
+        console.warn('Could not save exercise to library:', error)
       }
-
-      const newWorkoutExercise: WorkoutExercise = {
-        id: exerciseId,
-        exerciseId: exerciseId,
-        exercise: newExercise,
-        sets: Array.from({ length: numSets }, () => ({
-          id: randomId('set'),
-          weight: avgWeight,
-          reps: avgReps,
-          completed: false,
-        })),
-      }
-
-      const newWorkout = {
-        ...workout,
-        exercises: [...workout.exercises, newWorkoutExercise],
-      }
-
-      const saved = await persistWorkoutChange(newWorkout, { successMessage: 'Exercise added successfully' })
-
-      if (saved) {
-        // Capture form values before clearing
-        const addedName = exerciseForm.name.trim()
-        const addedMuscleGroup = exerciseForm.muscleGroup.trim()
-        const addedSets = numSets
-        const addedReps = avgReps
-
-        setShowAddExercise(false)
-        setExerciseForm(EMPTY_EXERCISE_FORM)
-
-        // Ask user if they want to save this exercise to their template
-        setShowSaveToTemplate({
-          name: addedName,
-          muscleGroup: addedMuscleGroup,
-          sets: addedSets,
-          reps: addedReps,
-        })
-      }
-    } catch (error) {
-      console.error('Error adding exercise:', error)
-      const errorInfo = handleFirestoreError(error)
-      showToast('error', errorInfo.message)
-      if (errorInfo.indexLink) {
-        console.error('Index creation link:', errorInfo.indexLink)
-      }
+      await addLibraryExercise(libraryExercise, setCount)
     } finally {
       setIsAddingExercise(false)
+    }
+  }
+
+  const handleSwapExercise = async (libraryExercise: LibraryExercise, scope: SwapScope) => {
+    if (!workout || swapIndex === null) return
+    const current = workout.exercises[swapIndex]
+    if (!current) return
+    const slotId = getSlotId(current)
+
+    const swapped: WorkoutExercise = {
+      ...current,
+      exerciseId: libraryExercise.id,
+      slotId,
+      notes: undefined,
+      exercise: {
+        id: libraryExercise.id,
+        name: libraryExercise.name,
+        muscleGroup: libraryExercise.muscleGroup,
+        category: workout.type,
+        repRange: libraryExercise.repRange,
+      },
+      // Same number of sets, fresh numbers: suggestions now come from the new exercise
+      sets: current.sets.map((set) => ({ ...set, weight: 0, reps: 0, completed: false })),
+    }
+
+    setSwapIndex(null)
+    setAppliedProgressions((prev) => {
+      const next = new Map(prev)
+      next.delete(current.id)
+      return next
+    })
+    const saved = await persistWorkoutChange(updateExerciseAt(workout, swapIndex, () => swapped))
+    if (!saved) return
+
+    if (scope === 'always' && slotId) {
+      const typeName = WORKOUT_TYPE_INFO[workout.type]?.name ?? 'workout'
+      try {
+        const backToProgram = libraryExercise.id === slotId
+        await setProgramSwap(workout.type, slotId, backToProgram ? null : libraryExercise)
+        showToast(
+          'success',
+          backToProgram
+            ? `Every ${typeName} uses ${libraryExercise.name} again`
+            : `Every ${typeName} will use ${libraryExercise.name}`
+        )
+      } catch (error) {
+        console.error('Error saving program swap:', error)
+        showToast('error', 'Swapped for today, but couldn’t save it for next time.')
+      }
+    } else {
+      showToast('success', `Swapped to ${libraryExercise.name} for today`)
     }
   }
 
@@ -762,9 +834,19 @@ function ActiveWorkoutPage() {
                     </div>
                   ) : (
                     <>
-                      <h3 className="font-semibold text-[var(--text-primary)] text-lg">
-                        {exercise.exercise.name}
-                      </h3>
+                      <div className="flex items-center gap-1">
+                        <h3 className="font-semibold text-[var(--text-primary)] text-lg">
+                          {exercise.exercise.name}
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={() => setHowToIndex(exerciseIndex)}
+                          className="min-w-[32px] min-h-[32px] flex items-center justify-center rounded-full text-[var(--text-inactive)] hover:text-primary-500"
+                          aria-label={`How to do ${exercise.exercise.name}`}
+                        >
+                          <Info size={16} />
+                        </button>
+                      </div>
                       <p className="text-[var(--text-secondary)] text-sm">
                         {exercise.exercise.muscleGroup}
                         {exercise.exercise.repRange && ` · ${exercise.exercise.repRange} reps`}
@@ -778,6 +860,7 @@ function ActiveWorkoutPage() {
                       {exercise.sets.filter((set) => set.completed).length}/{exercise.sets.length}
                     </span>
                     <ExerciseMenu
+                      onSwap={() => setSwapIndex(exerciseIndex)}
                       onRename={() => handleStartEditingExerciseName(exerciseIndex)}
                       onEdit={() => handleEditExercise(exerciseIndex)}
                       onRemove={() => handleRemoveExercise(exerciseIndex)}
@@ -968,7 +1051,6 @@ function ActiveWorkoutPage() {
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
-            setExerciseForm(EMPTY_EXERCISE_FORM)
             setShowAddExercise(true)
           }}
           type="button"
@@ -1084,79 +1166,51 @@ function ActiveWorkoutPage() {
         </div>
       </Modal>
 
-      {/* Add Custom Exercise Modal */}
-      <Modal
+      {/* Add exercise from the library, or create a new one */}
+      <AddExerciseSheet
         isOpen={showAddExercise}
-        onClose={() => {
-          setShowAddExercise(false)
-          setExerciseForm(EMPTY_EXERCISE_FORM)
-        }}
-        title="Add Custom Exercise"
-        size="md"
-        footer={
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() => {
-                setShowAddExercise(false)
-                setExerciseForm(EMPTY_EXERCISE_FORM)
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              fullWidth
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                handleAddCustomExercise()
-              }}
-              disabled={!exerciseForm.name.trim() || !exerciseForm.muscleGroup.trim() || isAddingExercise}
-            >
-              {isAddingExercise ? 'Adding...' : 'Add Exercise'}
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-4">
-          <Input
-            label="Exercise Name"
-            value={exerciseForm.name}
-            onChange={(e) => setExerciseForm({ ...exerciseForm, name: e.target.value })}
-            placeholder="e.g., Cable Flyes"
-            required
+        onClose={() => setShowAddExercise(false)}
+        suggestedMuscles={[
+          ...new Set(mockExercises.filter((e) => e.category === workout.type).map((e) => e.muscleGroup)),
+        ]}
+        customLibrary={customLibrary}
+        existingNames={new Set(workout.exercises.map((e) => e.exercise.name.toLowerCase()))}
+        lastSessions={lastSessions}
+        isSaving={isAddingExercise}
+        onAdd={(libraryExercise, setCount) => addLibraryExercise(libraryExercise, setCount)}
+        onCreate={handleCreateExercise}
+      />
+
+      {/* Swap an exercise for an alternative */}
+      {(() => {
+        const target = swapIndex !== null ? workout.exercises[swapIndex] : null
+        const slotId = target ? getSlotId(target) : undefined
+        const original = target && slotId && target.exerciseId !== slotId ? findBuiltInExercise(slotId) ?? null : null
+        const exclude = new Set(workout.exercises.map((e) => e.exercise.name.toLowerCase()))
+        if (original) exclude.add(original.name.toLowerCase())
+        return (
+          <SwapExerciseSheet
+            key={swapIndex ?? 'closed'}
+            isOpen={target !== null}
+            onClose={() => setSwapIndex(null)}
+            exerciseName={target?.exercise.name ?? ''}
+            muscleGroup={target?.exercise.muscleGroup ?? ''}
+            alternatives={target ? getAlternatives(target.exercise.muscleGroup, customLibrary, exclude) : []}
+            original={original}
+            canRemember={!!slotId}
+            workoutTypeName={WORKOUT_TYPE_INFO[workout.type]?.name ?? 'Workout'}
+            completedSets={target ? target.sets.filter((set) => set.completed).length : 0}
+            lastSessions={lastSessions}
+            onSwap={handleSwapExercise}
           />
-          <Input
-            label="Muscle Group"
-            value={exerciseForm.muscleGroup}
-            onChange={(e) => setExerciseForm({ ...exerciseForm, muscleGroup: e.target.value })}
-            placeholder="e.g., Chest"
-            required
-          />
-          <div className="grid grid-cols-3 gap-3">
-            <Input
-              label="Sets"
-              type="number"
-              value={exerciseForm.sets.toString()}
-              onChange={(e) => setExerciseForm({ ...exerciseForm, sets: Math.max(1, parseInt(e.target.value) || 1) })}
-            />
-            <Input
-              label="Weight (kg)"
-              type="number"
-              value={exerciseForm.targetWeight.toString()}
-              onChange={(e) => setExerciseForm({ ...exerciseForm, targetWeight: parseFloat(e.target.value) || 0 })}
-            />
-            <Input
-              label="Reps"
-              type="number"
-              value={exerciseForm.targetReps.toString()}
-              onChange={(e) => setExerciseForm({ ...exerciseForm, targetReps: Math.max(1, parseInt(e.target.value) || 1) })}
-            />
-          </div>
-        </div>
-      </Modal>
+        )
+      })()}
+
+      {/* How to do an exercise */}
+      <ExerciseHowToSheet
+        exercise={howToIndex !== null ? workout.exercises[howToIndex]?.exercise ?? null : null}
+        onClose={() => setHowToIndex(null)}
+      />
 
       {/* Exit Workout Confirmation Modal */}
       <Modal

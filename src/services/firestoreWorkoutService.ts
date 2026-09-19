@@ -17,7 +17,8 @@ import {
 import type { Unsubscribe } from 'firebase/firestore'
 import { db, auth } from '../lib/firebase'
 import type { Workout, WorkoutType } from '../types'
-import { mockExercises, getDefaultSets } from './mockData'
+import { buildProgramExercises } from '../utils/programBuilder'
+import { getProgramSwaps } from './programService'
 import { getCustomExercises } from './firestorePlanService'
 import { ABANDONED_WORKOUT_AFTER_MS, getWorkoutStart, hasCompletedSets, isAbandonedWorkout } from '../utils/workoutStatus'
 
@@ -246,6 +247,7 @@ async function findOrCreateWorkout(type: WorkoutType): Promise<Workout> {
 
   // Look up the active workout and the custom exercises at the same time; the
   // custom exercises are only needed when a new workout gets created
+  const swapsPromise = getProgramSwaps()
   const customExercisesPromise = getCustomExercises(type).catch((error) => {
     console.warn('Could not load custom exercises:', error)
     return []
@@ -265,27 +267,15 @@ async function findOrCreateWorkout(type: WorkoutType): Promise<Workout> {
     }
   }
 
-  // Get default exercises for this workout type
-  const defaultExercises = mockExercises
-    .filter(ex => ex.category === type)
-    .map(exercise => ({
-      id: `we-${exercise.id}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-      exerciseId: exercise.id,
-      exercise,
-      sets: Array(getDefaultSets(exercise.id)).fill(null).map((_, i) => ({
-        id: `set-${i}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-        weight: 0,
-        reps: 0,
-        completed: false,
-      })),
-    }))
+  // Program exercises with the user's permanent swaps applied
+  const defaultExercises = buildProgramExercises(type, await swapsPromise)
 
   // Fetch user's saved custom exercises for this workout type and append them
   let customExerciseEntries: typeof defaultExercises = []
   try {
     const customExercises = await customExercisesPromise
     // Exclude any that share a name with a default exercise (case-insensitive)
-    const defaultNames = new Set(mockExercises.filter(ex => ex.category === type).map(ex => ex.name.toLowerCase()))
+    const defaultNames = new Set(defaultExercises.map(ex => ex.exercise.name.toLowerCase()))
     customExerciseEntries = customExercises
       .filter(ce => !defaultNames.has(ce.name.toLowerCase()))
       .map(ce => ({
@@ -346,26 +336,14 @@ async function findOrCreateWorkout(type: WorkoutType): Promise<Workout> {
 export async function createWorkoutWithDate(type: WorkoutType, date: Date): Promise<Workout> {
   const userId = getUserId()
   
-  // Get default exercises for this workout type
-  const defaultExercises = mockExercises
-    .filter(ex => ex.category === type)
-    .map(exercise => ({
-      id: `we-${exercise.id}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-      exerciseId: exercise.id,
-      exercise,
-      sets: Array(getDefaultSets(exercise.id)).fill(null).map((_, i) => ({
-        id: `set-${i}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-        weight: 0,
-        reps: 0,
-        completed: false,
-      })),
-    }))
+  // Program exercises with the user's permanent swaps applied
+  const defaultExercises = buildProgramExercises(type, await getProgramSwaps())
 
   // Fetch user's saved custom exercises for this workout type and append them
   let customExerciseEntries: typeof defaultExercises = []
   try {
     const customExercises = await getCustomExercises(type)
-    const defaultNames = new Set(mockExercises.filter(ex => ex.category === type).map(ex => ex.name.toLowerCase()))
+    const defaultNames = new Set(defaultExercises.map(ex => ex.exercise.name.toLowerCase()))
     customExerciseEntries = customExercises
       .filter(ce => !defaultNames.has(ce.name.toLowerCase()))
       .map(ce => ({

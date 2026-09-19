@@ -6,7 +6,7 @@ export const mockExercises: Exercise[] = [
   { id: 'push-1', name: 'Bench Press', muscleGroup: 'Chest', category: 'push', repRange: '6-8' },
   { id: 'push-2', name: 'Overhead Shoulder Press (machine, seated)', muscleGroup: 'Front Delts', category: 'push', repRange: '8-10' },
   { id: 'push-3', name: 'Incline Dumbbell Press', muscleGroup: 'Chest', category: 'push', repRange: '8-10' },
-  { id: 'push-4', name: 'Lateral Raises', muscleGroup: 'Front Delts', category: 'push', repRange: '12-15' },
+  { id: 'push-4', name: 'Lateral Raises', muscleGroup: 'Side Delts', category: 'push', repRange: '12-15' },
   { id: 'push-5', name: 'Triceps Pushdowns', muscleGroup: 'Triceps', category: 'push', repRange: '10-12' },
   { id: 'push-6', name: 'Skull Crushers', muscleGroup: 'Triceps', category: 'push', repRange: '8-12' },
   { id: 'push-7', name: 'Chest Press (machine)', muscleGroup: 'Chest', category: 'push', repRange: '10-12' },

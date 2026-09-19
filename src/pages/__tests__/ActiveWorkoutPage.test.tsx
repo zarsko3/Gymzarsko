@@ -14,7 +14,14 @@ const facade = vi.hoisted(() => ({
 }))
 
 vi.mock('../../services/workoutServiceFacade', () => facade)
-vi.mock('../../services/firestorePlanService', () => ({ saveCustomExercise: vi.fn() }))
+const plans = vi.hoisted(() => ({
+  saveCustomExercise: vi.fn(),
+  getLibraryExercises: vi.fn(async () => []),
+}))
+const program = vi.hoisted(() => ({ setProgramSwap: vi.fn(async () => {}) }))
+
+vi.mock('../../services/firestorePlanService', () => plans)
+vi.mock('../../services/programService', () => program)
 import ActiveWorkoutPage from '../ActiveWorkoutPage'
 
 const previousUpper: Workout = {
@@ -166,5 +173,68 @@ describe('ActiveWorkoutPage suggestions', () => {
 
     releaseHistory([previousUpper])
     expect(await screen.findByText(/Last time · 30×10, 30×10, 30×10/)).toBeInTheDocument()
+  })
+
+  it('swaps an exercise for an alternative and can keep it for every workout', async () => {
+    renderPage()
+    await screen.findByText(/Last time/)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Exercise options' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /Swap exercise/ }))
+
+    const sheet = await screen.findByRole('dialog', { name: 'Swap Flat Dumbbell Press' })
+    fireEvent.click(within(sheet).getByRole('radio', { name: 'Every upper day' }))
+    fireEvent.click(within(sheet).getByRole('button', { name: /Cable Fly \(low to high\)/ }))
+
+    expect(await screen.findByText('Cable Fly (low to high)')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(program.setProgramSwap).toHaveBeenCalledWith(
+        'upper',
+        'upper-2',
+        expect.objectContaining({ id: 'alt-chest-6', name: 'Cable Fly (low to high)' })
+      )
+    )
+    // Other tests leave debounced saves behind, so look for this test's save specifically
+    const saved = facade.updateWorkout.mock.calls
+      .map((call) => (call as unknown[])[0] as Workout)
+      .find((w) => w.exercises[0]?.exerciseId === 'alt-chest-6')
+    expect(saved?.exercises[0]).toMatchObject({ exerciseId: 'alt-chest-6', slotId: 'upper-2' })
+    expect(saved?.exercises[0].sets).toHaveLength(2)
+  })
+
+  it('creates a missing exercise in the library and adds it to the workout', async () => {
+    plans.saveCustomExercise.mockResolvedValue({
+      id: 'lib-1', name: 'Landmine Row', muscleGroup: 'Back', category: 'upper', defaultSets: 3, defaultReps: 10, inTemplate: false,
+    })
+    renderPage()
+    await screen.findByText(/Last time/)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add Exercise' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Add exercise' })
+    fireEvent.change(within(sheet).getByPlaceholderText('Search by name or muscle'), { target: { value: 'landmine row' } })
+    fireEvent.click(within(sheet).getByRole('button', { name: /Create "Landmine Row"/ }))
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Back' }))
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Add to workout' }))
+
+    await waitFor(() =>
+      expect(plans.saveCustomExercise).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Landmine Row', muscleGroup: 'Back', category: 'upper' }),
+        { inTemplate: false }
+      )
+    )
+    expect(await screen.findByRole('heading', { name: 'Landmine Row' })).toBeInTheDocument()
+  })
+
+  it('shows form cues and a video link', async () => {
+    renderPage()
+    await screen.findByText(/Last time/)
+
+    fireEvent.click(screen.getByRole('button', { name: 'How to do Flat Dumbbell Press' }))
+    const sheet = await screen.findByRole('dialog', { name: 'How to do this exercise' })
+    expect(within(sheet).getByText('Lower until you feel a stretch')).toBeInTheDocument()
+    expect(within(sheet).getByRole('link', { name: /Watch a video/ })).toHaveAttribute(
+      'href',
+      expect.stringContaining('youtube.com/results?search_query=Flat%20Dumbbell%20Press')
+    )
   })
 })
