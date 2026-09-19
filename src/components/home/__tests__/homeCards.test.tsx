@@ -8,8 +8,9 @@ describe('home cards', () => {
   it('shows weekly progress and streak', () => {
     render(<WeeklySummary progress={{ completed: 3, goal: 5, streakWeeks: 1 }} />)
     expect(screen.getByText('3')).toBeInTheDocument()
-    expect(screen.getByText('/ 5')).toBeInTheDocument()
+    expect(screen.getByText('/5')).toBeInTheDocument()
     expect(screen.getByText('week')).toBeInTheDocument()
+    expect(screen.getByText('2 more workouts to keep it')).toBeInTheDocument()
   })
 
   it('lists muscle groups with their set counts', () => {

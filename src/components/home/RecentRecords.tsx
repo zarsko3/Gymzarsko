@@ -16,7 +16,7 @@ function RecentRecords({ records, limit = 3 }: RecentRecordsProps) {
   const remaining = records.length - shown.length
 
   return (
-    <Card className="bg-card">
+    <Card className="bg-card rounded-2xl">
       <div className="flex items-center gap-2 mb-3">
         <Trophy size={16} className="text-primary-500" />
         <h3 className="font-semibold text-[var(--text-primary)]">New records</h3>
