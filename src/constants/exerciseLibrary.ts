@@ -260,3 +260,10 @@ export function searchExercises(queryText: string, customExercises: LibraryExerc
     })
     .sort((a, b) => a.name.localeCompare(b.name))
 }
+
+/** "landmine row" -> "Landmine Row"; names typed with capitals are left alone */
+export function formatExerciseName(name: string): string {
+  const trimmed = name.trim().replace(/\s+/g, ' ')
+  if (trimmed !== trimmed.toLowerCase()) return trimmed
+  return trimmed.replace(/(^|[\s(/-])(\p{L})/gu, (_, before: string, letter: string) => before + letter.toUpperCase())
+}

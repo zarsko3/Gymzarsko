@@ -1,346 +1,196 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
-import { ChevronLeft, Trophy, TrendingUp, Calendar } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import Card from '../components/ui/Card'
-import {
-  getExerciseHistory,
-  getExercisePRs,
-  getExerciseVolumeHistory,
-  type ExercisePr,
-} from '../services/progressService'
-import { getExerciseCatalog, getWorkouts } from '../services/workoutServiceFacade'
-import type { ProgressEntry } from '../types'
+import { ChevronLeft, Info, Trophy } from 'lucide-react'
+import type { Workout } from '../types'
+import { getWorkouts } from '../services/workoutServiceFacade'
+import { findBuiltInExercise } from '../constants/exerciseLibrary'
+import { toDateSafe } from '../utils/formatters'
+import { estimateOneRepMax, getExerciseStrengthSeries } from '../utils/progressStats'
+import StrengthChart from '../components/progress/StrengthChart'
+import ExerciseHowToSheet from '../components/workout/ExerciseHowToSheet'
 
+interface Session {
+  workoutId: string
+  date: Date
+  sets: Array<{ weight: number; reps: number }>
+  best: { weight: number; reps: number }
+}
+
+/** Progress for one exercise. The route param is a library id or an exercise name. */
 function ExerciseDetailPage() {
   const navigate = useNavigate()
-  const { exerciseId } = useParams<{ exerciseId: string }>()
-  const [history, setHistory] = useState<ProgressEntry[]>([])
-  const [volumeHistory, setVolumeHistory] = useState<Array<{ date: Date; volume: number }>>([])
-  const [pr, setPr] = useState<ExercisePr | null>(null)
+  const { exerciseId = '' } = useParams<{ exerciseId: string }>()
+  const [workouts, setWorkouts] = useState<Workout[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [loadError, setLoadError] = useState<string | null>(null)
+  const [showHowTo, setShowHowTo] = useState(false)
+
+  const key = decodeURIComponent(exerciseId)
+  const builtIn = findBuiltInExercise(key)
+  const name = builtIn?.name ?? key
 
   useEffect(() => {
-    if (!exerciseId) {
-      navigate('/progress')
+    let cancelled = false
+    getWorkouts()
+      .then((all) => {
+        if (!cancelled) setWorkouts(all)
+      })
+      .catch((error) => console.error('Error loading exercise history:', error))
+      .finally(() => {
+        if (!cancelled) setIsLoading(false)
+      })
+    return () => {
+      cancelled = true
     }
-  }, [exerciseId, navigate])
+  }, [])
 
-  const exercises = useMemo(() => getExerciseCatalog(), [])
-  const exercise = useMemo(
-    () => exercises.find((e) => e.id === exerciseId),
-    [exercises, exerciseId],
+  const sessions = useMemo<Session[]>(() => {
+    const lower = name.toLowerCase()
+    return workouts
+      .filter((workout) => workout.completed)
+      .map((workout) => {
+        const sets = workout.exercises
+          .filter((exercise) => exercise.exercise.name.toLowerCase() === lower)
+          .flatMap((exercise) => exercise.sets)
+          .filter((set) => set.completed && set.weight > 0 && set.reps > 0)
+          .map((set) => ({ weight: set.weight, reps: set.reps }))
+        const date = toDateSafe(workout.date)
+        if (sets.length === 0 || !date) return null
+        const best = sets.reduce((top, set) => (set.weight > top.weight || (set.weight === top.weight && set.reps > top.reps) ? set : top))
+        return { workoutId: workout.id, date, sets, best }
+      })
+      .filter((session): session is Session => session !== null)
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+  }, [workouts, name])
+
+  const series = useMemo(() => getExerciseStrengthSeries(workouts, name), [workouts, name])
+
+  const latestExercise = workouts
+    .flatMap((workout) => workout.exercises)
+    .find((exercise) => exercise.exercise.name.toLowerCase() === name.toLowerCase())
+  const muscleGroup = builtIn?.muscleGroup ?? latestExercise?.exercise.muscleGroup ?? ''
+  const repRange = builtIn?.repRange ?? latestExercise?.exercise.repRange
+
+  const current = series.at(-1)?.oneRepMax ?? 0
+  const first = series[0]
+  const gained = first ? Math.round((current - first.oneRepMax) * 2) / 2 : 0
+  const bestSession = sessions.reduce<Session | null>(
+    (top, session) =>
+      !top || session.best.weight > top.best.weight || (session.best.weight === top.best.weight && session.best.reps > top.best.reps)
+        ? session
+        : top,
+    null
   )
 
-  useEffect(() => {
-    let isMounted = true
-
-    const loadExerciseData = async () => {
-      if (!exerciseId) return
-      setIsLoading(true)
-      setLoadError(null)
-      try {
-        const workouts = await getWorkouts()
-        const [historyData, volumeData, prs] = await Promise.all([
-          getExerciseHistory(exerciseId, workouts),
-          getExerciseVolumeHistory(exerciseId, workouts),
-          getExercisePRs(workouts),
-        ])
-
-        if (!isMounted) return
-        setHistory(historyData)
-        setVolumeHistory(volumeData)
-        setPr(prs.get(exerciseId) ?? null)
-      } catch (error) {
-        console.error('Error loading exercise details:', error)
-        if (isMounted) {
-          setLoadError('Failed to load exercise data. Please try again later.')
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    loadExerciseData()
-
-    return () => {
-      isMounted = false
-    }
-  }, [exerciseId])
-
-  if (!exerciseId || !exercise) {
-    return (
-      <div className="min-h-full flex items-center justify-center px-4">
-        <div className="max-w-sm w-full text-center">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-accent-mint flex items-center justify-center">
-            <Trophy size={40} className="text-primary-500" strokeWidth={2} />
-          </div>
-          <h3 className="text-2xl font-bold text-text-primary mb-3">Exercise Not Found</h3>
-          <p className="text-text-secondary mb-8 text-base leading-relaxed">
-            We couldn't find that exercise. Please select another one from your progress list.
-          </p>
-          <button
-            onClick={() => navigate('/progress')}
-            className="text-primary-500 font-semibold hover:text-primary-600 transition-colors text-lg"
-          >
-            ← Back to Progress
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-full flex items-center justify-center">
-        <div className="text-text-secondary">Loading exercise data...</div>
-      </div>
-    )
-  }
-
-  if (loadError || history.length === 0) {
-    return (
-      <div className="min-h-full flex items-center justify-center px-4">
-        <div className="max-w-sm w-full text-center">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-accent-mint flex items-center justify-center">
-            <Trophy size={40} className="text-primary-500" strokeWidth={2} />
-          </div>
-          <h3 className="text-2xl font-bold text-text-primary mb-3">
-            {loadError ? 'Something went wrong' : 'No Data Available'}
-          </h3>
-          <p className="text-text-secondary mb-8 text-base leading-relaxed">
-            {loadError
-              ? loadError
-              : `You haven't performed ${exercise.name} yet. Start a workout to see your progress here.`}
-          </p>
-          <button
-            onClick={() => navigate('/progress')}
-            className="text-primary-500 font-semibold hover:text-primary-600 transition-colors text-lg"
-          >
-            ← Back to Progress
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // Prepare chart data
-  const volumeChartData = volumeHistory.map(entry => ({
-    date: format(entry.date, 'MMM d'),
-    volume: Math.round(entry.volume),
-  }))
-
-  // Group history by date and calculate max weight
-  const weightByDate = new Map<string, number>()
-  history.forEach(entry => {
-    const dateKey = format(entry.date, 'MMM d')
-    const existing = weightByDate.get(dateKey)
-    if (!existing || entry.weight > existing) {
-      weightByDate.set(dateKey, entry.weight)
-    }
-  })
-
-  const weightChartData = Array.from(weightByDate.entries()).map(([date, weight]) => ({
-    date,
-    weight,
-  }))
-
   return (
-    <div className="min-h-full bg-[var(--bg-primary)]">
-      {/* Header */}
-      <div className="sticky top-0 bg-[var(--bg-card)] border-b border-[var(--border-primary)] z-10 shadow-sm">
-        <div className="flex items-center justify-between px-4 py-4">
-          <button 
-            onClick={() => navigate('/progress')}
-            className="flex items-center gap-1 text-primary-500 font-medium min-h-[44px] min-w-[44px] justify-center"
+    <div className="min-h-full">
+      <div className="sticky top-0 z-10 bg-[var(--bg-primary)] border-b border-[var(--border-primary)]">
+        <div className="flex items-center justify-between px-2 min-h-[56px]">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1 px-2 min-h-[44px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-medium"
           >
             <ChevronLeft size={20} />
-            <span>Back</span>
+            Back
           </button>
-          <h1 className="text-lg font-semibold text-text-primary text-center flex-1 px-4">
-            {exercise.name}
-          </h1>
-          <div className="w-12"></div>
+          <button
+            type="button"
+            onClick={() => setShowHowTo(true)}
+            className="flex items-center gap-1.5 px-3 min-h-[44px] rounded-lg text-sm font-medium text-primary-600 dark:text-primary-500"
+          >
+            <Info size={16} />
+            How to
+          </button>
         </div>
       </div>
 
-      <div className="px-4 py-6 space-y-4">
-        {/* Exercise Info */}
-        <Card>
-          <div className="text-center">
-            <div className="text-sm text-text-secondary mb-1">Muscle Group</div>
-            <div className="text-lg font-semibold text-text-primary">{exercise.muscleGroup}</div>
+      <div className="px-4 pt-4 pb-6 space-y-4">
+        <div>
+          <p className="text-sm text-[var(--text-secondary)]">
+            {muscleGroup}
+            {repRange && ` · ${repRange} reps`}
+          </p>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">{name}</h1>
+        </div>
+
+        {isLoading ? (
+          <p className="text-center text-[var(--text-secondary)] py-12">Loading...</p>
+        ) : sessions.length === 0 ? (
+          <div className="rounded-2xl bg-card p-6 text-center">
+            <p className="font-medium text-[var(--text-primary)]">No sessions yet</p>
+            <p className="text-sm text-[var(--text-secondary)] mt-1">Mark sets as done during a workout and your progress shows up here.</p>
           </div>
-        </Card>
-
-        {/* PR Card */}
-        {pr && (
-          <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center">
-                <Trophy size={32} className="text-white" />
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-card p-4">
+                <p className="text-xs text-[var(--text-secondary)]">Estimated 1RM</p>
+                <p className="text-2xl font-bold text-[var(--text-primary)] tabular-nums">{current} kg</p>
+                {series.length > 1 && first && (
+                  <p className={`text-xs font-medium mt-0.5 ${gained > 0 ? 'text-green-600 dark:text-green-400' : gained < 0 ? 'text-red-500' : 'text-[var(--text-secondary)]'}`}>
+                    {gained > 0 ? '+' : gained < 0 ? '−' : '±'}
+                    {Math.abs(gained)} kg since {format(first.date, 'MMM d')}
+                  </p>
+                )}
               </div>
-              <div className="flex-1">
-                <div className="text-sm text-text-secondary mb-1">Personal Record</div>
-                <div className="text-2xl font-bold text-text-primary">
-                  {pr.weight} kg × {pr.reps}
+              {bestSession && (
+                <div className="rounded-2xl bg-card p-4">
+                  <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                    <Trophy size={12} />
+                    Best set
+                  </p>
+                  <p className="text-2xl font-bold text-[var(--text-primary)] tabular-nums">
+                    {bestSession.best.weight} × {bestSession.best.reps}
+                  </p>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">{format(bestSession.date, 'MMM d, yyyy')}</p>
                 </div>
-                <div className="text-xs text-text-secondary flex items-center gap-1 mt-1">
-                  <Calendar size={12} />
-                  {format(pr.date, 'MMMM d, yyyy')}
-                </div>
+              )}
+            </div>
+
+            {series.length > 1 && (
+              <section className="rounded-2xl bg-card p-4">
+                <h2 className="font-semibold text-[var(--text-primary)] mb-2">Estimated 1RM over time</h2>
+                <StrengthChart points={series} />
+              </section>
+            )}
+
+            <section>
+              <h2 className="font-semibold text-[var(--text-primary)] mb-2 px-1">
+                Sessions <span className="text-[var(--text-secondary)] font-normal text-sm">· {sessions.length}</span>
+              </h2>
+              <div className="space-y-2">
+                {sessions.map((session) => {
+                  const isBest = session === bestSession
+                  return (
+                    <div key={session.workoutId} className="rounded-xl bg-card px-4 py-3 flex items-start justify-between gap-3">
+                      <div className="flex-shrink-0">
+                        <p className="text-sm font-medium text-[var(--text-primary)] flex items-center gap-1.5">
+                          {format(session.date, 'MMM d')}
+                          {isBest && <Trophy size={13} className="text-amber-500" aria-label="Best set" />}
+                        </p>
+                        <p className="text-xs text-[var(--text-secondary)]">
+                          ~{estimateOneRepMax(session.best.weight, session.best.reps)} kg 1RM
+                        </p>
+                      </div>
+                      <p className="text-sm text-[var(--text-secondary)] text-right tabular-nums">
+                        {session.sets.map((set) => `${set.weight}×${set.reps}`).join(' · ')}
+                      </p>
+                    </div>
+                  )
+                })}
               </div>
-              <div className="text-right">
-                <div className="text-sm text-text-secondary">Volume</div>
-                <div className="text-xl font-bold text-primary-500">{pr.volume} kg</div>
-              </div>
-            </div>
-          </Card>
+            </section>
+          </>
         )}
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          <Card className="text-center p-4">
-            <div className="text-2xl font-bold text-primary-500">{history.length}</div>
-            <div className="text-text-secondary text-xs mt-1">Total Sets</div>
-          </Card>
-          <Card className="text-center p-4">
-            <div className="text-2xl font-bold text-primary-500">
-              {new Set(history.map(h => format(h.date, 'yyyy-MM-dd'))).size}
-            </div>
-            <div className="text-text-secondary text-xs mt-1">Sessions</div>
-          </Card>
-          <Card className="text-center p-4">
-            <div className="text-2xl font-bold text-primary-500">
-              {Math.round(history.reduce((sum, h) => sum + h.volume, 0))}
-            </div>
-            <div className="text-text-secondary text-xs mt-1">Total (kg)</div>
-          </Card>
-        </div>
-
-        {/* Volume Chart */}
-        {volumeChartData.length > 1 && (
-          <Card className="p-4">
-            <h3 className="font-semibold text-text-primary mb-4 flex items-center gap-2">
-              <TrendingUp size={20} className="text-primary-500" />
-              Volume Progress
-            </h3>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={volumeChartData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-[var(--border-primary)]" />
-                <XAxis
-                  dataKey="date"
-                  style={{ fontSize: '12px' }}
-                  className="stroke-[var(--text-secondary)]"
-                  tick={{ fill: 'var(--text-secondary)' }}
-                />
-                <YAxis
-                  style={{ fontSize: '12px' }}
-                  className="stroke-[var(--text-secondary)]"
-                  tick={{ fill: 'var(--text-secondary)' }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'var(--bg-card)',
-                    border: '1px solid var(--border-primary)',
-                    borderRadius: '8px',
-                    color: 'var(--text-primary)',
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="volume"
-                  stroke="var(--primary-500)"
-                  strokeWidth={3}
-                  dot={{ fill: 'var(--primary-500)', r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </Card>
-        )}
-
-        {/* Weight Chart */}
-        {weightChartData.length > 1 && (
-          <Card className="p-4">
-            <h3 className="font-semibold text-text-primary mb-4 flex items-center gap-2">
-              <Trophy size={20} className="text-primary-500" />
-              Max Weight Progress
-            </h3>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={weightChartData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-[var(--border-primary)]" />
-                <XAxis
-                  dataKey="date"
-                  style={{ fontSize: '12px' }}
-                  className="stroke-[var(--text-secondary)]"
-                  tick={{ fill: 'var(--text-secondary)' }}
-                />
-                <YAxis
-                  style={{ fontSize: '12px' }}
-                  className="stroke-[var(--text-secondary)]"
-                  tick={{ fill: 'var(--text-secondary)' }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'var(--bg-card)',
-                    border: '1px solid var(--border-primary)',
-                    borderRadius: '8px',
-                    color: 'var(--text-primary)',
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="weight"
-                  stroke="#3B82F6"
-                  strokeWidth={3}
-                  dot={{ fill: '#3B82F6', r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </Card>
-        )}
-
-        {/* Recent Sets */}
-        <div className="space-y-3">
-          <h3 className="font-semibold text-text-primary">Recent Sets</h3>
-          <Card>
-            <div className="space-y-2">
-              {history.slice(-10).reverse().map((entry, index) => (
-                <div
-                  key={entry.id}
-                  className={`flex items-center justify-between py-2 ${
-                    index !== 0 ? 'border-t border-[var(--border-primary)]' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="text-sm text-text-secondary">
-                      {format(entry.date, 'MMM d')}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-sm">
-                      <span className="font-semibold text-text-primary">{entry.weight} kg</span>
-                      <span className="text-text-secondary"> × {entry.reps}</span>
-                    </div>
-                    <div className="text-sm font-medium text-primary-500 w-16 text-right">
-                      {entry.volume} kg
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
       </div>
+
+      <ExerciseHowToSheet
+        exercise={showHowTo ? { id: builtIn?.id ?? name, name, muscleGroup } : null}
+        onClose={() => setShowHowTo(false)}
+      />
     </div>
   )
 }
 
 export default ExerciseDetailPage
-

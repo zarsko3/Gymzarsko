@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, Check, MessageSquare, FileText, History, TrendingUp, Info } from 'lucide-react'
+import { Plus, Check, MessageSquare, FileText, History, TrendingUp, Info, AlertTriangle } from 'lucide-react'
 import type { Workout, WorkoutType, WorkoutExercise, WorkoutSet } from '../types'
 import { startWorkout, updateWorkout, completeWorkout, getCurrentWorkout, getWorkoutById, getRecentWorkouts } from '../services/workoutServiceFacade'
 import {
@@ -22,6 +22,7 @@ import { saveCustomExercise, getLibraryExercises, type CustomExercise } from '..
 import { setProgramSwap } from '../services/programService'
 import { mockExercises } from '../services/mockData'
 import { emptySets } from '../utils/programBuilder'
+import { getDeloadWeight, getExerciseStrengthSeries, isStalled, STALL_SESSIONS } from '../utils/progressStats'
 import {
   getAlternatives,
   findBuiltInExercise,
@@ -116,6 +117,8 @@ function ActiveWorkoutPage() {
   const [appliedProgressions, setAppliedProgressions] = useState<Map<string, SetValues>>(new Map())
   const [showUnmarkedSetsDialog, setShowUnmarkedSetsDialog] = useState(false)
   const [lastSessions, setLastSessions] = useState<Map<string, LastSession>>(new Map())
+  // Recent finished workouts (excluding this one), for stall detection
+  const [recentWorkouts, setRecentWorkouts] = useState<Workout[]>([])
   const [restStartedAt, setRestStartedAt] = useState<number | null>(null)
   const [restSeconds, setRestSeconds] = useState(DEFAULT_REST_SECONDS)
   const elapsedTime = useWorkoutTimer(workout?.startTime ?? null)
@@ -332,7 +335,9 @@ function ActiveWorkoutPage() {
         setWorkout(loaded)
         setIsLoadingWorkout(false)
         historyPromise.then((recent) => {
-          if (!cancelled) setLastSessions(buildLastSessions(recent, loaded.id))
+          if (cancelled) return
+          setLastSessions(buildLastSessions(recent, loaded.id))
+          setRecentWorkouts(recent.filter((w) => w.id !== loaded.id))
         })
       } catch (error) {
         fail(error)
@@ -861,6 +866,7 @@ function ActiveWorkoutPage() {
                     </span>
                     <ExerciseMenu
                       onSwap={() => setSwapIndex(exerciseIndex)}
+                      onViewProgress={() => navigate(`/progress/exercise/${encodeURIComponent(exercise.exercise.name)}`)}
                       onRename={() => handleStartEditingExerciseName(exerciseIndex)}
                       onEdit={() => handleEditExercise(exerciseIndex)}
                       onRemove={() => handleRemoveExercise(exerciseIndex)}
@@ -875,13 +881,51 @@ function ActiveWorkoutPage() {
                 if (!lastSession) return null
                 const progression = getProgression(lastSession, getRepRange(exercise), exercise.exercise.name)
                 const applied = appliedProgressions.get(exercise.id)
+                const stalled = isStalled(getExerciseStrengthSeries(recentWorkouts, exercise.exercise.name))
+                const lastTop = getTopSet(lastSession)
+                const deload = lastTop ? { weight: getDeloadWeight(lastTop.weight), reps: getRepRange(exercise)?.max ?? lastTop.reps } : null
                 return (
                   <div className="space-y-2">
                     <div className="flex items-start gap-2 text-xs text-[var(--text-secondary)] bg-[var(--bg-secondary)] rounded-lg px-3 py-2">
                       <History size={14} className="flex-shrink-0 mt-0.5" />
                       <span>Last time · {formatSessionSets(lastSession)}</span>
                     </div>
-                    {progression && (
+                    {stalled && deload && deload.weight > 0 && (
+                      <div className="rounded-lg px-3 py-2.5 border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-xs">
+                        <p className="flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-300">
+                          <AlertTriangle size={14} />
+                          No progress in {STALL_SESSIONS} sessions
+                        </p>
+                        {applied ? (
+                          <p className="mt-1 text-amber-800 dark:text-amber-200">
+                            Resetting to {applied.weight} kg × {applied.reps}. Build back up from here.
+                          </p>
+                        ) : (
+                          <>
+                            <p className="mt-1 text-amber-800 dark:text-amber-200">
+                              Reset about 10% lighter and build back up, or try a variation.
+                            </p>
+                            <div className="flex gap-2 mt-2">
+                              <button
+                                type="button"
+                                onClick={() => handleApplyProgression(exercise, deload)}
+                                className="px-3 min-h-[36px] rounded-md border border-amber-400 dark:border-amber-600 font-medium text-amber-800 dark:text-amber-200"
+                              >
+                                Reset to {deload.weight} kg
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSwapIndex(exerciseIndex)}
+                                className="px-3 min-h-[36px] rounded-md font-medium text-amber-800 dark:text-amber-200"
+                              >
+                                Swap exercise
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                    {progression && !stalled && (
                       <div className="flex items-center gap-2 text-xs rounded-lg px-3 py-2 border border-primary-500 text-primary-600 dark:text-primary-400">
                         <TrendingUp size={14} className="flex-shrink-0" />
                         <span className="flex-1">

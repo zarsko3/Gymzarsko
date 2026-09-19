@@ -17,6 +17,8 @@ export interface WorkoutTypeInfo {
   iconClass: string
   /** Filled day in the weekly strip */
   tintClass: string
+  /** Solid fill for charts */
+  barClass: string
 }
 
 /**
@@ -33,6 +35,7 @@ export const WORKOUT_TYPES: WorkoutTypeInfo[] = [
     softBgClass: 'bg-[var(--accent-soft-blue)]',
     iconClass: 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300',
     tintClass: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300',
+    barClass: 'bg-blue-500',
   },
   {
     id: 'pull',
@@ -44,6 +47,7 @@ export const WORKOUT_TYPES: WorkoutTypeInfo[] = [
     softBgClass: 'bg-[var(--accent-soft-green)]',
     iconClass: 'bg-green-100 text-green-600 dark:bg-green-900/50 dark:text-green-300',
     tintClass: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300',
+    barClass: 'bg-green-500',
   },
   {
     id: 'legs',
@@ -55,6 +59,7 @@ export const WORKOUT_TYPES: WorkoutTypeInfo[] = [
     softBgClass: 'bg-[var(--accent-soft-purple)]',
     iconClass: 'bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-300',
     tintClass: 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300',
+    barClass: 'bg-purple-500',
   },
   {
     id: 'upper',
@@ -66,6 +71,7 @@ export const WORKOUT_TYPES: WorkoutTypeInfo[] = [
     softBgClass: 'bg-orange-50 dark:bg-orange-900/30',
     iconClass: 'bg-orange-100 text-orange-600 dark:bg-orange-900/50 dark:text-orange-300',
     tintClass: 'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300',
+    barClass: 'bg-orange-500',
   },
   {
     id: 'lower',
@@ -77,6 +83,7 @@ export const WORKOUT_TYPES: WorkoutTypeInfo[] = [
     softBgClass: 'bg-teal-50 dark:bg-teal-900/30',
     iconClass: 'bg-teal-100 text-teal-600 dark:bg-teal-900/50 dark:text-teal-300',
     tintClass: 'bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-300',
+    barClass: 'bg-teal-500',
   },
 ]
 

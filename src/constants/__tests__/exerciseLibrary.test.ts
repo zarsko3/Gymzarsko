@@ -5,6 +5,7 @@ import {
   getAlternatives,
   getExerciseCues,
   getHowToVideoUrl,
+  formatExerciseName,
   searchExercises,
   type LibraryExercise,
 } from '../exerciseLibrary'
@@ -46,8 +47,7 @@ describe('exercise library', () => {
 })
 
 describe('formatExerciseName', () => {
-  it('capitalises names typed in lowercase and keeps deliberate capitals', async () => {
-    const { formatExerciseName } = await import('../../components/workout/AddExerciseSheet')
+  it('capitalises names typed in lowercase and keeps deliberate capitals', () => {
     expect(formatExerciseName('  landmine   row ')).toBe('Landmine Row')
     expect(formatExerciseName('cable fly (low-to-high)')).toBe('Cable Fly (Low-To-High)')
     expect(formatExerciseName('JM Press')).toBe('JM Press')

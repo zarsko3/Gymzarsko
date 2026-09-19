@@ -3,19 +3,13 @@ import { Minus, Plus, Search } from 'lucide-react'
 import BottomSheet from '../ui/BottomSheet'
 import {
   MUSCLE_GROUPS,
+  formatExerciseName,
   searchExercises,
   type LibraryExercise,
 } from '../../constants/exerciseLibrary'
 import { getTopSet, type LastSession } from '../../services/firestoreProgressService'
 
 const MAX_RESULTS = 25
-
-/** "landmine row" -> "Landmine Row"; names typed with capitals are left alone */
-export function formatExerciseName(name: string): string {
-  const trimmed = name.trim().replace(/\s+/g, ' ')
-  if (trimmed !== trimmed.toLowerCase()) return trimmed
-  return trimmed.replace(/(^|[\s(/-])(\p{L})/gu, (_, before: string, letter: string) => before + letter.toUpperCase())
-}
 
 interface AddExerciseSheetProps {
   isOpen: boolean

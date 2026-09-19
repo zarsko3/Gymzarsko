@@ -98,32 +98,3 @@ export interface BodyMetricGoal {
   createdAt: Date
   updatedAt: Date
 }
-
-// Analytics Types
-export interface FilterOptions {
-  dateRange: { start: Date; end: Date }
-  workoutType: 'all' | WorkoutType
-}
-
-export type CompareMode = 'last-vs-average' | 'week-over-week' | 'none'
-
-export interface ComparisonResult {
-  current: number
-  previous: number
-  change: number
-  changePercent: number
-}
-
-export interface WorkoutMetrics {
-  workoutId: string
-  date: Date
-  type: WorkoutType
-  totalVolume: number
-  topSetWeight: number
-  volumePerMinute: number
-  totalSets: number
-  intensity: number
-  duration: number
-}
-
-

@@ -105,7 +105,7 @@ function HomePage() {
           className="w-full flex items-center justify-center gap-1 py-2 text-sm font-medium text-primary-500 hover:text-primary-600 min-h-[44px]"
           type="button"
         >
-          See all stats
+          See your progress
           <ChevronRight size={16} />
         </button>
       </div>

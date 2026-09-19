@@ -237,4 +237,27 @@ describe('ActiveWorkoutPage suggestions', () => {
       expect.stringContaining('youtube.com/results?search_query=Flat%20Dumbbell%20Press')
     )
   })
+
+  it('flags a stalled exercise and offers a lighter reset', async () => {
+    const session = (id: string, day: number, weight: number, reps: number): Workout => ({
+      ...previousUpper,
+      id,
+      date: new Date(2026, 8, day),
+      exercises: [{ ...previousUpper.exercises[0], sets: [{ id: `${id}-s`, weight, reps, completed: true }] }],
+    })
+    // Newest first, like the service returns them: best was 30×10 and nothing beat it since
+    facade.getRecentWorkouts.mockResolvedValue([
+      session('s4', 16, 30, 9),
+      session('s3', 12, 30, 10),
+      session('s2', 8, 27.5, 10),
+      session('s1', 4, 30, 10),
+    ])
+
+    renderPage()
+    expect(await screen.findByText('No progress in 3 sessions')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset to 27.5 kg' }))
+    expect(screen.getByText('Resetting to 27.5 kg × 10. Build back up from here.')).toBeInTheDocument()
+    expect(weightInputs()[0]).toHaveAttribute('placeholder', '27.5')
+  })
 })
